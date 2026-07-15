@@ -1,0 +1,207 @@
+import { Component } from '@angular/core';
+import { HeaderComponent } from '../../../shared/presentation/components/header/header.component';
+import { SidebarComponent } from '../../../shared/presentation/components/sidebar/sidebar';
+import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { FooterComponent } from '../../../shared/presentation/components/footer/footer';
+import { BreadcrumbComponent } from '../../../shared/presentation/components/breadcrumb/breadcrumb.component';
+
+@Component({
+  selector: 'app-public-layout',
+  standalone: true,
+  imports: [HeaderComponent, SidebarComponent, FooterComponent, BreadcrumbComponent, RouterOutlet, RouterLink, RouterLinkActive],
+  template: `
+    <div class="layout-container">
+      <!-- Header -->
+      <app-header />
+
+      <!-- Breadcrumb - Positioned above content -->
+      <app-breadcrumb />
+
+      <!-- Main content -->
+      <div class="layout-main">
+        <!-- Sidebar (desktop) / Mobile Nav (mobile) -->
+        <app-sidebar class="desktop-sidebar" />
+
+        <!-- Content -->
+        <div class="layout-content-wrapper">
+          <main class="layout-content">
+            <router-outlet />
+          </main>
+
+          <!-- Footer (solo al final del contenido) -->
+          <app-footer />
+        </div>
+      </div>
+
+      <!-- Mobile Bottom Navigation -->
+      <nav class="mobile-nav">
+        <a routerLink="/" routerLinkActive="mobile-nav-active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link">
+          <span class="material-symbols-rounded">home</span>
+        </a>
+        <a routerLink="/social" routerLinkActive="mobile-nav-active" class="mobile-nav-link">
+          <span class="material-symbols-rounded">groups</span>
+        </a>
+        <a routerLink="/vet" routerLinkActive="mobile-nav-active" class="mobile-nav-link">
+          <span class="material-symbols-rounded">favorite</span>
+        </a>
+        <a routerLink="/marketplace" routerLinkActive="mobile-nav-active" class="mobile-nav-link">
+          <span class="material-symbols-rounded">storefront</span>
+        </a>
+        <a routerLink="/adoptions" routerLinkActive="mobile-nav-active" class="mobile-nav-link">
+          <span class="material-symbols-rounded">pet_supplies</span>
+        </a>
+      </nav>
+    </div>
+  `,
+  styles: [`
+    .layout-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background-color: var(--surface-bg);
+    }
+
+    .layout-main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      margin-top: 64px;
+    }
+
+    .layout-content-wrapper {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow-y: auto;
+      height: 100%;
+      padding-left: 72px;
+      padding-top: 48px;
+    }
+
+    .layout-content {
+      flex: 0 0 auto;
+      padding: 1.5rem;
+      background-color: var(--surface-bg);
+      min-width: 0;
+    }
+
+    .dark .layout-content {
+      background-color: var(--surface-bg);
+    }
+
+    app-footer {
+      flex-shrink: 0;
+    }
+
+    /* ===== MOBILE NAVIGATION ===== */
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background-color: color-mix(in srgb, var(--sidebar-bg) 90%, transparent);
+      border-top: 1px solid var(--sidebar-border);
+      z-index: 100;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 8px;
+      padding-bottom: env(safe-area-inset-bottom);
+      backdrop-filter: blur(12px);
+    }
+
+    .dark .mobile-nav {
+      background-color: color-mix(in srgb, var(--sidebar-bg) 90%, transparent);
+      backdrop-filter: blur(12px);
+    }
+
+    .mobile-nav-link {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 12px;
+      color: var(--sidebar-text);
+      text-decoration: none;
+      font-size: 0.625rem;
+      border-radius: var(--radius-md);
+      transition: all var(--transition-fast);
+      min-width: 56px;
+      position: relative;
+    }
+
+    .mobile-nav-link span {
+      font-size: 1.5rem;
+      width: 1.5rem;
+      height: 1.5rem;
+      margin-bottom: 2px;
+      transition: all var(--transition-fast);
+    }
+
+    .mobile-nav-link span.material-symbols-rounded {
+      font-size: 1.5rem;
+    }
+
+    .mobile-nav-link:hover {
+      background-color: var(--sidebar-hover);
+      color: var(--sidebar-text-hover);
+      transform: translateY(-2px);
+    }
+
+    .mobile-nav-active {
+      color: var(--sidebar-text-hover);
+    }
+
+    .mobile-nav-active span {
+      color: var(--sidebar-text-hover);
+      font-variation-settings: 'FILL' 1;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .layout-main {
+        margin-top: 64px;
+      }
+
+      .layout-content-wrapper {
+        padding-left: 0;
+        padding-top: 0;
+        padding-bottom: 64px;
+      }
+
+      .desktop-sidebar {
+        display: none;
+      }
+
+      .mobile-nav {
+        display: flex;
+      }
+
+      .layout-content {
+        padding: 1rem;
+      }
+
+      app-breadcrumb {
+        margin-left: 0;
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .mobile-nav-link {
+        min-width: 48px;
+        padding: 4px 6px;
+      }
+
+      .mobile-nav-link span {
+        font-size: 1.25rem;
+      }
+
+      .mobile-nav-link span {
+        font-size: 0.6rem;
+      }
+    }
+  `]
+})
+export class PublicLayout {}
