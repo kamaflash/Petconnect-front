@@ -6,6 +6,7 @@ import { AvatarModule } from 'primeng/avatar';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { SkeletonModule } from 'primeng/skeleton';
 
 export interface TableCardItem {
   id: string;
@@ -31,6 +32,7 @@ export interface TableCardItem {
     InputTextModule,
     FormsModule,
     RouterLink,
+    SkeletonModule,
   ],
   template: `
     <div class="table-card-container">
@@ -70,43 +72,58 @@ export interface TableCardItem {
         </div>
       </div>
 
-      <!-- Grid de cards -->
+  <!-- Grid de cards -->
       <div class="table-card-grid">
-        <!-- Card para añadir (solo en modo editable) -->
-        <div class="add-card" *ngIf="editable()" (click)="onAdd.emit()">
-          <div class="add-card-content">
-            <i class="pi pi-plus add-icon"></i>
-            <span class="add-label">Añadir</span>
-          </div>
-        </div>
-
-        <div class="table-card" *ngFor="let item of filteredItems()">
-          <div class="table-card-header-content">
-            <p-avatar [image]="item.avatar" shape="circle" size="large"></p-avatar>
-            <div class="table-card-info">
-              <a *ngIf="item.userId" [routerLink]="'/profile/' + item.userId" class="table-card-name">{{ item.name }}</a>
-              <p *ngIf="!item.userId" class="table-card-name">{{ item.name }}</p>
-              <p class="table-card-description" *ngIf="item.description">{{ item.description }}</p>
-              <p class="table-card-location" *ngIf="item.location">
-                <i class="pi pi-map-marker"></i> {{ item.location }}
-              </p>
-              <div class="table-card-rating" *ngIf="item.rating !== undefined">
-                <i class="pi pi-star-fill" *ngFor="let star of [1,2,3,4,5]"></i>
-                <span class="rating-value">{{ item.rating }} ({{ item.reviews }})</span>
+        <!-- Loading Skeletons -->
+        @if (loading()) {
+          <div class="table-card skeleton-card" *ngFor="let i of [1, 2, 3, 4, 5]">
+            <div class="table-card-header-content">
+              <p-skeleton shape="circle" size="3rem" />
+              <div class="table-card-info">
+                <p-skeleton width="10rem" height="1rem" styleClass="mb-2" />
+                <p-skeleton width="6rem" height="0.875rem" />
               </div>
             </div>
+            <p-skeleton width="100%" height="0.75rem" styleClass="mt-2" />
+            <p-skeleton width="80%" height="0.75rem" styleClass="mt-1" />
           </div>
-          <div class="table-card-tags" *ngIf="item.tags">
-            <p-tag
-              *ngFor="let tag of item.tags"
-              [value]="tag"
-              styleClass="p-tag-sm"
-            />
+        } @else {
+          <!-- Card para añadir (solo en modo editable) -->
+          <div class="add-card" *ngIf="editable()" (click)="onAdd.emit()">
+            <div class="add-card-content">
+              <i class="pi pi-plus add-icon"></i>
+              <span class="add-label">Añadir</span>
+            </div>
           </div>
-          <div class="table-card-actions">
-            <ng-content select="[card-actions]"></ng-content>
+
+          <div class="table-card" *ngFor="let item of filteredItems()">
+            <div class="table-card-header-content">
+              <p-avatar [image]="item.avatar" shape="circle" size="large"></p-avatar>
+              <div class="table-card-info">
+                <a *ngIf="item.userId" [routerLink]="'/profile/' + item.userId" class="table-card-name">{{ item.name }}</a>
+                <p *ngIf="!item.userId" class="table-card-name">{{ item.name }}</p>
+                <p class="table-card-description" *ngIf="item.description">{{ item.description }}</p>
+                <p class="table-card-location" *ngIf="item.location">
+                  <i class="pi pi-map-marker"></i> {{ item.location }}
+                </p>
+                <div class="table-card-rating" *ngIf="item.rating !== undefined">
+                  <i class="pi pi-star-fill" *ngFor="let star of [1,2,3,4,5]"></i>
+                  <span class="rating-value">{{ item.rating }} ({{ item.reviews }})</span>
+                </div>
+              </div>
+            </div>
+            <div class="table-card-tags" *ngIf="item.tags">
+              <p-tag
+                *ngFor="let tag of item.tags"
+                [value]="tag"
+                styleClass="p-tag-sm"
+              />
+            </div>
+            <div class="table-card-actions">
+              <ng-content select="[card-actions]"></ng-content>
+            </div>
           </div>
-        </div>
+        }
       </div>
     </div>
   `,
@@ -322,6 +339,11 @@ export interface TableCardItem {
       margin-top: auto;
       padding-top: 0.5rem;
     }
+
+    /* Skeleton card */
+    .skeleton-card {
+      pointer-events: none;
+    }
   `]
 })
 export class TableCardComponent {
@@ -331,6 +353,7 @@ export class TableCardComponent {
   activeFilter = input('all');
   filteredItems = input<TableCardItem[]>([]);
   editable = input(false);
+  loading = input(false);
 
   searchChange = output<string>();
   filterChange = output<string>();

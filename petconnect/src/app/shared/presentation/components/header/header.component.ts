@@ -34,12 +34,11 @@ import { RippleModule } from 'primeng/ripple';
       <div class="header-content">
         <!-- Left: Logo + Navigation -->
         <div class="header-left">
-          <div class="logo-container" routerLink="/" style="cursor: pointer;">
-            <div class="logo-icon">
-              <i class="pi pi-paw" style="font-size: 1.1rem; color: white;"></i>
-            </div>
-            <span class="logo-text">PetConnect</span>
-          </div>
+           <div class="logo-container" routerLink="/" style="cursor: pointer;">
+             <div class="logo-icon">
+               <img src="https://res.cloudinary.com/dxjcjee8f/image/upload/v1784245378/oxs6hug2kb16gymq5pue.png" alt="PetConnect" class="logo-image" />
+             </div>
+           </div>
         </div>
 
         <!-- Center: Search (only when logged in) -->
@@ -68,78 +67,136 @@ import { RippleModule } from 'primeng/ripple';
         <!-- Right: Actions -->
         <div class="header-right">
           @if (isLoggedIn()) {
-            <!-- Theme toggle -->
-            <button
-              pButton
-              [icon]="isDarkMode() ? 'pi pi-sun' : 'pi pi-moon'"
-              class="p-button-text p-button-sm header-btn"
-              (click)="toggleTheme()"
-              pTooltip="Cambiar tema"
-              tooltipPosition="bottom"
-            ></button>
+            <!-- Desktop: Full menu -->
+            <div class="desktop-actions">
+              <!-- Theme toggle -->
+              <button
+                pButton
+                [icon]="isDarkMode() ? 'pi pi-sun' : 'pi pi-moon'"
+                class="p-button-text p-button-sm header-btn"
+                (click)="toggleTheme()"
+                pTooltip="Cambiar tema"
+                tooltipPosition="bottom"
+              ></button>
 
-            <!-- Notifications -->
-            <button
-              pButton
-              icon="pi pi-bell"
-              class="p-button-text p-button-sm header-btn"
-              pTooltip="Notificaciones"
-              tooltipPosition="bottom"
-              (click)="onNotifications()"
-            >
-              <span class="notification-dot"></span>
-            </button>
+              <!-- Notifications -->
+              <button
+                pButton
+                icon="pi pi-bell"
+                class="p-button-text p-button-sm header-btn"
+                pTooltip="Notificaciones"
+                tooltipPosition="bottom"
+                (click)="onNotifications()"
+              >
+                <span class="notification-dot"></span>
+              </button>
 
-            <!-- Messages -->
-            <button
-              pButton
-              icon="pi pi-envelope"
-              class="p-button-text p-button-sm header-btn"
-              pTooltip="Mensajes"
-              tooltipPosition="bottom"
-              (click)="onMessages()"
-            ></button>
-          }
+              <!-- Messages -->
+              <button
+                pButton
+                icon="pi pi-envelope"
+                class="p-button-text p-button-sm header-btn"
+                pTooltip="Mensajes"
+                tooltipPosition="bottom"
+                (click)="onMessages()"
+              ></button>
 
-          <!-- User menu -->
-          <div class="user-menu-container">
-            <button
-              pButton
-              class="p-button-text p-button-sm header-btn user-btn"
-              (click)="menu.toggle($event)"
-              pTooltip="Menú"
-              tooltipPosition="bottom"
-            >
-              @if (isLoggedIn()) {
-                <p-avatar
-                  [image]="userAvatar()"
-                  shape="circle"
-                  size="normal"
-                  class="user-avatar"
-                ></p-avatar>
-              } @else {
-                <i class="pi pi-user"></i>
-              }
-            </button>
-
-            <p-menu #menu [model]="menuItems" [popup]="true" [appendTo]="'body'">
-              <ng-template pTemplate="start">
-                @if (isLoggedIn()) {
-                  <div class="user-menu-header">
+              <!-- User menu -->
+              <div class="user-menu-container">
+                <button
+                  pButton
+                  class="p-button-text p-button-sm header-btn user-btn"
+                  (click)="menu.toggle($event)"
+                  pTooltip="Menú"
+                  tooltipPosition="bottom"
+                >
+                  @if (isLoggedIn()) {
                     <p-avatar
                       [image]="userAvatar()"
                       shape="circle"
-                      size="large"
+                      size="normal"
+                      class="user-avatar"
                     ></p-avatar>
-                    <div class="user-info">
-                      <span class="user-name">{{ userName() }}</span>
-                      <span class="user-email">{{ userEmail() }}</span>
-                    </div>
-                  </div>
-                }
-              </ng-template>
-            </p-menu>
-          </div>
+                  } @else {
+                    <i class="pi pi-user"></i>
+                  }
+                </button>
+
+                <p-menu #menu [model]="menuItems" [popup]="true" [appendTo]="'body'">
+                  <ng-template pTemplate="start">
+                    @if (isLoggedIn()) {
+                      <div class="user-menu-header">
+                        <p-avatar
+                          [image]="userAvatar()"
+                          shape="circle"
+                          size="large"
+                        ></p-avatar>
+                        <div class="user-info">
+                          <span class="user-name">{{ userName() }}</span>
+                          <span class="user-email">{{ userEmail() }}</span>
+                        </div>
+                      </div>
+                    }
+                  </ng-template>
+                </p-menu>
+              </div>
+            </div>
+
+            <!-- Mobile: Icon buttons -->
+            <div class="mobile-actions">
+              <button
+                pButton
+                [icon]="isDarkMode() ? 'pi pi-sun' : 'pi pi-moon'"
+                class="p-button-text p-button-sm header-btn"
+                (click)="toggleTheme()"
+                pTooltip="Cambiar tema"
+                tooltipPosition="bottom"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-bell"
+                class="p-button-text p-button-sm header-btn"
+                pTooltip="Notificaciones"
+                tooltipPosition="bottom"
+                (click)="onNotifications()"
+              >
+                <span class="notification-dot"></span>
+              </button>
+              <button
+                pButton
+                icon="pi pi-cog"
+                class="p-button-text p-button-sm header-btn"
+                pTooltip="Configuración"
+                tooltipPosition="bottom"
+                (click)="onSettings()"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-plus"
+                class="p-button-text p-button-sm header-btn"
+                pTooltip="Administración"
+                tooltipPosition="bottom"
+                (click)="onAdmin()"
+              ></button>
+              <button
+                pButton
+                icon="pi pi-user"
+                class="p-button-text p-button-sm header-btn"
+                pTooltip="Mi Perfil"
+                tooltipPosition="bottom"
+                (click)="onProfile()"
+              ></button>
+            </div>
+          } @else {
+            <button
+              pButton
+              icon="pi pi-user"
+              class="p-button-text p-button-sm header-btn"
+              (click)="openLoginModal()"
+              pTooltip="Acceder"
+              tooltipPosition="bottom"
+            ></button>
+          }
         </div>
       </div>
     </header>
@@ -292,6 +349,34 @@ import { RippleModule } from 'primeng/ripple';
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
+    /* ===== DESKTOP/MOBILE TOGGLE ===== */
+    .desktop-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .mobile-actions {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .desktop-actions {
+        display: none;
+      }
+
+      .mobile-actions {
+        display: flex;
+      }
+
+      .header-center {
+        display: none;
+      }
+    }
   `]
 })
 export class HeaderComponent implements OnInit {
@@ -370,6 +455,11 @@ export class HeaderComponent implements OnInit {
           command: () => this.onProfile()
         },
         {
+          label: 'Administración',
+          icon: 'pi pi-cog',
+          command: () => this.onAdmin()
+        },
+        {
           label: 'Mis Mascotas',
           icon: 'pi pi-paw',
           command: () => this.onPets()
@@ -417,6 +507,10 @@ export class HeaderComponent implements OnInit {
 
   onProfile(): void {
     this.router.navigate(['/profile']);
+  }
+
+  onAdmin(): void {
+    this.router.navigate(['/admin']);
   }
 
   onPets(): void {

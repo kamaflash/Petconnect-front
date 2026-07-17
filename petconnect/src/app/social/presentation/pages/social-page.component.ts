@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -7,7 +7,6 @@ import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { InputTextModule } from 'primeng/inputtext';
 import { DialogModule } from 'primeng/dialog';
-import { ProgressBarModule } from 'primeng/progressbar';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
@@ -17,7 +16,14 @@ import { ChipModule } from 'primeng/chip';
 import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
 import { MenuModule } from 'primeng/menu';
+import { ProgressBarModule } from 'primeng/progressbar';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
+import { AuthService } from '../../../auth/infrastructure/services/auth.service';
+import { CloudinaryService, CloudinaryUploadResponse } from '../../../shared/infrastructure/services/cloudinary.service';
+import { SocialService, PostResponse, EventResponse, GroupResponse, NotificationResponse, TrendingTopicResponse, FollowResponse } from '../../infrastructure/services/social.service';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
 
 interface CommunityUser {
   id: string;
@@ -149,7 +155,6 @@ interface Notification {
     AvatarGroupModule,
     InputTextModule,
     DialogModule,
-    ProgressBarModule,
     FormsModule,
     ReactiveFormsModule,
     RouterLink,
@@ -160,6 +165,8 @@ interface Notification {
     TooltipModule,
     MenuModule,
     DynamicFormComponent,
+    PostFeedComponent,
+    ProgressBarModule,
   ],
   providers: [MessageService],
   template: `
@@ -213,11 +220,19 @@ interface Notification {
           </div>
         </div>
 
+        <!-- Loading Progress Bar -->
+        @if (loading()) {
+          <div class="loading-overlay">
+            <p-progressBar mode="indeterminate" [style]="{'height': '4px'}" />
+          </div>
+        }
+
         <!-- Mi Tablón -->
+        <!-- Loading state is now handled by PostFeedComponent with Skeleton -->
         <div class="feed-layout" *ngIf="activeTab() === 'feed'">
           <div class="feed-column">
             <div class="create-post-input" (click)="showCreatePostDialog()">
-              <p-avatar image="https://i.pravatar.cc/150?img=1" shape="circle" size="normal"></p-avatar>
+              <p-avatar [image]="currentUserAvatar()" shape="circle" size="normal"></p-avatar>
               <input
                 type="text"
                 placeholder="¿Qué estás pensando?"
@@ -230,76 +245,12 @@ interface Notification {
               </div>
             </div>
 
-            <div class="post-card" *ngFor="let post of filteredFeedPosts()">
-              <div class="post-header">
-                <div class="post-user">
-                  <div class="post-avatar-ring">
-                    <p-avatar
-                      [image]="post.user.avatar"
-                      shape="circle"
-                      size="large"
-                    ></p-avatar>
-                  </div>
-                  <div class="post-user-text">
-                    <a [routerLink]="'/profile/' + post.user.userId" class="post-username">{{ post.user.username }}</a>
-                    <span class="post-name">{{ post.user.name }}</span>
-                  </div>
-                </div>
-                <button class="post-more-btn">
-                  <i class="pi pi-ellipsis-h"></i>
-                </button>
-              </div>
-
-              <div class="post-image-wrap">
-                <img [src]="post.image" [alt]="post.content" class="post-image" />
-              </div>
-
-              <div class="post-actions">
-                <div class="post-actions-left">
-                  <button class="post-action-btn" (click)="toggleLike(post)">
-                    <i class="pi" [class.pi-heart-fill]="post.liked" [class.pi-heart]="!post.liked"
-                       [style.color]="post.liked ? 'var(--primary-color)' : ''"></i>
-                  </button>
-                  <button class="post-action-btn">
-                    <i class="pi pi-comment"></i>
-                  </button>
-                  <button class="post-action-btn">
-                    <i class="pi pi-send"></i>
-                  </button>
-                </div>
-                <button class="post-action-btn" (click)="toggleSavePost(post)">
-                  <i class="pi" [class.pi-bookmark-fill]="post.saved" [class.pi-bookmark]="!post.saved"></i>
-                </button>
-              </div>
-
-              <div class="post-likes">
-                <p-avatar-group>
-                  <p-avatar image="https://i.pravatar.cc/150?img=11" shape="circle" size="normal"></p-avatar>
-                  <p-avatar image="https://i.pravatar.cc/150?img=12" shape="circle" size="normal"></p-avatar>
-                  <p-avatar image="https://i.pravatar.cc/150?img=13" shape="circle" size="normal"></p-avatar>
-                </p-avatar-group>
-                <span class="likes-text">Le gusta a <strong>{{ post.likes }}</strong> personas</span>
-              </div>
-
-              <div class="post-caption">
-                <a [routerLink]="'/profile/' + post.user.userId" class="caption-user">{{ post.user.username }}</a>
-                <span class="caption-text">{{ post.content }}</span>
-              </div>
-
-              <div class="post-comments">
-                <span class="comments-link">Ver los {{ post.comments }} comentarios</span>
-                <span class="comment-time">{{ post.timestamp | date:'d MMM' }}</span>
-              </div>
-
-              <div class="post-comment-input">
-                <input
-                  type="text"
-                  placeholder="Añade un comentario..."
-                  class="comment-input"
-                />
-                <button class="comment-post-btn">Publicar</button>
-              </div>
-            </div>
+            <app-post-feed
+              [posts]="postItems()"
+              [loading]="loading()"
+              (likeToggled)="onLikeToggled($event)"
+              (saveToggled)="onSaveToggled($event)"
+            />
 
             <div class="load-more-container">
               <p-button
@@ -317,7 +268,7 @@ interface Notification {
               <div class="sidebar-header">
                 <h3>Tendencias</h3>
               </div>
-              <div class="trending-item" *ngFor="let trend of trendingTopics">
+              <div class="trending-item" *ngFor="let trend of trendingTopics()">
                 <span class="trend-rank">#{{ trend.rank }}</span>
                 <div class="trend-info">
                   <span class="trend-name">{{ trend.name }}</span>
@@ -330,7 +281,7 @@ interface Notification {
               <div class="sidebar-header">
                 <h3>Família populares</h3>
               </div>
-              <div class="popular-pet" *ngFor="let pet of popularPets">
+              <div class="popular-pet" *ngFor="let pet of popularPets()">
                 <p-avatar [image]="pet.avatar" shape="circle"></p-avatar>
                 <div class="pet-info">
                   <span class="pet-name">{{ pet.name }}</span>
@@ -350,7 +301,7 @@ interface Notification {
               <div class="sidebar-header">
                 <h3>Próximos eventos</h3>
               </div>
-              <div class="upcoming-event" *ngFor="let event of upcomingEvents">
+              <div class="upcoming-event" *ngFor="let event of upcomingEvents()">
                 <div class="event-date">
                   <span class="event-day">{{ event.date | date:'dd' }}</span>
                   <span class="event-month">{{ event.date | date:'MMM' }}</span>
@@ -360,7 +311,7 @@ interface Notification {
                   <span class="event-attendees">{{ event.attendees }} asistentes</span>
                 </div>
                 <p-button
-                  [label]="event.isAttending ? 'Asistiendo' : 'Asistir'"
+                  [label]="event.isAttending ? 'Asistiendo' : 'Asir'"
                   [icon]="event.isAttending ? 'pi pi-check' : 'pi pi-plus'"
                   styleClass="p-button-sm  p-button-outlined"
                   (onClick)="toggleEventAttendance(event)"
@@ -465,7 +416,7 @@ interface Notification {
             />
           </div>
           <div class="events-grid">
-            <div class="event-card" *ngFor="let event of upcomingEvents">
+            <div class="event-card" *ngFor="let event of allEvents()">
               <div class="event-image" [style.background-image]="'url(' + event.image + ')'">
                 <div class="event-category">
                   <span>{{ event.category }}</span>
@@ -520,7 +471,7 @@ interface Notification {
             />
           </div>
           <div class="groups-grid">
-            <div class="group-card" *ngFor="let group of allGroups">
+            <div class="group-card" *ngFor="let group of allGroups()">
               <p-avatar [image]="group.avatar" shape="circle" size="xlarge"></p-avatar>
               <div class="group-info">
                 <h3>{{ group.name }}</h3>
@@ -557,7 +508,7 @@ interface Notification {
           <div class="notifications-list">
             <div
               class="notification-item"
-              *ngFor="let notification of notifications"
+              *ngFor="let notification of notifications()"
               [class.unread]="!notification.read"
             >
               <p-avatar [image]="notification.user.avatar" shape="circle"></p-avatar>
@@ -656,6 +607,15 @@ interface Notification {
       max-width: 1200px;
       margin: 0 auto;
       padding: 0 1rem 2rem;
+    }
+
+    /* Loading */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
     }
 
     /* Tabs */
@@ -1715,15 +1675,28 @@ interface Notification {
     }
   `]
 })
-export class SocialPageComponent {
+export class SocialPageComponent implements OnInit {
   private messageService = inject(MessageService);
+  private authService = inject(AuthService);
+  private cloudinaryService = inject(CloudinaryService);
+  private socialService = inject(SocialService);
+  private http = inject(HttpClient);
+
+  private readonly apiUrl = environment.apiUrl;
+
+  // Loading state
+  loading = signal(false);
+  loadingMore = signal(false);
+
+  // Current user data
+  currentUserId = signal('');
+  currentUserName = signal('Usuario');
+  currentUserAvatar = signal('https://i.pravatar.cc/150?img=1');
+  currentUserUsername = signal('@usuario');
 
   // Tabs
   activeTab = signal('feed');
   followersSearchQuery = signal('');
-
-  // Loading states
-  loadingMore = signal(false);
 
   // New post
   createPostDialogVisible = signal(false);
@@ -1779,450 +1752,252 @@ export class SocialPageComponent {
   totalMembers = 12543;
   totalPosts = 8976;
   activeNow = 234;
-  unreadNotifications = 12;
+  unreadNotifications = 0;
 
-  // Trending topics
-  trendingTopics = [
-    { rank: 1, name: 'Adopciones responsables', posts: 234 },
-    { rank: 2, name: 'Nutrición canina', posts: 189 },
-    { rank: 3, name: 'Comportamiento felino', posts: 156 },
-    { rank: 4, name: 'Cuidados de invierno', posts: 123 },
-    { rank: 5, name: 'Família y niños', posts: 98 },
-  ];
+  // Trending topics (from backend)
+  trendingTopics = signal<{ rank: number; name: string; posts: number }[]>([]);
 
-  // Popular pets
-  popularPets: Pet[] = [
-    {
-      id: 'p1',
-      name: 'Rocky',
-      avatar: 'https://i.pravatar.cc/150?img=10',
-      breed: 'Golden Retriever',
-      isFollowing: false,
-      species: 'Perro',
-      age: '3 años',
-      ownerId: '1',
-      ownerName: 'Carlos',
-      followers: 245,
-      posts: 45,
-      lastActive: new Date(),
-      isPublic: true
-    },
-    {
-      id: 'p2',
-      name: 'Milo',
-      avatar: 'https://i.pravatar.cc/150?img=11',
-      breed: 'Persa',
-      isFollowing: false,
-      species: 'Gato',
-      age: '2 años',
-      ownerId: '2',
-      ownerName: 'Ana',
-      followers: 189,
-      posts: 32,
-      lastActive: new Date(),
-      isPublic: true
-    },
-    {
-      id: 'p3',
-      name: 'Luna',
-      avatar: 'https://i.pravatar.cc/150?img=12',
-      breed: 'Husky Siberiano',
-      isFollowing: false,
-      species: 'Perro',
-      age: '1 año',
-      ownerId: '3',
-      ownerName: 'María',
-      followers: 312,
-      posts: 56,
-      lastActive: new Date(),
-      isPublic: true
-    },
-  ];
+  // Popular pets (from backend)
+  popularPets = signal<Pet[]>([]);
 
-  // Events
-  upcomingEvents: Event[] = [
-    {
-      id: 'e1',
-      title: 'Feria de Adopciones',
-      description: 'Encuentra a tu nuevo mejor amigo en esta feria de adopciones responsables.',
-      date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      location: 'Parque Central',
-      organizer: 'PetCare Foundation',
-      attendees: 156,
-      image: 'https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=600&h=300&fit=crop',
-      isAttending: false,
-      category: 'Adopción',
-      attendeesList: [
-        'https://i.pravatar.cc/150?img=1',
-        'https://i.pravatar.cc/150?img=2',
-        'https://i.pravatar.cc/150?img=3',
-        'https://i.pravatar.cc/150?img=4',
-      ]
-    },
-    {
-      id: 'e2',
-      title: 'Charla: Cuidado Dental',
-      description: 'Aprende sobre la importancia del cuidado dental en perros y gatos.',
-      date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-      location: 'Centro Veterinario',
-      organizer: 'Dr. Pérez',
-      attendees: 89,
-      image: 'https://images.unsplash.com/photo-1583511655857-1c1bb0b7dc2e?w=600&h=300&fit=crop',
-      isAttending: false,
-      category: 'Educación',
-      attendeesList: [
-        'https://i.pravatar.cc/150?img=5',
-        'https://i.pravatar.cc/150?img=6',
-        'https://i.pravatar.cc/150?img=7',
-      ]
-    }
-  ];
+  // Events (from backend)
+  allEvents = signal<Event[]>([]);
+  upcomingEvents = signal<Event[]>([]);
 
-  // Groups
-  allGroups: Group[] = [
-    {
-      id: 'g1',
-      name: 'Amigos de los Perros',
-      description: 'Comunidad para amantes de los perros de todas las razas.',
-      avatar: 'https://i.pravatar.cc/150?img=8',
-      members: 1234,
-      isMember: true,
-      category: 'Perros',
-      lastActive: new Date()
-    },
-    {
-      id: 'g2',
-      name: 'Gatos y Más',
-      description: 'Todo sobre el fascinante mundo de los gatos.',
-      avatar: 'https://i.pravatar.cc/150?img=9',
-      members: 876,
-      isMember: false,
-      category: 'Gatos',
-      lastActive: new Date()
-    },
-    {
-      id: 'g3',
-      name: 'Família Exóticas',
-      description: 'Comparte experiencias con mascotas no convencionales.',
-      avatar: 'https://i.pravatar.cc/150?img=10',
-      members: 345,
-      isMember: false,
-      category: 'Exóticos',
-      lastActive: new Date()
-    }
-  ];
+  // Groups (from backend)
+  allGroups = signal<Group[]>([]);
 
   // Following pets
-  followingPets = signal<Pet[]>([
-    {
-      id: '1',
-      name: 'Max',
-      avatar: 'https://i.pravatar.cc/150?img=10',
-      species: 'Perro',
-      breed: 'Golden Retriever',
-      age: '3 años',
-      isFollowing: true,
-      ownerId: '1',
-      ownerName: 'Carlos',
-      followers: 245,
-      posts: 45,
-      lastActive: new Date(),
-      isPublic: true
-    },
-    {
-      id: '2',
-      name: 'Luna',
-      avatar: 'https://i.pravatar.cc/150?img=11',
-      species: 'Gato',
-      breed: 'Persa',
-      age: '2 años',
-      isFollowing: true,
-      ownerId: '2',
-      ownerName: 'Ana',
-      followers: 189,
-      posts: 32,
-      lastActive: new Date(),
-      isPublic: true
-    }
-  ]);
+  followingPets = signal<Pet[]>([]);
 
   // Following users
-  followingUsers = signal<CommunityUser[]>([
-    {
-      id: '1',
-      name: 'Carlos Ruiz',
-      avatar: 'https://i.pravatar.cc/150?img=3',
-      username: '@carlos_pets',
-      userId: '2',
-      pets: 2,
-      level: 8,
-      isFollowing: true,
-      followers: 1200,
-      following: 345,
-      posts: 67,
-      joinedDate: new Date('2023-01-15'),
-      location: 'Madrid, España',
-      bio: 'Amante de los perros y la naturaleza',
-      achievements: ['Top Contributor', 'Pet Lover'],
-      isVerified: true
-    },
-    {
-      id: '2',
-      name: 'Luis Gómez',
-      avatar: 'https://i.pravatar.cc/150?img=5',
-      username: '@luis_doglover',
-      userId: '3',
-      pets: 1,
-      level: 12,
-      isFollowing: true,
-      followers: 856,
-      following: 123,
-      posts: 45,
-      joinedDate: new Date('2023-03-20'),
-      location: 'Barcelona, España',
-      bio: 'Dedicated to dog training',
-      achievements: ['Trainer Expert', 'Weekend Hero'],
-      isVerified: false
-    }
-  ]);
+  followingUsers = signal<CommunityUser[]>([]);
 
   // Followers users
-  followersUsers = signal<CommunityUser[]>([
-    {
-      id: '3',
-      name: 'María López',
-      avatar: 'https://i.pravatar.cc/150?img=7',
-      username: '@maria_pets',
-      userId: '4',
-      pets: 1,
-      level: 10,
-      isFollowing: false,
-      followers: 1500,
-      following: 234,
-      posts: 89,
-      joinedDate: new Date('2023-02-10'),
-      location: 'Valencia, España',
-      bio: 'Cat lover and rescuer',
-      achievements: ['Cat Whisperer', 'Rescue Hero'],
-      isVerified: true
-    },
-    {
-      id: '4',
-      name: 'Elena Sánchez',
-      avatar: 'https://i.pravatar.cc/150?img=6',
-      username: '@elena_catmom',
-      userId: '5',
-      pets: 2,
-      level: 7,
-      isFollowing: false,
-      followers: 980,
-      following: 456,
-      posts: 34,
-      joinedDate: new Date('2023-04-01'),
-      location: 'Sevilla, España',
-      bio: 'Mom of two amazing cats',
-      achievements: ['New Member'],
-      isVerified: false
-    }
-  ]);
+  followersUsers = signal<CommunityUser[]>([]);
 
-  // Posts
-  communityPosts = signal<CommunityPost[]>([
-    {
-      id: '1',
-      user: {
-        name: 'Carlos Ruiz',
-        username: '@carlos_pets',
-        avatar: 'https://i.pravatar.cc/150?img=3',
-        userId: '2',
-        isVerified: true
-      },
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      content: 'Acabo de adoptar un nuevo perrito llamado Max. Es un Golden Retriever de 3 años. ¡Estoy muy feliz! ¿Alguien tiene consejos para la adaptación?',
-      image: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=600&h=400&fit=crop',
-      likes: 42,
-      comments: 12,
-      shares: 5,
-      liked: false,
-      saved: false,
-      tags: ['adopcion', 'goldenretriever', 'nuevomascota'],
-      type: 'milestone',
-      petMention: [
-        { id: '1', name: 'Max', avatar: 'https://i.pravatar.cc/150?img=10' }
-      ]
-    },
-    {
-      id: '2',
-      user: {
-        name: 'Ana Martínez',
-        username: '@ana_amazon',
-        avatar: 'https://i.pravatar.cc/150?img=4',
-        userId: '2',
-        isVerified: true
-      },
-      timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000),
-      content: '¡Nueva actualización disponible en la app! Ahora puedes programar citas veterinarias directamente desde la aplicación. Además, hemos añadido un sistema de recordatorios para medicamentos.',
-      imageGallery: [
-        'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=600&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1583511655857-1c1bb0b7dc2e?w=600&h=300&fit=crop'
-      ],
-      likes: 89,
-      comments: 23,
-      shares: 15,
-      liked: true,
-      saved: true,
-      tags: ['actualizacion', 'tecnologia', 'veterinaria'],
-      type: 'update'
-    },
-    {
-      id: '3',
-      user: {
-        name: 'Luis Gómez',
-        username: '@luis_doglover',
-        avatar: 'https://i.pravatar.cc/150?img=5',
-        userId: '3',
-        isVerified: false
-      },
-      timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
-      content: 'Estoy buscando recomendaciones para un buen entrenador de perros en la zona de Barcelona. Mi perro Rocky necesita ayuda con la socialización.',
-      likes: 34,
-      comments: 18,
-      shares: 8,
-      liked: false,
-      saved: false,
-      tags: ['entrenamiento', 'barcelona', 'socializacion'],
-      type: 'question',
-      petMention: [
-        { id: 'p1', name: 'Rocky', avatar: 'https://i.pravatar.cc/150?img=12' }
-      ]
-    }
-  ]);
+  // Posts (from backend)
+  communityPosts = signal<CommunityPost[]>([]);
 
   // Comments
-  postComments: { [key: string]: Comment[] } = {
-    '1': [
-      {
-        id: 'c1',
-        user: {
-          name: 'María López',
-          avatar: 'https://i.pravatar.cc/150?img=7',
-          username: '@maria_pets',
-          userId: '4'
-        },
-        content: '¡Felicidades! Los primeros días son importantes. Te recomiendo darle mucho amor y paciencia.',
-        timestamp: new Date(Date.now() - 90 * 60 * 1000),
-        likes: 5,
-        liked: false
-      },
-      {
-        id: 'c2',
-        user: {
-          name: 'Elena Sánchez',
-          avatar: 'https://i.pravatar.cc/150?img=6',
-          username: '@elena_catmom',
-          userId: '5'
-        },
-        content: '¡Qué hermoso! Asegúrate de tener todos los accesorios necesarios. ¡Mucha suerte!',
-        timestamp: new Date(Date.now() - 60 * 60 * 1000),
-        likes: 3,
-        liked: true
-      }
-    ],
-    '2': [
-      {
-        id: 'c3',
-        user: {
-          name: 'Carlos Ruiz',
-          avatar: 'https://i.pravatar.cc/150?img=3',
-          username: '@carlos_pets',
-          userId: '2'
-        },
-        content: 'Excelente actualización. La funcionalidad de recordatorios es justo lo que necesitaba.',
-        timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000),
-        likes: 7,
-        liked: false
-      }
-    ],
-    '3': [
-      {
-        id: 'c4',
-        user: {
-          name: 'Ana Martínez',
-          avatar: 'https://i.pravatar.cc/150?img=4',
-          username: '@ana_amazon',
-          userId: '2'
-        },
-        content: 'Te recomiendo a Juan Pérez en el centro de Barcelona. Hace un trabajo excelente.',
-        timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000),
-        likes: 4,
-        liked: false
-      }
-    ]
-  };
+  postComments: { [key: string]: Comment[] } = {};
 
-  // Notifications
-  notifications: Notification[] = [
-    {
-      id: 'n1',
-      type: 'like',
-      user: {
-        name: 'María López',
-        avatar: 'https://i.pravatar.cc/150?img=7',
-        username: '@maria_pets',
-        userId: '4'
-      },
-      content: 'le ha dado me gusta a tu publicación',
-      timestamp: new Date(Date.now() - 10 * 60 * 1000),
-      read: false,
-      postId: '1',
-      postContent: 'Acabo de adoptar un nuevo perrito...'
-    },
-    {
-      id: 'n2',
-      type: 'comment',
-      user: {
-        name: 'Elena Sánchez',
-        avatar: 'https://i.pravatar.cc/150?img=6',
-        username: '@elena_catmom',
-        userId: '5'
-      },
-      content: 'ha comentado tu publicación',
-      timestamp: new Date(Date.now() - 45 * 60 * 1000),
-      read: false,
-      postId: '1',
-      postContent: '¡Felicidades! Los primeros días...'
-    },
-    {
-      id: 'n3',
-      type: 'follow',
-      user: {
-        name: 'Luis Gómez',
-        avatar: 'https://i.pravatar.cc/150?img=5',
-        username: '@luis_doglover',
-        userId: '3'
-      },
-      content: 'ha comenzado a seguirte',
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      read: true
-    },
-    {
-      id: 'n4',
-      type: 'achievement',
-      user: {
-        name: 'Sistema PetCare',
-        avatar: 'https://i.pravatar.cc/150?img=1',
-        username: '@petcare',
-        userId: 'system'
-      },
-      content: '¡Has alcanzado el nivel 10! Sigue compartiendo contenido para subir de nivel.',
-      timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000),
-      read: false
-    }
-  ];
+  // Notifications (from backend)
+  notifications = signal<Notification[]>([]);
 
+  // Computed
   filteredFeedPosts = computed(() => {
     return this.communityPosts().sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   });
+
+  // Convert CommunityPost[] to PostItem[] for the shared component
+  postItems = computed((): PostItem[] => {
+    return this.filteredFeedPosts().map(post => ({
+      id: post.id,
+      user: {
+        name: post.user.name,
+        avatar: post.user.avatar,
+        username: post.user.username,
+        userId: post.user.userId
+      },
+      image: post.image || '',
+      caption: post.content,
+      likes: post.likes,
+      comments: post.comments,
+      liked: post.liked,
+      saved: post.saved,
+      timestamp: post.timestamp
+    }));
+  });
+
+  ngOnInit(): void {
+    this.initializeCurrentUser();
+    this.loadAllData();
+  }
+
+  private initializeCurrentUser(): void {
+    const currentUser = this.authService.user();
+    if (currentUser) {
+      this.currentUserId.set(currentUser.id);
+      this.currentUserName.set(`${currentUser.firstName} ${currentUser.lastName}`);
+      this.currentUserAvatar.set(currentUser.avatarUrl || 'https://i.pravatar.cc/150?img=1');
+      this.currentUserUsername.set(`@${currentUser.firstName.toLowerCase()}_${currentUser.authUserId.substring(0, 6)}`);
+    }
+  }
+
+  private loadAllData(): void {
+    this.loading.set(true);
+
+    // Load all data in parallel
+    this.loadPosts();
+    this.loadEvents();
+    this.loadGroups();
+    this.loadTrendingTopics();
+    this.loadNotifications();
+
+    // Set loading to false after a short delay (data will be populated as it arrives)
+    setTimeout(() => {
+      this.loading.set(false);
+    }, 1000);
+  }
+
+  private loadPosts(): void {
+    this.socialService.getAllPosts().subscribe({
+      next: (posts) => {
+        this.communityPosts.set(posts.map(post => this.mapPostToCommunityPost(post)));
+        this.totalPosts = posts.length;
+      },
+      error: (error) => {
+        console.error('Error loading posts:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las publicaciones'
+        });
+      }
+    });
+  }
+
+  private loadEvents(): void {
+    this.socialService.getAllEvents().subscribe({
+      next: (events) => {
+        const mappedEvents = events.map(event => this.mapEventToEvent(event));
+        this.allEvents.set(mappedEvents);
+        this.upcomingEvents.set(mappedEvents.slice(0, 2));
+      },
+      error: (error) => {
+        console.error('Error loading events:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar los eventos'
+        });
+      }
+    });
+  }
+
+  private loadGroups(): void {
+    this.socialService.getAllGroups().subscribe({
+      next: (groups) => {
+        this.allGroups.set(groups.map(group => this.mapGroupToGroup(group)));
+      },
+      error: (error) => {
+        console.error('Error loading groups:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar los grupos'
+        });
+      }
+    });
+  }
+
+  private loadTrendingTopics(): void {
+    this.socialService.getTrendingTopics().subscribe({
+      next: (topics) => {
+        this.trendingTopics.set(topics.map((topic, index) => ({
+          rank: index + 1,
+          name: topic.name,
+          posts: topic.postsCount
+        })));
+      },
+      error: (error) => {
+        console.error('Error loading trending topics:', error);
+      }
+    });
+  }
+
+  private loadNotifications(): void {
+    const userId = this.currentUserId();
+    if (userId) {
+      this.socialService.getNotifications(userId).subscribe({
+        next: (notifications) => {
+          this.notifications.set(notifications.map(n => this.mapNotificationToNotification(n)));
+          this.unreadNotifications = notifications.filter(n => !n.read).length;
+        },
+        error: (error) => {
+          console.error('Error loading notifications:', error);
+        }
+      });
+
+      this.socialService.getUnreadNotificationCount(userId).subscribe({
+        next: (count) => {
+          this.unreadNotifications = count;
+        },
+        error: (error) => {
+          console.error('Error loading unread count:', error);
+        }
+      });
+    }
+  }
+
+  private mapPostToCommunityPost(post: PostResponse): CommunityPost {
+    return {
+      id: post.id,
+      user: {
+        name: 'Usuario',
+        username: '@usuario',
+        avatar: 'https://i.pravatar.cc/150?img=1',
+        userId: post.authorId,
+        isVerified: false
+      },
+      timestamp: new Date(post.createdAt),
+      content: post.caption,
+      image: post.imageUrl,
+      likes: post.likesCount,
+      comments: post.commentsCount,
+      shares: 0,
+      liked: false,
+      saved: false
+    };
+  }
+
+  private mapEventToEvent(event: EventResponse): Event {
+    return {
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      date: new Date(event.eventDate),
+      location: event.location,
+      organizer: 'Organizador',
+      attendees: event.attendeesCount,
+      image: event.imageUrl,
+      isAttending: false,
+      category: event.category,
+      attendeesList: []
+    };
+  }
+
+  private mapGroupToGroup(group: GroupResponse): Group {
+    return {
+      id: group.id,
+      name: group.name,
+      description: group.description,
+      avatar: group.avatarUrl,
+      members: group.membersCount,
+      isMember: false,
+      category: group.category,
+      lastActive: new Date()
+    };
+  }
+
+  private mapNotificationToNotification(notification: NotificationResponse): Notification {
+    return {
+      id: notification.id,
+      type: notification.type as 'like' | 'comment' | 'follow' | 'mention' | 'achievement',
+      user: {
+        name: 'Usuario',
+        avatar: 'https://i.pravatar.cc/150?img=1',
+        username: '@usuario',
+        userId: notification.actorId
+      },
+      content: notification.content,
+      timestamp: new Date(notification.createdAt),
+      read: notification.read,
+      postId: notification.referenceId,
+      postContent: ''
+    };
+  }
 
   getPostComments(postId: string): Comment[] {
     return this.postComments[postId] || [];
@@ -2259,14 +2034,60 @@ export class SocialPageComponent {
     this.activeTab.set(tab);
   }
 
+  onLikeToggled(postItem: PostItem): void {
+    // Find the corresponding CommunityPost and update it
+    const currentPosts = this.communityPosts();
+    const post = currentPosts.find(p => p.id === postItem.id);
+    if (post) {
+      post.liked = postItem.liked;
+      post.likes = postItem.likes;
+      this.communityPosts.set([...currentPosts]);
+    }
+  }
+
+  onSaveToggled(postItem: PostItem): void {
+    const currentPosts = this.communityPosts();
+    const post = currentPosts.find(p => p.id === postItem.id);
+    if (post) {
+      post.saved = postItem.saved;
+      this.communityPosts.set([...currentPosts]);
+    }
+  }
+
   toggleLike(post: CommunityPost) {
+    const wasLiked = post.liked;
     post.liked = !post.liked;
     post.likes += post.liked ? 1 : -1;
+
     if (post.liked) {
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Me gusta',
-        detail: 'Te gusta esta publicación'
+      this.socialService.likePost(post.id).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Me gusta',
+            detail: 'Te gusta esta publicación'
+          });
+        },
+        error: () => {
+          // Revert on error
+          post.liked = wasLiked;
+          post.likes -= post.liked ? 1 : -1;
+        }
+      });
+    } else {
+      this.socialService.unlikePost(post.id).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Actualizado',
+            detail: 'Ya no te gusta esta publicación'
+          });
+        },
+        error: () => {
+          // Revert on error
+          post.liked = wasLiked;
+          post.likes += post.liked ? 1 : -1;
+        }
       });
     }
   }
@@ -2352,10 +2173,10 @@ export class SocialPageComponent {
     });
   }
 
-  onPostFormSubmit(formData: any) {
+  async onPostFormSubmit(formData: any) {
     const content = formData.content || '';
     const tags = formData.tags ? formData.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [];
-    const uploadedFiles = formData.files || [];
+    const uploadedFiles = formData.images || [];
 
     if (!content.trim()) {
       this.messageService.add({
@@ -2366,44 +2187,94 @@ export class SocialPageComponent {
       return;
     }
 
-    const newPost: CommunityPost = {
-      id: 'p' + Date.now(),
-      user: {
-        name: 'Usuario Actual',
-        username: '@usuario_actual',
-        avatar: 'https://i.pravatar.cc/150?img=1',
-        userId: 'current',
-        isVerified: true
-      },
-      timestamp: new Date(),
-      content: content,
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      liked: false,
-      saved: false,
-      tags: tags
-    };
-
-    if (uploadedFiles && uploadedFiles.length > 0) {
-      const imageUrls = uploadedFiles.map((file: any) => file.objectURL || file);
-      if (imageUrls.length === 1) {
-        newPost.image = imageUrls[0];
-      } else {
-        newPost.imageGallery = imageUrls;
-      }
+    // Get current user from AuthService
+    const currentUser = this.authService.user();
+    if (!currentUser) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Debes estar logueado para publicar'
+      });
+      return;
     }
 
-    this.communityPosts.update(posts => [newPost, ...posts]);
-    this.totalPosts += 1;
+    // Get the first image file if available
+    let imageFile: File | undefined;
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      const firstFile = uploadedFiles[0];
+      imageFile = firstFile.originalFile || firstFile;
+    }
 
-    this.closeCreatePostDialog();
+    // Create post in backend with image upload
+    this.socialService.createPost({
+      authorId: this.currentUserId(),
+      caption: content,
+      imageUrl: ''
+    }, imageFile)
+      .subscribe({
+        next: (createdPost) => {
+          const newPost: CommunityPost = {
+            id: createdPost.id,
+            user: {
+              name: this.currentUserName(),
+              username: this.currentUserUsername(),
+              avatar: this.currentUserAvatar(),
+              userId: this.currentUserId(),
+              isVerified: false
+            },
+            timestamp: new Date(createdPost.createdAt),
+            content: createdPost.caption,
+            image: createdPost.imageUrl || undefined,
+            likes: createdPost.likesCount,
+            comments: createdPost.commentsCount,
+            shares: 0,
+            liked: false,
+            saved: false,
+            tags: tags
+          };
 
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Publicado',
-      detail: 'Tu publicación ha sido compartida con la comunidad'
-    });
+          this.communityPosts.update(posts => [newPost, ...posts]);
+          this.totalPosts += 1;
+          this.closeCreatePostDialog();
+
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Publicado',
+            detail: 'Tu publicación ha sido compartida con la comunidad'
+          });
+        },
+        error: () => {
+          // Fallback: add locally if API fails
+          const newPost: CommunityPost = {
+            id: 'p' + Date.now(),
+            user: {
+              name: this.currentUserName(),
+              username: this.currentUserUsername(),
+              avatar: this.currentUserAvatar(),
+              userId: this.currentUserId(),
+              isVerified: false
+            },
+            timestamp: new Date(),
+            content: content,
+            likes: 0,
+            comments: 0,
+            shares: 0,
+            liked: false,
+            saved: false,
+            tags: tags
+          };
+
+          this.communityPosts.update(posts => [newPost, ...posts]);
+          this.totalPosts += 1;
+          this.closeCreatePostDialog();
+
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Publicado (offline)',
+            detail: 'Tu publicación se ha guardado localmente'
+          });
+        }
+      });
   }
 
   openImageViewer(images: string[], index: number) {
@@ -2426,27 +2297,8 @@ export class SocialPageComponent {
 
   loadMorePosts() {
     this.loadingMore.set(true);
+    // For now, just add mock data - in real app would call pagination API
     setTimeout(() => {
-      const morePosts: CommunityPost[] = [
-        {
-          id: 'extra' + Date.now(),
-          user: {
-            name: 'Usuario Ejemplo',
-            username: '@ejemplo',
-            avatar: 'https://i.pravatar.cc/150?img=13',
-            userId: 'example'
-          },
-          timestamp: new Date(Date.now() - 30 * 60 * 1000),
-          content: 'Esta es una publicación adicional generada al cargar más contenido. La comunidad está creciendo cada día.',
-          likes: 15,
-          comments: 3,
-          shares: 2,
-          liked: false,
-          saved: false,
-          tags: ['comunidad', 'crecimiento']
-        }
-      ];
-      this.communityPosts.update(posts => [...posts, ...morePosts]);
       this.loadingMore.set(false);
       this.messageService.add({
         severity: 'success',
@@ -2457,17 +2309,44 @@ export class SocialPageComponent {
   }
 
   markAllNotificationsAsRead() {
-    this.notifications.forEach(n => n.read = true);
-    this.unreadNotifications = 0;
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Notificaciones',
-      detail: 'Todas las notificaciones han sido marcadas como leídas'
-    });
+    const userId = this.currentUserId();
+    if (userId) {
+      this.socialService.markAllNotificationsAsRead(userId).subscribe({
+        next: () => {
+          this.notifications.update(n => n.map(notification => ({ ...notification, read: true })));
+          this.unreadNotifications = 0;
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Notificaciones',
+            detail: 'Todas las notificaciones han sido marcadas como leídas'
+          });
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudieron marcar las notificaciones'
+          });
+        }
+      });
+    }
   }
 
   markNotificationAsRead(notification: Notification) {
-    notification.read = true;
-    this.unreadNotifications = this.notifications.filter(n => !n.read).length;
+    this.socialService.markNotificationAsRead(notification.id).subscribe({
+      next: () => {
+        this.notifications.update(n =>
+          n.map(n => n.id === notification.id ? { ...n, read: true } : n)
+        );
+        this.unreadNotifications = this.notifications().filter(n => !n.read).length;
+      },
+      error: () => {
+        // Fallback: mark locally
+        this.notifications.update(n =>
+          n.map(n => n.id === notification.id ? { ...n, read: true } : n)
+        );
+        this.unreadNotifications = this.notifications().filter(n => !n.read).length;
+      }
+    });
   }
 }

@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -17,8 +17,13 @@ import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/present
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { ProfileService, UserProfileResponse, PetResponse } from '../../infrastructure/services/profile.service';
 import { User } from '../../../auth/domain/entities/user.entity';
+import { SocialService, EventResponse } from '../../../social/infrastructure/services/social.service';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
+import { ProgressBarModule } from 'primeng/progressbar';
+import { SkeletonModule } from 'primeng/skeleton';
 
-type ProfileType = 'user' | 'shelter' | 'seller' | 'vet' | 'pet';
+type ProfileType = 'user' | 'shelter' | 'seller' | 'vet' | 'pet' | 'trainer';
 
 interface BaseProfile {
   id: string;
@@ -92,7 +97,20 @@ interface PetProfile extends BaseProfile {
   };
 }
 
-type AnyProfile = UserProfile | ShelterProfile | SellerProfile | VetProfile | PetProfile;
+interface TrainerProfile extends BaseProfile {
+  type: 'trainer';
+  specialty: string;
+  rating: number;
+  reviews: number;
+  stats: {
+    clients: number;
+    followers: number;
+    posts: number;
+    likes: number;
+  };
+}
+
+type AnyProfile = UserProfile | ShelterProfile | SellerProfile | VetProfile | PetProfile | TrainerProfile;
 
 interface Pet {
   id: string;
@@ -119,23 +137,67 @@ interface Pet {
     RouterLink,
     TableCardComponent,
     DynamicFormComponent,
+    ToastModule,
+    ProgressBarModule,
+    SkeletonModule,
   ],
+  providers: [MessageService],
   template: `
     <div class="profile-page">
       <div class="profile-container">
-        <!-- Header del perfil -->
-        <div class="profile-header">
-          <div class="profile-cover">
-            <img [src]="userProfile()?.coverImage" alt="Cover" class="cover-image" />
+        <!-- Header del perfil estilo Instagram -->
+        <div class="profile-header-instagram">
+          <div class="profile-cover-instagram">
+            @if (loading()) {
+              <p-skeleton height="200px" class="cover-skeleton"></p-skeleton>
+            } @else {
+              <img [src]="userProfile()?.coverImage" alt="Cover" class="cover-image-instagram" />
+            }
           </div>
-          <div class="profile-info">
-            <div class="profile-avatar-section">
-              <p-avatar [image]="userProfile()?.avatar" shape="circle" size="xlarge" class="profile-avatar"></p-avatar>
-              <div class="profile-actions" *ngIf="isOwnProfile()">
-                <p-button label="Editar Perfil" icon="pi pi-pencil" styleClass="p-button-outlined" />
-                <p-button label="Configuración" icon="pi pi-cog" styleClass="p-button-text" />
+          <div class="profile-info-instagram">
+            <div class="profile-avatar-section-instagram">
+              @if (loading()) {
+                <p-skeleton shape="circle" size="8rem" class="avatar-skeleton-instagram"></p-skeleton>
+              } @else {
+                <div class="avatar-ring">
+                  <p-avatar [image]="userProfile()?.avatar" shape="circle" size="xlarge" class="profile-avatar-instagram"></p-avatar>
+                </div>
+              }
+            </div>
+            <div class="profile-details-instagram">
+              @if (loading()) {
+                <p-skeleton width="10rem" height="1.5rem" class="mb-2"></p-skeleton>
+              } @else {
+                <h2 class="profile-username">{{ userUsername() }}</h2>
+              }
+              <div class="profile-stats-instagram">
+                @if (loading()) {
+                  <div class="stat-item-instagram" *ngFor="let i of [1, 2, 3, 4]">
+                    <p-skeleton width="2.5rem" height="1rem" class="mb-1"></p-skeleton>
+                    <p-skeleton width="4rem" height="0.75rem"></p-skeleton>
+                  </div>
+                } @else {
+                  <div class="stat-item-instagram" *ngFor="let stat of profileStats()">
+                    <span class="stat-value-instagram">{{ stat.value }}</span>
+                    <span class="stat-label-instagram">{{ stat.label }}</span>
+                  </div>
+                }
               </div>
-              <div class="profile-actions" *ngIf="!isOwnProfile()">
+              @if (!loading()) {
+                <h1 class="profile-name-instagram">{{ userProfile()?.name }}</h1>
+                <p class="profile-bio-instagram">{{ userProfile()?.bio }}</p>
+              } @else {
+                <p-skeleton width="8rem" height="1.125rem" class="mb-2 mt-2"></p-skeleton>
+                <p-skeleton width="100%" height="0.75rem" class="mb-1"></p-skeleton>
+                <p-skeleton width="100%" height="0.75rem" class="mb-1"></p-skeleton>
+                <p-skeleton width="60%" height="0.75rem"></p-skeleton>
+              }
+            </div>
+            <div class="profile-actions-instagram">
+              <div *ngIf="isOwnProfile() && !loading()">
+                <p-button label="Editar Perfil" icon="pi pi-pencil" styleClass="p-button-outlined" (onClick)="setActiveTab('knowme')" />
+              </div>
+              <div *ngIf="!isOwnProfile() && !loading()">
                 <p-button
                   [label]="userProfile()?.isFollowing ? 'Siguiendo' : 'Seguir'"
                   [icon]="userProfile()?.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"
@@ -143,115 +205,74 @@ interface Pet {
                 />
               </div>
             </div>
-            <div class="profile-details">
-              <h1 class="profile-name">{{ userProfile()?.name }}</h1>
-              <div class="profile-meta">
-                <span *ngIf="userProfile()?.location">
-                  <i class="pi pi-map-marker"></i> {{ userProfile()?.location }}
-                </span>
-                <span *ngIf="userProfile()?.website">
-                  <i class="pi pi-globe"></i> {{ userProfile()?.website }}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
 
-        <!-- Estadísticas -->
-        <div class="profile-stats">
-          <div class="stat-item" *ngFor="let stat of profileStats()">
-            <span class="stat-value">{{ stat.value }}</span>
-            <span class="stat-label">{{ stat.label }}</span>
+        <!-- Loading Progress Bar -->
+        @if (loading()) {
+          <div class="loading-overlay">
+            <p-progressBar mode="indeterminate" [style]="{'height': '4px'}" />
           </div>
-        </div>
+        }
 
-        <!-- Tabs -->
-        <div class="profile-tabs">
-          <div class="tabs-container">
+        <!-- Tabs estilo Instagram -->
+        <div class="profile-tabs-instagram">
+          <div class="tabs-container-instagram">
             <button
-              class="tab-button"
+              class="tab-button-instagram"
               [class.active]="activeTab() === 'posts'"
               (click)="setActiveTab('posts')"
             >
-              <i class="pi pi-image"></i>
+              <span class="material-symbols-rounded" [class.active-icon]="activeTab() === 'posts'">photo_library</span>
               <span>Publicaciones</span>
             </button>
             <button
-              class="tab-button"
+              class="tab-button-instagram"
               [class.active]="activeTab() === 'pets'"
               (click)="setActiveTab('pets')"
               *ngIf="isUser() || isShelter()"
             >
-              <i class="pi pi-paw"></i>
-              <span>Família</span>
+              <span class="material-symbols-rounded" [class.active-icon]="activeTab() === 'pets'">pet_supplies</span>
+              <span>Mascotas</span>
             </button>
             <button
-              class="tab-button"
-              [class.active]="activeTab() === 'reviews'"
-              (click)="setActiveTab('reviews')"
-              *ngIf="isVet() || isSeller() || isShelter()"
-            >
-              <i class="pi pi-star"></i>
-              <span>Reseñas</span>
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="activeTab() === 'products'"
-              (click)="setActiveTab('products')"
-              *ngIf="isSeller()"
-            >
-              <i class="pi pi-shopping-cart"></i>
-              <span>Productos</span>
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="activeTab() === 'likes'"
-              (click)="setActiveTab('likes')"
-              *ngIf="isVet()"
-            >
-              <i class="pi pi-heart"></i>
-              <span>Likes dados</span>
-            </button>
-            <button
-              class="tab-button"
+              class="tab-button-instagram"
               [class.active]="activeTab() === 'knowme'"
               (click)="setActiveTab('knowme')"
             >
-              <i class="pi pi-user"></i>
+              <span class="material-symbols-rounded" [class.active-icon]="activeTab() === 'knowme'">person</span>
               <span>Conóceme</span>
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="activeTab() === 'knownews'"
-              (click)="setActiveTab('knownews')"
-              *ngIf="!isUser() && !isOwnProfile()"
-            >
-              <i class="pi pi-users"></i>
-              <span>Conócenos</span>
             </button>
           </div>
         </div>
 
         <!-- Contenido de tabs -->
         <div class="profile-content">
-          <!-- Publicaciones -->
-          <div class="posts-grid" *ngIf="activeTab() === 'posts'">
-            <div class="post-card" *ngFor="let post of userPosts()">
-              <img [src]="post.image" alt="Post" class="post-image" />
-              <div class="post-overlay">
+          <!-- Publicaciones - Grid 3 columnas estilo Instagram -->
+          <div class="posts-grid-instagram" *ngIf="activeTab() === 'posts' && !loading()">
+            <div class="post-card-instagram" *ngFor="let post of userPosts()">
+              <img [src]="post.image" alt="Post" class="post-image-instagram" />
+              <div class="post-overlay-instagram">
                 <span><i class="pi pi-heart"></i> {{ post.likes }}</span>
                 <span><i class="pi pi-comment"></i> {{ post.comments }}</span>
               </div>
             </div>
           </div>
+          <div class="posts-grid-instagram" *ngIf="activeTab() === 'posts' && loading()">
+            <!-- Posts Loading Skeletons -->
+            <div class="post-card-instagram skeleton-post-instagram" *ngFor="let i of [1, 2, 3, 4, 5, 6]">
+              <p-skeleton height="150px" borderRadius="0"></p-skeleton>
+            </div>
+          </div>
 
-          <!-- Família -->
-          <div class="pets-section" *ngIf="activeTab() === 'pets' && (isUser() || isShelter())">
+          <!-- Mascotas -->
+          <div class="pets-section-instagram" *ngIf="activeTab() === 'pets' && (isUser() || isShelter())">
             <app-table-card
               [items]="userPets()"
               [showSearch]="true"
               [filteredItems]="filteredPetItems()"
               [editable]="isOwnProfile()"
+              [loading]="loading()"
               (onAdd)="showAddPetDialog()"
               (searchChange)="onPetSearch($event)"
             >
@@ -263,85 +284,55 @@ interface Pet {
             </app-table-card>
           </div>
 
-          <!-- Reseñas -->
-          <div class="reviews-list" *ngIf="activeTab() === 'reviews' && (isVet() || isSeller() || isShelter())">
-            <div class="review-card" *ngFor="let review of userReviews()">
-              <p-avatar [image]="review.avatar" shape="circle"></p-avatar>
-              <div class="review-content">
-                <p class="review-author">{{ review.author }}</p>
-                <p-rating [stars]="5" [readonly]="true" [(ngModel)]="review.rating"></p-rating>
-                <p class="review-text">{{ review.text }}</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- Productos -->
-          <div class="products-grid" *ngIf="activeTab() === 'products' && isSeller()">
-            <div class="product-card" *ngFor="let product of sellerProducts()">
-              <img [src]="product.image" alt="Product" class="product-image" />
-              <p class="product-name">{{ product.name }}</p>
-              <p class="product-price">{{ product.price | currency:'EUR' }}</p>
-            </div>
-          </div>
-
-          <!-- Likes dados -->
-          <div class="likes-grid" *ngIf="activeTab() === 'likes' && isVet()">
-            <div class="like-card" *ngFor="let like of vetLikes()">
-              <i class="pi pi-heart like-icon"></i>
-              <p class="like-name">{{ like.name }}</p>
-            </div>
-          </div>
-
           <!-- Conóceme (formulario de edición para el propio perfil) -->
-          <div class="knowme-content" *ngIf="activeTab() === 'knowme' && isOwnProfile()">
+          <div class="knowme-content-instagram" *ngIf="activeTab() === 'knowme' && isOwnProfile() && !loading()">
             <app-dynamic-form
               [config]="profileFormConfig()"
               [formData]="profileFormData()"
               (onSubmitClick)="onProfileSubmit($event)"
             />
           </div>
+          <div class="knowme-content-instagram" *ngIf="activeTab() === 'knowme' && isOwnProfile() && loading()">
+            <div class="knowme-card-instagram skeleton-card">
+              <p-skeleton width="12rem" height="1.25rem" class="mb-3"></p-skeleton>
+              <p-skeleton width="100%" height="2.5rem" class="mb-2"></p-skeleton>
+              <p-skeleton width="100%" height="2.5rem" class="mb-2"></p-skeleton>
+              <p-skeleton width="100%" height="4rem" class="mb-2"></p-skeleton>
+              <p-skeleton width="100%" height="2.5rem" class="mb-2"></p-skeleton>
+              <p-skeleton width="100%" height="2.5rem" class="mb-2"></p-skeleton>
+            </div>
+          </div>
 
           <!-- Conóceme (información del perfil para otros usuarios) -->
-          <div class="knowme-content" *ngIf="activeTab() === 'knowme' && !isOwnProfile()">
-            <div class="knowme-card">
+          <div class="knowme-content-instagram" *ngIf="activeTab() === 'knowme' && !isOwnProfile() && !loading()">
+            <div class="knowme-card-instagram">
               <h3>Conóceme</h3>
-              <p class="knowme-bio">{{ userProfile()?.bio }}</p>
-              <div class="knowme-info">
-                <div class="knowme-item">
+              <p class="knowme-bio-instagram">{{ userProfile()?.bio }}</p>
+              <div class="knowme-info-instagram">
+                <div class="knowme-item-instagram">
                   <i class="pi pi-map-marker"></i>
                   <span>{{ userProfile()?.location }}</span>
                 </div>
-                <div class="knowme-item">
+                <div class="knowme-item-instagram">
                   <i class="pi pi-globe"></i>
                   <span>{{ userProfile()?.website }}</span>
                 </div>
-                <div class="knowme-item">
+                <div class="knowme-item-instagram">
                   <i class="pi pi-calendar"></i>
                   <span>Se unió en {{ userProfile()?.joinDate | date:'MMMM yyyy' }}</span>
                 </div>
               </div>
             </div>
           </div>
-
-          <!-- Conócenos (solo lectura para otros perfiles) -->
-          <div class="knownews-content" *ngIf="activeTab() === 'knownews' && !isUser() && !isOwnProfile()">
-            <div class="knownews-card">
-              <h3>Sobre nosotros</h3>
-              <p class="knownews-text">{{ userProfile()?.bio }}</p>
-              <div class="knownews-info">
-                <div class="knownews-item">
-                  <i class="pi pi-map-marker"></i>
-                  <span>{{ userProfile()?.location }}</span>
-                </div>
-                <div class="knownews-item">
-                  <i class="pi pi-globe"></i>
-                  <span>{{ userProfile()?.website }}</span>
-                </div>
-                <div class="knownews-item">
-                  <i class="pi pi-calendar"></i>
-                  <span>Se unió en {{ userProfile()?.joinDate | date:'MMMM yyyy' }}</span>
-                </div>
-              </div>
+          <div class="knowme-content-instagram" *ngIf="activeTab() === 'knowme' && !isOwnProfile() && loading()">
+            <div class="knowme-card-instagram skeleton-card">
+              <p-skeleton width="8rem" height="1.25rem" class="mb-3"></p-skeleton>
+              <p-skeleton width="100%" height="0.875rem" class="mb-2"></p-skeleton>
+              <p-skeleton width="100%" height="0.875rem" class="mb-2"></p-skeleton>
+              <p-skeleton width="60%" height="0.875rem" class="mb-3"></p-skeleton>
+              <p-skeleton width="100%" height="0.75rem" class="mb-1"></p-skeleton>
+              <p-skeleton width="100%" height="0.75rem" class="mb-1"></p-skeleton>
+              <p-skeleton width="80%" height="0.75rem" class="mb-1"></p-skeleton>
             </div>
           </div>
         </div>
@@ -360,271 +351,319 @@ interface Pet {
     }
 
     .profile-container {
-      max-width: 1200px;
+      max-width: 900px;
       margin: 0 auto;
       padding: 1rem;
     }
 
-    .profile-header {
-      background-color: var(--bitbucket-header-bg);
-      border-radius: 0.5rem;
-      overflow: hidden;
+    /* Header estilo Instagram */
+    .profile-header-instagram {
+      display: flex;
+      flex-direction: column;
     }
 
-    .profile-cover {
+    .profile-cover-instagram {
       height: 200px;
       overflow: hidden;
+      border-radius: 0.5rem 0.5rem 0 0;
     }
 
-    .cover-image {
+    .cover-skeleton, .cover-image-instagram {
       width: 100%;
       height: 100%;
+      display: block;
+    }
+
+    .cover-image-instagram {
       object-fit: cover;
     }
 
-    .profile-info {
+    .profile-info-instagram {
       display: flex;
-      gap: 1.5rem;
+      gap: 2rem;
       padding: 1.5rem;
+      background-color: var(--bitbucket-header-bg);
+      border-radius: 0 0 0.5rem 0.5rem;
+      align-items: flex-start;
     }
 
-    .profile-avatar-section {
+    .profile-avatar-section-instagram {
       flex-shrink: 0;
     }
 
-    .profile-avatar {
-      margin-top: -50px;
-      border: 4px solid var(--bitbucket-header-bg);
+    .avatar-ring {
+      margin-top: -60px;
+      padding: 3px;
+      border-radius: 50%;
+      background: var(--instagram-gradient);
     }
 
-    .profile-actions {
-      margin-top: 1rem;
-      display: flex;
-      gap: 0.5rem;
+    .profile-avatar-instagram {
+      border: 3px solid var(--bitbucket-header-bg);
     }
 
-    .profile-details {
+    .avatar-skeleton-instagram {
+      margin-top: -60px;
+    }
+
+    .profile-details-instagram {
       flex: 1;
     }
 
-    .profile-name {
-      font-size: 1.75rem;
-      font-weight: 700;
+    .profile-username {
+      font-size: 1.5rem;
+      font-weight: 300;
       color: var(--bitbucket-text-primary);
       margin: 0;
     }
 
-    .profile-meta {
-      display: flex;
-      gap: 1rem;
-      color: var(--bitbucket-text-secondary);
-      font-size: 0.875rem;
-    }
-
-    .profile-meta i {
-      margin-right: 0.25rem;
-    }
-
-    .profile-stats {
+    .profile-stats-instagram {
       display: flex;
       gap: 2rem;
-      padding: 1rem 1.5rem;
-      background-color: var(--bitbucket-header-bg);
-      border-radius: 0.5rem;
-      margin-top: 1rem;
+      margin: 0.5rem 0;
     }
 
-    .stat-item {
+    .stat-item-instagram {
       text-align: center;
     }
 
-    .stat-value {
+    .stat-value-instagram {
       display: block;
-      font-size: 1.25rem;
       font-weight: 600;
       color: var(--bitbucket-text-primary);
+      font-size: 1rem;
     }
 
-    .stat-label {
+    .stat-label-instagram {
       font-size: 0.875rem;
       color: var(--bitbucket-text-secondary);
     }
 
-    .profile-tabs {
+    .profile-name-instagram {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--bitbucket-text-primary);
+      margin: 0.5rem 0 0.25rem 0;
+    }
+
+    .profile-bio-instagram {
+      color: var(--bitbucket-text-primary);
+      font-size: 0.875rem;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .profile-actions-instagram {
+      flex-shrink: 0;
+    }
+
+    /* Tabs minimalistas */
+    .profile-tabs-instagram {
       margin-top: 1rem;
+      border-bottom: 1px solid var(--bitbucket-border);
     }
 
-    .tabs-container {
+    .tabs-container-instagram {
       display: flex;
-      gap: 0.5rem;
-      border-bottom: 2px solid var(--bitbucket-border);
-      padding-bottom: 0.5rem;
+      justify-content: center;
+      gap: 2rem;
+      padding: 0.75rem 0;
     }
 
-    .tab-button {
+    .tab-button-instagram {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.5rem 1rem;
+      padding: 0.5rem 0;
       background: none;
       border: none;
-      border-radius: 0.375rem;
       cursor: pointer;
       color: var(--bitbucket-text-secondary);
       font-weight: 500;
+      font-size: 0.9375rem;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .tab-button-instagram:hover {
+      color: var(--bitbucket-text-primary);
+    }
+
+    .tab-button-instagram.active {
+      color: var(--bitbucket-text-primary);
+    }
+
+    .tab-button-instagram.active::after {
+      content: '';
+      position: absolute;
+      bottom: -0.75rem;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--primary-color);
+      border-radius: 1px;
+    }
+
+    /* Icon fill effect for active tabs */
+    .tab-button-instagram.active i {
+      color: var(--primary-color);
+    }
+
+    .tab-button-instagram i {
       transition: all 0.2s;
     }
 
-    .tab-button:hover {
-      background-color: var(--bitbucket-bg-hover);
-      color: var(--bitbucket-text-primary);
+    .tab-button-instagram .material-symbols-rounded {
+      font-size: 1.25rem;
+      transition: all 0.2s;
     }
 
-    .tab-button.active {
-      background-color: var(--primary-color);
-      color: white;
+    .tab-button-instagram .material-symbols-rounded.active-icon {
+      font-variation-settings: 'FILL' 1;
     }
 
-    .profile-content {
+    /* Posts Grid estilo Instagram - 3 columnas */
+    .posts-grid-instagram {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.25rem;
       margin-top: 1rem;
     }
 
-    .posts-grid, .pets-grid, .products-grid, .likes-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 1rem;
-    }
-
-    .post-card, .pet-card, .product-card, .like-card {
+    .post-card-instagram {
       position: relative;
-      border-radius: 0.5rem;
-      overflow: hidden;
       aspect-ratio: 1;
-      background-color: var(--bitbucket-header-bg);
+      overflow: hidden;
+      cursor: pointer;
     }
 
-    .post-image, .product-image {
+    .post-image-instagram {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: transform 0.3s ease;
     }
 
-    .post-overlay {
+    .post-card-instagram:hover .post-image-instagram {
+      transform: scale(1.05);
+    }
+
+    .post-overlay-instagram {
       position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(0, 0, 0, 0.5);
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
       color: white;
-      padding: 0.5rem;
       display: flex;
-      justify-content: space-around;
-      font-size: 0.875rem;
-    }
-
-    .pet-name, .product-name, .like-name {
-      font-weight: 600;
-      color: var(--bitbucket-text-primary);
-      margin: 0.5rem 0 0 0;
-      text-align: center;
-    }
-
-    .pet-breed, .product-price {
-      color: var(--bitbucket-text-secondary);
-      font-size: 0.875rem;
-      text-align: center;
-    }
-
-    .like-icon {
-      font-size: 2rem;
-      color: var(--primary-color);
-      display: block;
-      text-align: center;
-      margin-top: 0.5rem;
-    }
-
-    .reviews-list {
-      display: flex;
-      flex-direction: column;
+      justify-content: center;
+      align-items: center;
       gap: 1rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
-    .review-card {
-      display: flex;
-      gap: 1rem;
-      background-color: var(--bitbucket-header-bg);
-      border-radius: 0.5rem;
-      padding: 1rem;
+    .post-card-instagram:hover .post-overlay-instagram {
+      opacity: 1;
     }
 
-    .review-content {
-      flex: 1;
+    .skeleton-post-instagram {
+      aspect-ratio: 1;
     }
 
-    .review-author {
-      font-weight: 600;
-      color: var(--bitbucket-text-primary);
-      margin: 0 0 0.5rem 0;
+    /* Pets Section */
+    .pets-section-instagram {
+      margin-top: 1rem;
     }
 
-    .review-text {
-      color: var(--bitbucket-text-secondary);
-      font-size: 0.875rem;
+    /* Knowme Section */
+    .knowme-content-instagram {
+      margin-top: 1rem;
     }
 
-    .knowme-content, .knownews-content {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .knowme-card, .knownews-card {
+    .knowme-card-instagram {
       background-color: var(--bitbucket-header-bg);
       border-radius: 0.5rem;
       padding: 1.5rem;
     }
 
-    .knowme-card h3, .knownews-card h3 {
-      font-size: 1.25rem;
+    .knowme-card-instagram h3 {
+      font-size: 1.125rem;
       font-weight: 600;
       color: var(--bitbucket-text-primary);
       margin: 0 0 1rem 0;
     }
 
-    .knowme-bio, .knownews-text {
+    .knowme-bio-instagram {
       color: var(--bitbucket-text-primary);
       font-size: 0.875rem;
       margin: 0 0 1rem 0;
       line-height: 1.6;
     }
 
-    .knowme-info, .knownews-info {
+    .knowme-info-instagram {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
     }
 
-    .knowme-item, .knownews-item {
+    .knowme-item-instagram {
       display: flex;
       align-items: center;
       gap: 0.5rem;
       color: var(--bitbucket-text-secondary);
+      font-size: 0.875rem;
     }
 
-    .knowme-item i, .knownews-item i {
+    .knowme-item-instagram i {
       color: var(--primary-color);
     }
 
+    .skeleton-card {
+      pointer-events: none;
+    }
+
+    /* Loading Overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
+
+    :host ::ng-deep .loading-overlay .p-progressbar {
+      height: 4px;
+    }
+
+    :host ::ng-deep .loading-overlay .p-progressbar-value {
+      background: var(--primary-color);
+    }
+
+    /* Utility classes */
+    .mb-1 { margin-bottom: 0.25rem; }
+    .mb-2 { margin-bottom: 0.5rem; }
+    .mb-3 { margin-bottom: 0.75rem; }
+    .mt-2 { margin-top: 0.5rem; }
+
     /* Responsive */
     @media (max-width: 768px) {
-      .profile-info {
+      .profile-info-instagram {
         flex-direction: column;
         align-items: center;
         text-align: center;
       }
 
-      .profile-meta {
+      .profile-stats-instagram {
         justify-content: center;
+      }
+
+      .posts-grid-instagram {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .posts-grid-instagram {
+        grid-template-columns: 1fr;
       }
     }
   `]
@@ -634,7 +673,13 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly profileService = inject(ProfileService);
+  private readonly socialService = inject(SocialService);
+  private readonly messageService = inject(MessageService);
+  private readonly cdr = inject(ChangeDetectorRef);
   private paramSubscription?: Subscription;
+
+  // Loading state
+  loading = signal(true);
 
   activeTab = signal('posts');
   profileId = signal<string | null>(null);
@@ -664,12 +709,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   // Perfiles cargados desde backend
   loadedProfiles = signal<Record<string, AnyProfile>>({});
 
-  // Família cargadas desde backend
+  // Mascotas cargadas desde backend
   userPets = signal<Pet[]>([]);
 
   petSearchQuery = signal('');
 
-  // Família formateadas para TableCardComponent
+  // Mascotas formateadas para TableCardComponent
   petTableItems = computed((): TableCardItem[] => {
     return this.userPets().map(pet => ({
       id: pet.id,
@@ -679,7 +724,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     }));
   });
 
-  // Família filtradas por búsqueda
+  // Mascotas filtradas por búsqueda
   filteredPetItems = computed(() => {
     const query = this.petSearchQuery().toLowerCase();
     if (!query) return this.petTableItems();
@@ -694,24 +739,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     { id: '1', image: 'https://picsum.photos/300/300?random=1', likes: 24, comments: 5 },
     { id: '2', image: 'https://picsum.photos/300/300?random=2', likes: 18, comments: 3 },
     { id: '3', image: 'https://picsum.photos/300/300?random=3', likes: 32, comments: 8 },
-  ]);
-
-  // Reseñas del usuario
-  userReviews = signal([
-    { id: '1', author: 'Ana Martínez', avatar: 'https://i.pravatar.cc/150?img=10', rating: 5, text: 'Excelente profesional' },
-    { id: '2', author: 'Luis Gómez', avatar: 'https://i.pravatar.cc/150?img=11', rating: 4, text: 'Muy buena atención' },
-  ]);
-
-  // Productos del vendedor
-  sellerProducts = signal([
-    { id: '1', name: 'Alimento Premium', price: 25.99, image: 'https://picsum.photos/150/150?random=1' },
-    { id: '2', name: 'Juguete Interactivo', price: 12.50, image: 'https://picsum.photos/150/150?random=2' },
-  ]);
-
-  // Likes dados por el veterinario
-  vetLikes = signal([
-    { id: '1', name: 'Publicación sobre vacunas' },
-    { id: '2', name: 'Consejo sobre nutrición' },
+    { id: '4', image: 'https://picsum.photos/300/300?random=4', likes: 15, comments: 2 },
+    { id: '5', image: 'https://picsum.photos/300/300?random=5', likes: 42, comments: 7 },
+    { id: '6', image: 'https://picsum.photos/300/300?random=6', likes: 28, comments: 4 },
   ]);
 
   // Inicializar perfil con datos del usuario autenticado
@@ -727,45 +757,61 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
       this.profileId.set(id);
       this.profileType.set(isPetRoute ? 'pet' : (type || 'user'));
-    });
 
-    // Leer query parameter 'tab' para establecer la pestaña activa
-    this.route.queryParams.subscribe(queryParams => {
-      const tab = queryParams['tab'];
-      if (tab && this.isOwnProfile()) {
-        this.activeTab.set(tab);
+      // Leer query parameter 'tab' para establecer la pestaña activa
+      this.route.queryParams.subscribe(queryParams => {
+        const tab = queryParams['tab'];
+        if (tab && this.isOwnProfile()) {
+          this.activeTab.set(tab);
+        }
+      });
+
+      // Inicializar perfil con datos del usuario autenticado
+      const user = this.authService.user();
+      if (user) {
+        this.ownProfile = {
+          id: user.id,
+          type: 'user',
+          name: user.firstName + ' ' + user.lastName,
+          username: user.firstName.toLowerCase() + user.lastName.toLowerCase(),
+          avatar: user.avatarUrl || '',
+          coverImage: user.coverImageUrl || '',
+          bio: user.bio || '',
+          location: user.city || '',
+          website: '',
+          joinDate: user.createdAt,
+          isFollowing: false,
+          stats: {
+            pets: 0,
+            followers: 0,
+            following: 0,
+            posts: 0,
+          },
+        };
       }
+
+      // Cargar datos del perfil
+      this.loadProfileData();
     });
+  }
 
-    // Inicializar perfil con datos del usuario autenticado
-    const user = this.authService.user();
-    if (user) {
-      this.ownProfile = {
-        id: user.id,
-        type: 'user',
-        name: user.firstName + ' ' + user.lastName,
-        username: user.firstName.toLowerCase() + user.lastName.toLowerCase(),
-        avatar: user.avatarUrl || '',
-        coverImage: user.coverImageUrl || '',
-        bio: user.bio || '',
-        location: user.city || '',
-        website: '',
-        joinDate: user.createdAt,
-        isFollowing: false,
-        stats: {
-          pets: 0,
-          followers: 0,
-          following: 0,
-          posts: 0,
-        },
-      };
-
-      // Cargar mascotas del propio perfil
-      this.loadPetsForProfile(user.id);
-    }
+  private loadProfileData(): void {
+    this.loading.set(true);
 
     // Cargar perfiles de otros usuarios desde backend
     this.loadAllProfiles();
+
+    // Cargar mascotas del propio perfil
+    const user = this.authService.user();
+    if (user && this.isOwnProfile()) {
+      this.loadPetsForProfile(user.id);
+    }
+
+    // Ensure loading is visible for at least 1 second
+    setTimeout(() => {
+      this.loading.set(false);
+      this.cdr.detectChanges();
+    }, 1000);
   }
 
   private loadAllProfiles(): void {
@@ -825,8 +871,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           }
         }
         this.loadedProfiles.set(profileMap);
+        this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error loading profiles:', err),
+      error: (err) => {
+        console.error('Error loading profiles:', err);
+        this.cdr.detectChanges();
+      },
     });
   }
 
@@ -839,8 +889,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           breed: p.breed || '',
           avatar: p.avatarUrl || '',
         })));
+        this.cdr.detectChanges();
       },
-      error: (err) => console.error('Error loading pets:', err),
+      error: (err) => {
+        console.error('Error loading pets:', err);
+        this.cdr.detectChanges();
+      },
     });
   }
 
@@ -862,6 +916,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   isSeller = computed(() => this.userProfile()?.type === 'seller');
   isVet = computed(() => this.userProfile()?.type === 'vet');
   isPet = computed(() => this.userProfile()?.type === 'pet');
+  isTrainer = computed(() => this.userProfile()?.type === 'trainer');
 
   // Getters para propiedades específicas de cada tipo
   userUsername = computed(() => {

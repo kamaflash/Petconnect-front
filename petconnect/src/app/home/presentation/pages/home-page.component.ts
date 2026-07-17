@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef, signal } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -7,11 +7,13 @@ import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { InputTextModule } from 'primeng/inputtext';
 import { ProgressBarModule } from 'primeng/progressbar';
+import { SkeletonModule } from 'primeng/skeleton';
 import { RouterLink } from '@angular/router';
 import { HomeService, PostResponse, UserProfileResponse, StoryResponse, SuggestionResponse, MarketplacePromoResponse, VetServiceResponse, AdoptionResponse, AchievementResponse, UserLevelResponse } from '../../infrastructure/services/home.service';
 import { Story, Post, Suggestion, PromoItem, User, VetService, Adoption, Achievement, UserLevel } from '../../infrastructure/models/home.models';
 import { finalize, catchError } from 'rxjs/operators';
 import { forkJoin, Observable, of } from 'rxjs';
+import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
 
 @Component({
   selector: 'app-home-page',
@@ -25,7 +27,9 @@ import { forkJoin, Observable, of } from 'rxjs';
     AvatarGroupModule,
     InputTextModule,
     ProgressBarModule,
+    SkeletonModule,
     RouterLink,
+    PostFeedComponent,
   ],
   template: `
     <div class="home-page">
@@ -90,6 +94,13 @@ import { forkJoin, Observable, of } from 'rxjs';
 
         <!-- Columna Central - Feed -->
         <div class="center-column">
+          <!-- Loading Progress Bar -->
+          @if (loadingPosts()) {
+            <div class="loading-overlay">
+              <p-progressBar mode="indeterminate" [style]="{'height': '4px'}" />
+            </div>
+          }
+
           <!-- Stories -->
           <div class="stories-card">
             <div class="stories-scroll">
@@ -103,100 +114,16 @@ import { forkJoin, Observable, of } from 'rxjs';
                 </div>
                 <span class="story-name">{{ story.user.name }}</span>
               </a>
-              <!-- <div class="story-item">
-                <div class="story-ring story-add-ring">
-                  <p-avatar
-                    icon="pi pi-plus"
-                    shape="circle"
-                    size="large"
-                    class="story-add-avatar"
-                  ></p-avatar>
-                </div>
-                <span class="story-name">Tu historia</span>
-              </div> -->
             </div>
           </div>
 
           <!-- Feed -->
-          <div class="posts-feed">
-            <div class="post-card" *ngFor="let post of posts">
-              <!-- Header -->
-              <div class="post-header">
-                <div class="post-user">
-                  <div class="post-avatar-ring">
-                    <p-avatar
-                      [image]="post.user.avatar"
-                      shape="circle"
-                      size="large"
-                    ></p-avatar>
-                  </div>
-                  <div class="post-user-text">
-                    <a [routerLink]="'/profile/' + post.user.userId" class="post-username">{{ post.user.username }}</a>
-                    <span class="post-name">{{ post.user.name }}</span>
-                  </div>
-                </div>
-                <button class="post-more-btn">
-                  <i class="pi pi-ellipsis-h"></i>
-                </button>
-              </div>
-
-              <!-- Image -->
-              <div class="post-image-wrap">
-                <img [src]="post.image" [alt]="post.caption" class="post-image" />
-              </div>
-
-              <!-- Actions -->
-              <div class="post-actions">
-                <div class="post-actions-left">
-                  <button class="post-action-btn" (click)="toggleLike(post)">
-                    <i class="pi" [class.pi-heart-fill]="post.liked" [class.pi-heart]="!post.liked"
-                       [style.color]="post.liked ? 'var(--primary-color)' : ''"></i>
-                  </button>
-                  <button class="post-action-btn">
-                    <i class="pi pi-comment"></i>
-                  </button>
-                  <button class="post-action-btn">
-                    <i class="pi pi-send"></i>
-                  </button>
-                </div>
-                <button class="post-action-btn" (click)="toggleSave(post)">
-                  <i class="pi" [class.pi-bookmark-fill]="post.saved" [class.pi-bookmark]="!post.saved"></i>
-                </button>
-              </div>
-
-              <!-- Likes -->
-              <div class="post-likes">
-                <p-avatar-group>
-                  <p-avatar image="https://i.pravatar.cc/150?img=11" shape="circle" size="normal"></p-avatar>
-                  <p-avatar image="https://i.pravatar.cc/150?img=12" shape="circle" size="normal"></p-avatar>
-                  <p-avatar image="https://i.pravatar.cc/150?img=13" shape="circle" size="normal"></p-avatar>
-                </p-avatar-group>
-                <span class="likes-text">Le gusta a <strong>{{ post.likes }}</strong> personas</span>
-              </div>
-
-              <!-- Caption -->
-              <div class="post-caption">
-                <a [routerLink]="'/profile/' + post.user.userId" class="caption-user">{{ post.user.username }}</a>
-                <span class="caption-text">{{ post.caption }}</span>
-              </div>
-
-              <!-- Comments -->
-              <div class="post-comments">
-                <span class="comments-link">Ver los {{ post.comments }} comentarios</span>
-                <span class="comment-time">{{ post.timestamp | date:'d MMM' }}</span>
-              </div>
-
-              <!-- Comment Input -->
-              <div class="post-comment-input">
-                <input
-                  type="text"
-                  placeholder="Añade un comentario..."
-                  class="comment-input"
-                />
-                <button class="comment-post-btn">Publicar</button>
-              </div>
-            </div>
-          </div>
+          <app-post-feed
+            [posts]="postItems()"
+            [loading]="loadingPosts()"
+            (likeToggled)="onLikeToggled($event)"
+            (saveToggled)="onSaveToggled($event)"
+          />
         </div>
 
         <!-- Columna Derecha -->
@@ -299,6 +226,8 @@ import { forkJoin, Observable, of } from 'rxjs';
       max-width: 1280px;
       gap: 1.5rem;
       padding: 0 1.5rem;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     /* ===== MODERN CARD ===== */
@@ -449,6 +378,10 @@ import { forkJoin, Observable, of } from 'rxjs';
     /* ===== CENTER COLUMN ===== */
     .center-column {
       min-width: 0;
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+      overflow: visible;
     }
 
     /* Stories */
@@ -510,232 +443,6 @@ import { forkJoin, Observable, of } from 'rxjs';
       text-overflow: ellipsis;
       white-space: nowrap;
       text-align: center;
-    }
-
-    /* Posts */
-    .posts-feed {
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
-    }
-
-    .post-card {
-      background: var(--surface-card);
-      border-radius: var(--radius-md);
-      overflow: hidden;
-    }
-
-    .post-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.75rem 1rem;
-    }
-
-    .post-user {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
-    .post-avatar-ring {
-      padding: 2px;
-      border-radius: var(--radius-full);
-      background: var(--instagram-gradient);
-    }
-
-    .post-avatar-ring :host ::ng-deep .p-avatar {
-      border: 2px solid var(--surface-card);
-    }
-
-    .post-user-text {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .post-username {
-      font-weight: 600;
-      color: var(--text-primary);
-      font-size: 0.8125rem;
-      text-decoration: none;
-      line-height: 1.3;
-    }
-
-    .post-username:hover {
-      text-decoration: underline;
-    }
-
-    .post-name {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-    }
-
-    .post-more-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--text-tertiary);
-      padding: 0.375rem;
-      border-radius: var(--radius-full);
-      transition: all var(--transition-fast);
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .post-more-btn:hover {
-      background: var(--surface-hover);
-      color: var(--text-primary);
-    }
-
-    .post-image-wrap {
-      position: relative;
-      width: 100%;
-      background: var(--surface-hover);
-    }
-
-    .post-image {
-      display: block;
-      width: 100%;
-      max-height: 600px;
-      object-fit: contain;
-      background: #000;
-    }
-
-    .post-actions {
-      display: flex;
-      justify-content: space-between;
-      padding: 0.5rem 1rem 0.25rem;
-    }
-
-    .post-actions-left {
-      display: flex;
-      gap: 0.75rem;
-    }
-
-    .post-action-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--text-primary);
-      font-size: 1.375rem;
-      padding: 0.25rem;
-      transition: all var(--transition-fast);
-      border-radius: var(--radius-full);
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .post-action-btn:hover {
-      color: var(--primary-color);
-      background: var(--surface-hover);
-    }
-
-    .post-likes {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.25rem 1rem 0.5rem;
-    }
-
-    .post-likes :host ::ng-deep .p-avatar-group .p-avatar {
-      width: 1.25rem;
-      height: 1.25rem;
-      font-size: 0.5rem;
-      border: 2px solid var(--surface-card);
-      margin-left: -0.25rem;
-    }
-
-    .likes-text {
-      font-size: 0.8125rem;
-      color: var(--text-primary);
-    }
-
-    .post-caption {
-      padding: 0 1rem 0.375rem;
-      font-size: 0.8125rem;
-      display: flex;
-      gap: 0.375rem;
-    }
-
-    .caption-user {
-      font-weight: 600;
-      color: var(--text-primary);
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .caption-user:hover {
-      text-decoration: underline;
-    }
-
-    .caption-text {
-      color: var(--text-primary);
-    }
-
-    .post-comments {
-      padding: 0 1rem 0.375rem;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .comments-link {
-      color: var(--text-tertiary);
-      font-size: 0.8125rem;
-      cursor: pointer;
-    }
-
-    .comments-link:hover {
-      color: var(--text-secondary);
-    }
-
-    .comment-time {
-      color: var(--text-tertiary);
-      font-size: 0.75rem;
-    }
-
-    .post-comment-input {
-      border-top: 1px solid var(--surface-border);
-      padding: 0.5rem 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .comment-input {
-      flex: 1;
-      border: none;
-      outline: none;
-      background: transparent;
-      color: var(--text-primary);
-      font-size: 0.8125rem;
-    }
-
-    .comment-input::placeholder {
-      color: var(--text-tertiary);
-    }
-
-    .comment-post-btn {
-      background: none;
-      border: none;
-      color: var(--primary-color);
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 0.8125rem;
-      opacity: 0.6;
-      transition: opacity var(--transition-fast);
-      padding: 0.25rem 0.5rem;
-      border-radius: var(--radius-sm);
-    }
-
-    .comment-post-btn:hover {
-      opacity: 1;
-      background: var(--primary-color-light);
     }
 
     /* ===== RIGHT COLUMN ===== */
@@ -946,6 +653,23 @@ import { forkJoin, Observable, of } from 'rxjs';
       color: var(--text-secondary);
     }
 
+    /* Loading Overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
+
+    :host ::ng-deep .loading-overlay .p-progressbar {
+      height: 4px;
+    }
+
+    :host ::ng-deep .loading-overlay .p-progressbar-value {
+      background: var(--primary-color);
+    }
+
     /* ===== RESPONSIVE ===== */
     @media (max-width: 1200px) {
       .home-container {
@@ -974,7 +698,7 @@ export class HomePageComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
 
   stories: Story[] = [];
-  posts: Post[] = [];
+  posts = signal<Post[]>([]);
   suggestions: Suggestion[] = [];
   marketPromos: PromoItem[] = [];
   vetServices: VetService[] = [];
@@ -983,13 +707,33 @@ export class HomePageComponent implements OnInit {
   userLevel: UserLevel = { level: 12, currentXp: 650, totalXp: 1000 };
 
   // Loading states
-  loadingPosts = true;
-  loadingStories = true;
-  loadingSuggestions = true;
-  loadingPromos = true;
-  loadingServices = true;
-  loadingAdoptions = true;
-  loadingAchievements = true;
+  loadingPosts = signal(true);
+  loadingStories = signal(true);
+  loadingSuggestions = signal(true);
+  loadingPromos = signal(true);
+  loadingServices = signal(true);
+  loadingAdoptions = signal(true);
+  loadingAchievements = signal(true);
+
+  // Convert posts to PostItem format for the component
+  postItems = computed((): PostItem[] => {
+    return this.posts().map(post => ({
+      id: post.id,
+      user: {
+        name: post.user.name,
+        avatar: post.user.avatar,
+        username: post.user.username || '@usuario',
+        userId: post.user.userId
+      },
+      image: post.image,
+      caption: post.caption,
+      likes: post.likes,
+      comments: post.comments,
+      liked: post.liked,
+      saved: post.saved,
+      timestamp: post.timestamp
+    }));
+  });
 
   ngOnInit(): void {
     this.loadAllData();
@@ -1007,14 +751,14 @@ export class HomePageComponent implements OnInit {
   }
 
   private loadStories(): void {
-    this.loadingStories = true;
+    this.loadingStories.set(true);
 
     forkJoin({
       stories: this.homeService.getStories(),
       profiles: this.homeService.getAllProfiles()
     }).pipe(
       finalize(() => {
-        this.loadingStories = false;
+        this.loadingStories.set(false);
         this.cdr.detectChanges();
       })
     ).subscribe({
@@ -1052,22 +796,25 @@ export class HomePageComponent implements OnInit {
   }
 
   private loadPosts(): void {
-    this.loadingPosts = true;
+    this.loadingPosts.set(true);
 
     forkJoin({
       posts: this.homeService.getAllPosts(),
       profiles: this.homeService.getAllProfiles()
     }).pipe(
       finalize(() => {
-        this.loadingPosts = false;
-        this.cdr.detectChanges();
+        // Ensure loading is visible for at least 1 second
+        setTimeout(() => {
+          this.loadingPosts.set(false);
+          this.cdr.detectChanges();
+        }, 1000);
       })
     ).subscribe({
       next: (response) => {
         if (response.posts && response.posts.length > 0) {
           const profiles = response.profiles || [];
 
-          this.posts = response.posts.map(post => {
+          this.posts.set(response.posts.map(post => {
             const profile = profiles.find(p => p.authUserId === post.authorId);
             return new Post({
               id: post.id,
@@ -1085,27 +832,27 @@ export class HomePageComponent implements OnInit {
               liked: false,
               saved: false
             });
-          });
+          }));
           this.cdr.detectChanges();
         } else {
-          this.posts = [];
+          this.posts.set([]);
           this.cdr.detectChanges();
         }
       },
       error: (err) => {
         console.error('Error loading posts:', err);
-        this.posts = [];
+        this.posts.set([]);
         this.cdr.detectChanges();
       }
     });
   }
 
   private loadSuggestions(): void {
-    this.loadingSuggestions = true;
+    this.loadingSuggestions.set(true);
 
     this.homeService.getSuggestions().pipe(
       finalize(() => {
-        this.loadingSuggestions = false;
+        this.loadingSuggestions.set(false);
         this.cdr.detectChanges();
       })
     ).subscribe({
@@ -1132,11 +879,11 @@ export class HomePageComponent implements OnInit {
   }
 
   private loadMarketPromos(): void {
-    this.loadingPromos = true;
+    this.loadingPromos.set(true);
 
     this.homeService.getMarketPromos().pipe(
       finalize(() => {
-        this.loadingPromos = false;
+        this.loadingPromos.set(false);
         this.cdr.detectChanges();
       })
     ).subscribe({
@@ -1158,11 +905,11 @@ export class HomePageComponent implements OnInit {
   }
 
   private loadVetServices(): void {
-    this.loadingServices = true;
+    this.loadingServices.set(true);
 
     this.homeService.getVetServices().pipe(
       finalize(() => {
-        this.loadingServices = false;
+        this.loadingServices.set(false);
         this.cdr.detectChanges();
       })
     ).subscribe({
@@ -1184,11 +931,11 @@ export class HomePageComponent implements OnInit {
   }
 
   private loadNewAdoptions(): void {
-    this.loadingAdoptions = true;
+    this.loadingAdoptions.set(true);
 
     this.homeService.getNewAdoptions().pipe(
       finalize(() => {
-        this.loadingAdoptions = false;
+        this.loadingAdoptions.set(false);
         this.cdr.detectChanges();
       })
     ).subscribe({
@@ -1210,11 +957,11 @@ export class HomePageComponent implements OnInit {
   }
 
   private loadAchievements(): void {
-    this.loadingAchievements = true;
+    this.loadingAchievements.set(true);
 
     this.homeService.getUpcomingAchievements().pipe(
       finalize(() => {
-        this.loadingAchievements = false;
+        this.loadingAchievements.set(false);
         this.cdr.detectChanges();
       })
     ).subscribe({
@@ -1256,12 +1003,24 @@ export class HomePageComponent implements OnInit {
     return count.toString();
   }
 
-  toggleLike(post: Post): void {
-    post.liked = !post.liked;
-    post.likes += post.liked ? 1 : -1;
+  onLikeToggled(post: PostItem): void {
+    // Handle like toggle from child component
+    const currentPosts = this.posts();
+    const index = currentPosts.findIndex(p => p.id === post.id);
+    if (index !== -1) {
+      currentPosts[index].liked = post.liked;
+      currentPosts[index].likes = post.likes;
+      this.posts.set([...currentPosts]);
+    }
   }
 
-  toggleSave(post: Post): void {
-    post.saved = !post.saved;
+  onSaveToggled(post: PostItem): void {
+    // Handle save toggle from child component
+    const currentPosts = this.posts();
+    const index = currentPosts.findIndex(p => p.id === post.id);
+    if (index !== -1) {
+      currentPosts[index].saved = post.saved;
+      this.posts.set([...currentPosts]);
+    }
   }
 }

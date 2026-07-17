@@ -1,0 +1,216 @@
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
+import { Observable } from 'rxjs';
+
+export interface PostResponse {
+  id: string;
+  authorId: string;
+  imageUrl: string;
+  caption: string;
+  likesCount: number;
+  commentsCount: number;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface CreatePostRequest {
+  authorId: string;
+  imageUrl: string;
+  caption: string;
+}
+
+export interface UpdatePostRequest {
+  imageUrl?: string;
+  caption?: string;
+}
+
+export interface EventResponse {
+  id: string;
+  title: string;
+  description: string;
+  eventDate: string;
+  location: string;
+  organizerId: string;
+  imageUrl: string;
+  category: string;
+  attendeesCount: number;
+  active: boolean;
+}
+
+export interface GroupResponse {
+  id: string;
+  name: string;
+  description: string;
+  avatarUrl: string;
+  category: string;
+  membersCount: number;
+  active: boolean;
+}
+
+export interface FollowResponse {
+  id: string;
+  followerId: string;
+  followingId: string;
+  createdAt: string;
+}
+
+export interface NotificationResponse {
+  id: string;
+  userId: string;
+  type: string;
+  content: string;
+  read: boolean;
+  referenceId: string;
+  referenceType: string;
+  actorId: string;
+  createdAt: string;
+}
+
+export interface TrendingTopicResponse {
+  id: string;
+  name: string;
+  postsCount: number;
+  active: boolean;
+}
+
+export interface StoryResponse {
+  id: string;
+  userId: string;
+  imageUrl: string;
+  seen: boolean;
+  expiresAt: string;
+  createdAt: string;
+}
+
+@Injectable({
+  providedIn: 'root'
+})
+export class SocialService {
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = environment.apiUrl;
+
+  // ========== POSTS ==========
+
+  getAllPosts(): Observable<PostResponse[]> {
+    return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts`);
+  }
+
+  getPost(postId: string): Observable<PostResponse> {
+    return this.http.get<PostResponse>(`${this.apiUrl}/social/posts/${postId}`);
+  }
+
+  getPostsByAuthor(authorId: string): Observable<PostResponse[]> {
+    return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts/by-author/${authorId}`);
+  }
+
+  createPost(request: CreatePostRequest, imageFile?: File): Observable<PostResponse> {
+    const formData = new FormData();
+    formData.append('authorId', request.authorId);
+    formData.append('caption', request.caption);
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
+    return this.http.post<PostResponse>(`${this.apiUrl}/social/posts`, formData);
+  }
+
+  updatePost(postId: string, request: UpdatePostRequest): Observable<PostResponse> {
+    return this.http.put<PostResponse>(`${this.apiUrl}/social/posts/${postId}`, request);
+  }
+
+  deletePost(postId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/social/posts/${postId}`);
+  }
+
+  likePost(postId: string): Observable<PostResponse> {
+    return this.http.post<PostResponse>(`${this.apiUrl}/social/posts/${postId}/like`, {});
+  }
+
+  unlikePost(postId: string): Observable<PostResponse> {
+    return this.http.post<PostResponse>(`${this.apiUrl}/social/posts/${postId}/unlike`, {});
+  }
+
+  // ========== STORIES ==========
+
+  getStories(): Observable<StoryResponse[]> {
+    return this.http.get<StoryResponse[]>(`${this.apiUrl}/social/stories`);
+  }
+
+  // ========== EVENTS ==========
+
+  getAllEvents(): Observable<EventResponse[]> {
+    return this.http.get<EventResponse[]>(`${this.apiUrl}/social/events`);
+  }
+
+  createEvent(event: Partial<EventResponse>): Observable<EventResponse> {
+    return this.http.post<EventResponse>(`${this.apiUrl}/social/events`, event);
+  }
+
+  attendEvent(eventId: string): Observable<EventResponse> {
+    return this.http.post<EventResponse>(`${this.apiUrl}/social/events/${eventId}/attend`, {});
+  }
+
+  unattendEvent(eventId: string): Observable<EventResponse> {
+    return this.http.post<EventResponse>(`${this.apiUrl}/social/events/${eventId}/unattend`, {});
+  }
+
+  // ========== GROUPS ==========
+
+  getAllGroups(): Observable<GroupResponse[]> {
+    return this.http.get<GroupResponse[]>(`${this.apiUrl}/social/groups`);
+  }
+
+  createGroup(group: Partial<GroupResponse>): Observable<GroupResponse> {
+    return this.http.post<GroupResponse>(`${this.apiUrl}/social/groups`, group);
+  }
+
+  joinGroup(groupId: string): Observable<GroupResponse> {
+    return this.http.post<GroupResponse>(`${this.apiUrl}/social/groups/${groupId}/join`, {});
+  }
+
+  leaveGroup(groupId: string): Observable<GroupResponse> {
+    return this.http.post<GroupResponse>(`${this.apiUrl}/social/groups/${groupId}/leave`, {});
+  }
+
+  // ========== FOLLOWS ==========
+
+  getFollowers(userId: string): Observable<FollowResponse[]> {
+    return this.http.get<FollowResponse[]>(`${this.apiUrl}/social/follows/followers/${userId}`);
+  }
+
+  getFollowing(userId: string): Observable<FollowResponse[]> {
+    return this.http.get<FollowResponse[]>(`${this.apiUrl}/social/follows/following/${userId}`);
+  }
+
+  followUser(followerId: string, followingId: string): Observable<FollowResponse> {
+    return this.http.post<FollowResponse>(`${this.apiUrl}/social/follows`, { followerId, followingId });
+  }
+
+  unfollowUser(followerId: string, followingId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/social/follows/${followerId}/${followingId}`);
+  }
+
+  // ========== NOTIFICATIONS ==========
+
+  getNotifications(userId: string): Observable<NotificationResponse[]> {
+    return this.http.get<NotificationResponse[]>(`${this.apiUrl}/social/notifications/${userId}`);
+  }
+
+  getUnreadNotificationCount(userId: string): Observable<number> {
+    return this.http.get<number>(`${this.apiUrl}/social/notifications/${userId}/unread-count`);
+  }
+
+  markNotificationAsRead(notificationId: string): Observable<NotificationResponse> {
+    return this.http.put<NotificationResponse>(`${this.apiUrl}/social/notifications/${notificationId}/read`, {});
+  }
+
+  markAllNotificationsAsRead(userId: string): Observable<void> {
+    return this.http.put<void>(`${this.apiUrl}/social/notifications/read-all/${userId}`, {});
+  }
+
+  // ========== TRENDING TOPICS ==========
+
+  getTrendingTopics(): Observable<TrendingTopicResponse[]> {
+    return this.http.get<TrendingTopicResponse[]>(`${this.apiUrl}/social/trending`);
+  }
+}

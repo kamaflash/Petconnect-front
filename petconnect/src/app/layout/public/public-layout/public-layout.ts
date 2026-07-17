@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { HeaderComponent } from '../../../shared/presentation/components/header/header.component';
 import { SidebarComponent } from '../../../shared/presentation/components/sidebar/sidebar';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd, Router } from '@angular/router';
 import { FooterComponent } from '../../../shared/presentation/components/footer/footer';
 import { BreadcrumbComponent } from '../../../shared/presentation/components/breadcrumb/breadcrumb.component';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-public-layout',
@@ -79,10 +80,11 @@ import { BreadcrumbComponent } from '../../../shared/presentation/components/bre
     }
 
     .layout-content {
-      flex: 0 0 auto;
+      flex: 1;
       padding: 1.5rem;
       background-color: var(--surface-bg);
       min-width: 0;
+      overflow: visible;
     }
 
     .dark .layout-content {
@@ -204,4 +206,10 @@ import { BreadcrumbComponent } from '../../../shared/presentation/components/bre
     }
   `]
 })
-export class PublicLayout {}
+export class PublicLayout implements OnInit {
+  private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    // No page loader needed - each page handles its own loading state
+  }
+}
