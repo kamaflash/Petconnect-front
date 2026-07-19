@@ -716,8 +716,11 @@ export class HomePageComponent implements OnInit {
   loadingAchievements = signal(true);
 
   // Convert posts to PostItem format for the component
+  // Sort posts by timestamp (newest first) to match social-page behavior
   postItems = computed((): PostItem[] => {
-    return this.posts().map(post => ({
+    return this.posts()
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .map(post => ({
       id: post.id,
       user: {
         name: post.user.name,

@@ -246,6 +246,7 @@ interface Pet {
           <!-- Mascotas -->
           <div class="pets-section-instagram" *ngIf="activeTab() === 'pets' && (isUser() || isShelter())">
             <app-table-card
+              [type]="'pet'"
               [items]="userPets()"
               [showSearch]="true"
               [filteredItems]="filteredPetItems()"

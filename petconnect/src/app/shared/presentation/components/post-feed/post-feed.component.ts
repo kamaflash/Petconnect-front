@@ -25,6 +25,8 @@ export interface PostItem {
   timestamp: Date;
 }
 
+export type PostViewMode = 'feed' | 'grid';
+
 @Component({
   selector: 'app-post-feed',
   standalone: true,
@@ -37,7 +39,7 @@ export interface PostItem {
     RouterLink,
   ],
   template: `
-    <div class="posts-feed">
+    <div [class.posts-feed]="mode() === 'feed'" [class.posts-grid]="mode() === 'grid'">
       <!-- Loading Skeletons -->
       @if (loading()) {
         <div class="post-card skeleton-post" *ngFor="let i of [1, 2, 3]">
@@ -46,7 +48,7 @@ export interface PostItem {
             <div class="post-user">
               <p-skeleton shape="circle" size="3rem" />
               <div class="post-user-text">
-                <p-skeleton width="10rem" height="0.875rem" styleClass="mb-2" />
+                <p-skeleton width="8rem" height="0.875rem" styleClass="mb-2" />
                 <p-skeleton width="6rem" height="0.75rem" />
               </div>
             </div>
@@ -170,6 +172,19 @@ export interface PostItem {
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
+    }
+
+    /* ===== GRID MODE ===== */
+    .posts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .posts-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     .post-card {
@@ -399,6 +414,7 @@ export interface PostItem {
 export class PostFeedComponent {
   posts = input<PostItem[]>([]);
   loading = input(false);
+  mode = input<PostViewMode>('feed');
 
   likeToggled = output<PostItem>();
   saveToggled = output<PostItem>();

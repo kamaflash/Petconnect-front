@@ -1,7 +1,6 @@
 import { Component, signal, computed, inject, OnInit, OnDestroy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
 import { AvatarModule } from 'primeng/avatar';
 import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
@@ -14,10 +13,18 @@ import { Subscription } from 'rxjs';
 import { MenuModule } from 'primeng/menu';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { InfoItemComponent } from '../../../shared/presentation/components/info-item/info-item.component';
+import { StatCardComponent } from '../../../shared/presentation/components/stat-card/stat-card.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { ProfileService, PetResponse } from '../../infrastructure/services/profile.service';
-import { SocialService } from '../../../social/infrastructure/services/social.service';
 import { MessageService } from 'primeng/api';
+import {
+  getSpeciesLabel,
+  getGenderLabel,
+  getTemperamentLabel,
+  getEnergyLevelLabel,
+  getTrainingLevelLabel
+} from '../../../shared/utils/pet-label.utils';
 
 interface PetComment {
   id: string;
@@ -34,7 +41,6 @@ interface PetComment {
   imports: [
     CommonModule,
     ButtonModule,
-    CardModule,
     AvatarModule,
     TagModule,
     DialogModule,
@@ -45,6 +51,8 @@ interface PetComment {
     MenuModule,
     TabsComponent,
     DynamicFormComponent,
+    InfoItemComponent,
+    StatCardComponent,
   ],
   providers: [MessageService],
   template: `
@@ -160,7 +168,7 @@ interface PetComment {
                 <div class="info-grid">
                   <div class="info-item">
                     <span class="info-label">Especie</span>
-                    <span class="info-value">{{ getSpeciesLabel(pet()?.species) }}</span>
+                  <span class="info-value">{{ getSpeciesLabelWrapper(pet()?.species) }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">Raza</span>
@@ -178,7 +186,7 @@ interface PetComment {
                   </ng-template>
                   <div class="info-item">
                     <span class="info-label">Género</span>
-                    <span class="info-value">{{ getGenderLabel(pet()?.gender) }}</span>
+                    <span class="info-value">{{ getGenderLabelWrapper(pet()?.gender) }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">Color</span>
@@ -305,15 +313,15 @@ interface PetComment {
                 <div class="info-grid">
                   <div class="info-item">
                     <span class="info-label">Temperamento</span>
-                    <span class="info-value">{{ getTemperamentLabel(pet()?.temperament) }}</span>
+                    <span class="info-value">{{ getTemperamentLabelWrapper(pet()?.temperament) }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">Nivel de Energía</span>
-                    <span class="info-value">{{ getEnergyLevelLabel(pet()?.energyLevel) }}</span>
+                    <span class="info-value">{{ getEnergyLevelLabelWrapper(pet()?.energyLevel) }}</span>
                   </div>
                   <div class="info-item">
                     <span class="info-label">Nivel de Entrenamiento</span>
-                    <span class="info-value">{{ getTrainingLevelLabel(pet()?.trainingLevel) }}</span>
+                    <span class="info-value">{{ getTrainingLevelLabelWrapper(pet()?.trainingLevel) }}</span>
                   </div>
                   <div class="info-item full-width">
                     <span class="info-label">Actividades Favoritas</span>
@@ -1347,7 +1355,6 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly profileService = inject(ProfileService);
-  private readonly socialService = inject(SocialService);
   private readonly messageService = inject(MessageService);
   private readonly cdr = inject(ChangeDetectorRef);
   private paramSubscription?: Subscription;
@@ -2023,58 +2030,25 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     window.history.back();
   }
 
-  // Helper methods
-  getSpeciesLabel(species: string | null | undefined): string {
-    const labels: Record<string, string> = {
-      'dog': 'Perro',
-      'cat': 'Gato',
-      'bird': 'Ave',
-      'rabbit': 'Conejo',
-      'hamster': 'Hámster',
-      'other': 'Otro'
-    };
-    return species ? (labels[species] || species) : '—';
+  // Wrapper methods for template to use imported functions
+  getSpeciesLabelWrapper(species: string | null | undefined): string {
+    return getSpeciesLabel(species);
   }
 
-  getGenderLabel(gender: string | null | undefined): string {
-    const labels: Record<string, string> = {
-      'male': 'Macho',
-      'female': 'Hembra',
-      'unknown': 'Desconocido'
-    };
-    return gender ? (labels[gender] || gender) : '—';
+  getGenderLabelWrapper(gender: string | null | undefined): string {
+    return getGenderLabel(gender);
   }
 
-  getTemperamentLabel(temperament: string | null | undefined): string {
-    const labels: Record<string, string> = {
-      'calm': 'Tranquilo',
-      'energetic': 'Energético',
-      'playful': 'Juguetón',
-      'shy': 'Tímido',
-      'aggressive': 'Agresivo',
-      'friendly': 'Amigable',
-      'other': 'Otro'
-    };
-    return temperament ? (labels[temperament] || temperament) : '—';
+  getTemperamentLabelWrapper(temperament: string | null | undefined): string {
+    return getTemperamentLabel(temperament);
   }
 
-  getEnergyLevelLabel(level: string | null | undefined): string {
-    const labels: Record<string, string> = {
-      'low': 'Bajo',
-      'medium': 'Medio',
-      'high': 'Alto'
-    };
-    return level ? (labels[level] || level) : '—';
+  getEnergyLevelLabelWrapper(level: string | null | undefined): string {
+    return getEnergyLevelLabel(level);
   }
 
-  getTrainingLevelLabel(level: string | null | undefined): string {
-    const labels: Record<string, string> = {
-      'none': 'Ninguno',
-      'basic': 'Básico',
-      'intermediate': 'Intermedio',
-      'advanced': 'Avanzado'
-    };
-    return level ? (labels[level] || level) : '—';
+  getTrainingLevelLabelWrapper(level: string | null | undefined): string {
+    return getTrainingLevelLabel(level);
   }
 
   // Menu methods

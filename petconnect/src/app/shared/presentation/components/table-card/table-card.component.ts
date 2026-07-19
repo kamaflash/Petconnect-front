@@ -118,67 +118,17 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group';
 
           @switch (type()) {
             @case ('post') {
-              @for (item of filteredItems(); track item.id) {
-                <div class="feed-post">
-                  <div class="post-header">
-                    <div class="post-user">
-                      <p-avatar [image]="item.avatar" shape="circle" size="normal"></p-avatar>
-                      <div class="post-user-info">
-                        @if (item.userId) {
-                          <a [routerLink]="'/profile/' + item.userId" class="post-username">{{ item.name }}</a>
-                        } @else {
-                          <span class="post-username">{{ item.name }}</span>
-                        }
-                        @if (item.location) {
-                          <span class="post-location">{{ item.location }}</span>
-                        }
-                      </div>
-                    </div>
-                    <div class="post-actions-trigger">
-                      <ng-content select="[card-actions]"></ng-content>
+              <div class="posts-grid-instagram">
+                @for (item of filteredItems(); track item.id) {
+                  <div class="post-card-instagram">
+                    <img [src]="item.image" alt="Post" class="post-image-instagram" />
+                    <div class="post-overlay-instagram">
+                      <span><i class="pi pi-heart"></i> {{ item['likes'] ?? item.likesCount ?? 0 }}</span>
+                      <span><i class="pi pi-comment"></i> {{ item['comments'] ?? item.commentsCount ?? 0 }}</span>
                     </div>
                   </div>
-
-                  @if (item.image) {
-                    <div class="post-image-wrapper">
-                      <img [src]="item.image" [alt]="item.name" class="post-image" />
-                    </div>
-                  } @else {
-                    <div class="post-image-placeholder">
-                      <i class="pi pi-image"></i>
-                    </div>
-                  }
-
-                  <div class="post-actions-bar">
-                    <button class="action-btn"><i class="pi pi-heart"></i></button>
-                    <button class="action-btn"><i class="pi pi-comment"></i></button>
-                    <button class="action-btn"><i class="pi pi-share-alt"></i></button>
-                  </div>
-
-                  @if (item.likesCount !== undefined) {
-                    <div class="post-likes"><span class="likes-count">{{ item.likesCount }} likes</span></div>
-                  }
-                  @if (item.description) {
-                    <div class="post-caption">
-                      <span class="caption-username">{{ item.name }}</span>
-                      <span class="caption-text">{{ item.description }}</span>
-                    </div>
-                  }
-                  @if (item.tags && item.tags.length > 0) {
-                    <div class="post-tags">
-                      @for (tag of item.tags; track tag) {
-                        <span class="post-tag">#{{ tag }}</span>
-                      }
-                    </div>
-                  }
-                  @if (item.commentsCount !== undefined) {
-                    <div class="post-comments-link"><span>Ver los {{ item.commentsCount }} comentarios</span></div>
-                  }
-                  @if (item.timeAgo) {
-                    <div class="post-time"><span>{{ item.timeAgo }}</span></div>
-                  }
-                </div>
-              }
+                }
+              </div>
             }
 
             @case ('pet') {
@@ -637,6 +587,63 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group';
       border-radius: 0.75rem;
       padding: 1rem;
       pointer-events: none;
+    }
+
+    /* ===== POST INSTAGRAM TYPE ===== */
+    .post-card-instagram {
+      position: relative;
+      aspect-ratio: 1;
+      overflow: hidden;
+      border-radius: 0.5rem;
+      cursor: pointer;
+    }
+
+    .post-image-instagram {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .post-card-instagram:hover .post-image-instagram {
+      transform: scale(1.05);
+    }
+
+    .post-overlay-instagram {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      color: white;
+    }
+
+    .post-card-instagram:hover .post-overlay-instagram {
+      opacity: 1;
+    }
+
+    .post-overlay-instagram span {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+    }
+
+    /* ===== POST INSTAGRAM GRID ===== */
+    .posts-grid-instagram {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+
+    @media (max-width: 768px) {
+      .posts-grid-instagram {
+        grid-template-columns: 1fr;
+      }
     }
   `]
 })
