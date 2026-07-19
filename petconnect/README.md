@@ -1,6 +1,6 @@
-# PetConnect Frontend
+# Lumio Frontend
 
-Frontend de la plataforma PetConnect desarrollado con Angular siguiendo una arquitectura Feature First basada en DDD y Clean Architecture.
+Frontend de la plataforma Lumio desarrollado con Angular siguiendo una arquitectura Feature First basada en DDD y Clean Architecture.
 
 ## Stack Tecnológico
 

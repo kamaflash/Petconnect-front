@@ -13,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { TableCardComponent, TableCardItem } from '../../../shared/presentation/components/table-card/table-card.component';
+import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { ProfileService, UserProfileResponse, PetResponse } from '../../infrastructure/services/profile.service';
@@ -140,6 +141,7 @@ interface Pet {
     ToastModule,
     ProgressBarModule,
     SkeletonModule,
+    TabsComponent,
   ],
   providers: [MessageService],
   template: `
@@ -216,35 +218,11 @@ interface Pet {
         }
 
         <!-- Tabs estilo Instagram -->
-        <div class="profile-tabs-instagram">
-          <div class="tabs-container-instagram">
-            <button
-              class="tab-button-instagram"
-              [class.active]="activeTab() === 'posts'"
-              (click)="setActiveTab('posts')"
-            >
-              <span class="material-symbols-rounded" [class.active-icon]="activeTab() === 'posts'">photo_library</span>
-              <span>Publicaciones</span>
-            </button>
-            <button
-              class="tab-button-instagram"
-              [class.active]="activeTab() === 'pets'"
-              (click)="setActiveTab('pets')"
-              *ngIf="isUser() || isShelter()"
-            >
-              <span class="material-symbols-rounded" [class.active-icon]="activeTab() === 'pets'">pet_supplies</span>
-              <span>Mascotas</span>
-            </button>
-            <button
-              class="tab-button-instagram"
-              [class.active]="activeTab() === 'knowme'"
-              (click)="setActiveTab('knowme')"
-            >
-              <span class="material-symbols-rounded" [class.active-icon]="activeTab() === 'knowme'">person</span>
-              <span>Conóceme</span>
-            </button>
-          </div>
-        </div>
+        <app-tabs
+          [tabs]="profileTabs()"
+          [activeTab]="activeTab()"
+          (tabChange)="onTabChange($event)"
+        />
 
         <!-- Contenido de tabs -->
         <div class="profile-content">
@@ -457,71 +435,6 @@ interface Pet {
       flex-shrink: 0;
     }
 
-    /* Tabs minimalistas */
-    .profile-tabs-instagram {
-      margin-top: 1rem;
-      border-bottom: 1px solid var(--bitbucket-border);
-    }
-
-    .tabs-container-instagram {
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      padding: 0.75rem 0;
-    }
-
-    .tab-button-instagram {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 0;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--bitbucket-text-secondary);
-      font-weight: 500;
-      font-size: 0.9375rem;
-      transition: all 0.2s;
-      position: relative;
-    }
-
-    .tab-button-instagram:hover {
-      color: var(--bitbucket-text-primary);
-    }
-
-    .tab-button-instagram.active {
-      color: var(--bitbucket-text-primary);
-    }
-
-    .tab-button-instagram.active::after {
-      content: '';
-      position: absolute;
-      bottom: -0.75rem;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: var(--primary-color);
-      border-radius: 1px;
-    }
-
-    /* Icon fill effect for active tabs */
-    .tab-button-instagram.active i {
-      color: var(--primary-color);
-    }
-
-    .tab-button-instagram i {
-      transition: all 0.2s;
-    }
-
-    .tab-button-instagram .material-symbols-rounded {
-      font-size: 1.25rem;
-      transition: all 0.2s;
-    }
-
-    .tab-button-instagram .material-symbols-rounded.active-icon {
-      font-variation-settings: 'FILL' 1;
-    }
-
     /* Posts Grid estilo Instagram - 3 columnas */
     .posts-grid-instagram {
       display: grid;
@@ -658,6 +571,10 @@ interface Pet {
 
       .posts-grid-instagram {
         grid-template-columns: repeat(2, 1fr);
+      }
+
+      .tabs-button-text {
+        display: none;
       }
     }
 
@@ -1164,6 +1081,19 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       };
       this.authService.updateUser(updatedUser);
     }
+  }
+
+  // Tabs configuration
+  profileTabs = computed((): Tab[] => {
+    return [
+      { id: 'posts', label: 'Publicaciones', icon: 'photo_library' },
+      { id: 'pets', label: 'Mascotas', icon: 'pet_supplies', visible: () => this.isUser() || this.isShelter() },
+      { id: 'knowme', label: 'Conóceme', icon: 'person' },
+    ];
+  });
+
+  onTabChange(tabId: string) {
+    this.setActiveTab(tabId);
   }
 
   ngOnDestroy(): void {

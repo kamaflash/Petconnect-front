@@ -30,11 +30,49 @@ export interface PetResponse {
   gender: string | null;
   bio: string | null;
   avatarUrl: string | null;
+  imageUrls: string[] | null;
   weight: number | null;
   weightUnit: string | null;
   active: boolean;
   microchipId: string | null;
   color: string | null;
+
+  // Información médica y de salud
+  bloodType: string | null;
+  allergies: string | null;
+  medicalConditions: string | null;
+  vetName: string | null;
+  vetPhone: string | null;
+  vetAddress: string | null;
+  lastVaccinationDate: string | null;
+  nextVaccinationDate: string | null;
+  lastVetVisit: string | null;
+  insuranceProvider: string | null;
+  insurancePolicyNumber: string | null;
+
+  // Información adicional
+  emergencyContact: string | null;
+  emergencyPhone: string | null;
+  adoptionDate: string | null;
+  adoptionCenter: string | null;
+  registrationNumber: string | null;
+  licenseNumber: string | null;
+  licenseExpiryDate: string | null;
+  spayedNeutered: boolean;
+  spayedNeuteredDate: string | null;
+
+  // Comportamiento
+  temperament: string | null;
+  energyLevel: string | null;
+  trainingLevel: string | null;
+  favoriteActivities: string | null;
+  favoriteFood: string | null;
+  specialNeeds: string | null;
+
+  // Seguridad y ubicación
+  lastKnownLocation: string | null;
+  lost: boolean;
+  lostDate: string | null;
 }
 
 @Injectable({
@@ -66,5 +104,9 @@ export class ProfileService {
 
   getPetsByOwner(ownerProfileId: string): Observable<PetResponse[]> {
     return this.http.get<PetResponse[]>(`${this.apiUrl}/pets/by-owner/${ownerProfileId}`);
+  }
+
+  getPetById(petId: string): Observable<PetResponse> {
+    return this.http.get<PetResponse>(`${this.apiUrl}/pets/${petId}`);
   }
 }

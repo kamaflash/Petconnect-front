@@ -123,7 +123,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     <div class="sidebar-footer">
       <div class="sidebar-footer-content">
         <span class="material-symbols-rounded">info</span>
-        <span class="text-sm">PetConnect v2.0</span>
+        <span class="text-sm">Lumio v2.0</span>
       </div>
     </div>
   </div>

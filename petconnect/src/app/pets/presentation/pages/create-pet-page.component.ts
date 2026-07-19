@@ -50,7 +50,7 @@ export class CreatePetPageComponent {
         label: 'Nombre',
         type: 'input',
         placeholder: 'Nombre de la mascota',
-        validation: { required: true, minLength: 2, maxLength: 50 }
+        validation: { required: true, minLength: 2, maxLength: 100 }
       },
       {
         key: 'species',
@@ -72,10 +72,10 @@ export class CreatePetPageComponent {
         label: 'Raza',
         type: 'input',
         placeholder: 'Raza de la mascota',
-        validation: { required: true }
+        validation: { maxLength: 100 }
       },
       {
-        key: 'birthDate',
+        key: 'dateOfBirth',
         label: 'Fecha de Nacimiento',
         type: 'date',
         placeholder: 'Seleccione la fecha',
@@ -83,32 +83,47 @@ export class CreatePetPageComponent {
         dateFormat: 'dd/mm/yy'
       },
       {
-        key: 'weight',
-        label: 'Peso (kg)',
-        type: 'number',
-        placeholder: 'Peso en kilogramos',
-        validation: { min: 0.1, max: 200 }
-      },
-      {
         key: 'gender',
         label: 'Género',
-        type: 'radio',
+        type: 'select',
+        placeholder: 'Seleccione el género',
         options: [
           { label: 'Macho', value: 'male' },
-          { label: 'Hembra', value: 'female' }
+          { label: 'Hembra', value: 'female' },
+          { label: 'Desconocido', value: 'unknown' }
         ]
       },
       {
-        key: 'vaccinationsUpToDate',
-        label: 'Vacunas al día',
-        type: 'checkbox'
+        key: 'color',
+        label: 'Color',
+        type: 'input',
+        placeholder: 'Color de la mascota',
+        validation: { maxLength: 100 }
       },
-    {
-        key: 'notes',
-        label: 'Notas',
+      {
+        key: 'weight',
+        label: 'Peso',
+        type: 'number',
+        placeholder: 'Peso',
+        validation: { min: 0.1, max: 200 }
+      },
+      {
+        key: 'weightUnit',
+        label: 'Unidad de Peso',
+        type: 'select',
+        placeholder: 'Seleccione la unidad',
+        options: [
+          { label: 'kg', value: 'kg' },
+          { label: 'lb', value: 'lb' }
+        ]
+      },
+      {
+        key: 'bio',
+        label: 'Biografía',
         type: 'textarea',
-        placeholder: 'Información adicional sobre la mascota...',
-        rows: 4
+        placeholder: 'Información sobre la personalidad y características de tu mascota...',
+        rows: 3,
+        validation: { maxLength: 500 }
       },
       {
         key: 'photos',

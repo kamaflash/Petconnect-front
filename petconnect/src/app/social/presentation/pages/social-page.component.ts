@@ -18,6 +18,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { MenuModule } from 'primeng/menu';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { CloudinaryService, CloudinaryUploadResponse } from '../../../shared/infrastructure/services/cloudinary.service';
@@ -167,58 +168,18 @@ interface Notification {
     DynamicFormComponent,
     PostFeedComponent,
     ProgressBarModule,
+    TabsComponent,
   ],
   providers: [MessageService],
   template: `
     <div class="social-page">
       <div class="social-container">
-        <!-- Tabs principales -->
-        <div class="social-tabs">
-          <div class="tabs-container">
-            <button
-              class="tab-button"
-              [class.active]="activeTab() === 'feed'"
-              (click)="setActiveTab('feed')"
-            >
-              <span class="material-symbols-rounded nav-icon" [class.filled]="activeTab() === 'feed'">home</span>
-              <span class="tab-text">Mi Tablón</span>
-              <span class="tab-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="activeTab() === 'following'"
-              (click)="setActiveTab('following')"
-            >
-              <span class="material-symbols-rounded nav-icon" [class.filled]="activeTab() === 'following'">person</span>
-              <span class="tab-text">Siguiendo</span>
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="activeTab() === 'events'"
-              (click)="setActiveTab('events')"
-            >
-              <span class="material-symbols-rounded nav-icon" [class.filled]="activeTab() === 'events'">event</span>
-              <span class="tab-text">Eventos</span>
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="activeTab() === 'groups'"
-              (click)="setActiveTab('groups')"
-            >
-              <span class="material-symbols-rounded nav-icon" [class.filled]="activeTab() === 'groups'">groups</span>
-              <span class="tab-text">Grupos</span>
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="activeTab() === 'notifications'"
-              (click)="setActiveTab('notifications')"
-            >
-              <span class="material-symbols-rounded nav-icon" [class.filled]="activeTab() === 'notifications'">notifications</span>
-              <span class="tab-text">Notificaciones</span>
-              <span class="tab-badge" *ngIf="unreadNotifications > 0">{{ unreadNotifications }}</span>
-            </button>
-          </div>
-        </div>
+        <!-- Tabs -->
+        <app-tabs
+          [tabs]="socialTabs()"
+          [activeTab]="activeTab()"
+          (tabChange)="onTabChange($event)"
+        />
 
         <!-- Loading Progress Bar -->
         @if (loading()) {
@@ -616,65 +577,6 @@ interface Notification {
       left: 0;
       right: 0;
       z-index: 1000;
-    }
-
-    /* Tabs */
-    .social-tabs {
-      margin-bottom: 2rem;
-    }
-
-    .tabs-container {
-      display: flex;
-      gap: 0.5rem;
-      border-bottom: 2px solid var(--bitbucket-border);
-      padding-bottom: 0.5rem;
-      overflow-x: auto;
-      flex-wrap: nowrap;
-    }
-
-    .tab-button {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
-      background: none;
-      border: none;
-      border-radius: 0.375rem;
-      cursor: pointer;
-      font-weight: 500;
-      transition: all 0.2s;
-      white-space: nowrap;
-      position: relative;
-    }
-
-    .tab-button:hover {
-      background-color: var(--bitbucket-bg-hover);
-      color: var(--bitbucket-text-primary);
-    }
-
-    .tab-button .nav-icon {
-      font-size: 1.25rem;
-    }
-
-    .tab-button.active .nav-icon {
-      font-size: 1.5rem;
-    }
-
-    .tab-button .nav-icon.filled {
-      font-variation-settings: 'FILL' 1;
-    }
-
-    .tab-button .nav-icon:not(.filled) {
-      font-variation-settings: 'FILL' 0;
-    }
-
-    .tab-badge {
-      background: var(--red-500);
-      color: white;
-      font-size: 0.6rem;
-      padding: 0.1rem 0.4rem;
-      border-radius: 999px;
-      margin-left: 0.25rem;
     }
 
     /* Feed Layout */
@@ -1635,19 +1537,6 @@ interface Notification {
         padding: 0 0.5rem 1rem;
       }
 
-      .tabs-container {
-        gap: 0.25rem;
-      }
-
-      .tab-button {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.75rem;
-      }
-
-      .tab-button span:not(.tab-badge) {
-        display: none;
-      }
-
       .event-content {
         flex-direction: column;
       }
@@ -2028,6 +1917,21 @@ export class SocialPageComponent implements OnInit {
       'achievement': 'pi pi-star-fill'
     };
     return icons[type] || 'pi pi-bell';
+  }
+
+  // Tabs configuration
+  socialTabs = computed((): Tab[] => {
+    return [
+      { id: 'feed', label: 'Mi Tablón', icon: 'home', badge: this.unreadNotifications },
+      { id: 'following', label: 'Siguiendo', icon: 'person' },
+      { id: 'events', label: 'Eventos', icon: 'event' },
+      { id: 'groups', label: 'Grupos', icon: 'groups' },
+      { id: 'notifications', label: 'Notificaciones', icon: 'notifications', badge: this.unreadNotifications },
+    ];
+  });
+
+  onTabChange(tabId: string) {
+    this.setActiveTab(tabId);
   }
 
   setActiveTab(tab: string) {

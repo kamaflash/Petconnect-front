@@ -114,206 +114,338 @@ export interface ModalButton {
       </ng-template>
     </p-dialog>
   `,
-  styles: [`
-    :host ::ng-deep .p-dialog {
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: var(--bitbucket-shadow);
-    }
+   styles: [`
+     /* ===== MODAL WRAPPER - Modern 2026 Style ===== */
+     :host ::ng-deep .p-dialog {
+       border-radius: 24px;
+       overflow: hidden;
+       background: var(--surface-card);
+       backdrop-filter: blur(20px);
+       -webkit-backdrop-filter: blur(20px);
+       border: 1px solid var(--surface-border);
+       box-shadow:
+         0 32px 64px -12px rgba(0, 0, 0, 0.12),
+         0 0 0 1px var(--surface-border),
+         inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+       animation: modalEnter 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+       transform-origin: center;
+       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+     }
 
-    :host ::ng-deep .p-dialog-header {
-      background-color: var(--bitbucket-header-bg);
-      border-bottom: 1px solid var(--bitbucket-border);
-      padding: 1.25rem 1.5rem;
-      color: var(--bitbucket-text-primary);
-      font-weight: 600;
-      font-size: 1.125rem;
-    }
+     @keyframes modalEnter {
+       from {
+         opacity: 0;
+         transform: scale(0.9) translateY(20px);
+         filter: blur(4px);
+       }
+       to {
+         opacity: 1;
+         transform: scale(1) translateY(0);
+         filter: blur(0);
+       }
+     }
 
-    :host ::ng-deep .p-dialog-header .p-dialog-title {
-      color: var(--bitbucket-text-primary);
-    }
+     /* ===== BACKDROP - Enhanced Glassmorphism ===== */
+     :host ::ng-deep .p-dialog-mask {
+       background: rgba(0, 0, 0, 0.35);
+       backdrop-filter: blur(24px);
+       -webkit-backdrop-filter: blur(24px);
+       animation: backdropEnter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+     }
 
-    :host ::ng-deep .p-dialog-header .p-dialog-header-icon {
-      color: var(--bitbucket-text-secondary);
-      transition: all 0.2s ease;
-      border-radius: 4px;
-      width: 2rem;
-      height: 2rem;
-    }
+     @keyframes backdropEnter {
+       from {
+         opacity: 0;
+         backdrop-filter: blur(0);
+       }
+       to {
+         opacity: 1;
+         backdrop-filter: blur(24px);
+       }
+     }
 
-    :host ::ng-deep .p-dialog-header .p-dialog-header-icon:hover {
-      color: var(--bitbucket-text-primary);
-      background-color: var(--bitbucket-bg-hover);
-    }
+     /* ===== HEADER - Instagram/Facebook Style ===== */
+     :host ::ng-deep .p-dialog-header {
+       background: var(--surface-card);
+       border-bottom: 1px solid var(--surface-border);
+       padding: 1.5rem 1.75rem;
+       color: var(--text-primary);
+       font-weight: 600;
+       font-size: 1.25rem;
+       letter-spacing: -0.015em;
+       display: flex;
+       align-items: center;
+       justify-content: space-between;
+       backdrop-filter: blur(10px);
+       -webkit-backdrop-filter: blur(10px);
+     }
 
-    :host ::ng-deep .p-dialog-content {
-      background-color: var(--bitbucket-header-bg);
-      padding: 1.5rem;
-      color: var(--bitbucket-text-secondary);
-    }
+     :host ::ng-deep .p-dialog-header .p-dialog-title {
+       color: var(--text-primary);
+       font-weight: 600;
+       font-size: 1.25rem;
+       letter-spacing: -0.015em;
+       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+     }
 
-    :host ::ng-deep .p-dialog-footer {
-      background-color: var(--bitbucket-header-bg);
-      border-top: 1px solid var(--bitbucket-border);
-      padding: 1rem 1.5rem;
-    }
+     :host ::ng-deep .p-dialog-header .p-dialog-header-icon {
+       color: var(--text-secondary);
+       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+       border-radius: 12px;
+       width: 2.5rem;
+       height: 2.5rem;
+       margin: 0;
+       display: flex;
+       align-items: center;
+       justify-content: center;
+       background: transparent;
+       border: none;
+     }
 
-    /* Dark mode */
-    .dark :host ::ng-deep .p-dialog-header {
-      background-color: var(--bitbucket-header-bg);
-      border-bottom-color: var(--bitbucket-border);
-      color: var(--bitbucket-text-primary);
-    }
+     :host ::ng-deep .p-dialog-header .p-dialog-header-icon:hover {
+       color: var(--text-primary);
+       background-color: var(--surface-hover);
+       transform: rotate(90deg) scale(1.05);
+     }
 
-    .dark :host ::ng-deep .p-dialog-header .p-dialog-title {
-      color: var(--bitbucket-text-primary);
-    }
+     /* ===== CONTENT ===== */
+     :host ::ng-deep .p-dialog-content {
+       background: var(--surface-card);
+       padding: 1.75rem;
+       color: var(--text-secondary);
+       line-height: 1.65;
+       font-size: 0.95rem;
+     }
 
-    .dark :host ::ng-deep .p-dialog-content {
-      background-color: var(--bitbucket-header-bg);
-      color: var(--bitbucket-text-secondary);
-    }
+     /* ===== FOOTER ===== */
+     :host ::ng-deep .p-dialog-footer {
+       background: var(--surface-card);
+       border-top: 1px solid var(--surface-border);
+       padding: 1.25rem 1.75rem;
+       backdrop-filter: blur(10px);
+       -webkit-backdrop-filter: blur(10px);
+     }
 
-    .dark :host ::ng-deep .p-dialog-footer {
-      background-color: var(--bitbucket-header-bg);
-      border-top-color: var(--bitbucket-border);
-    }
+     /* ===== DARK MODE ===== */
+     .dark :host ::ng-deep .p-dialog {
+       box-shadow:
+         0 32px 64px -12px rgba(0, 0, 0, 0.35),
+         0 0 0 1px var(--surface-border),
+         inset 0 1px 0 0 rgba(255, 255, 255, 0.02);
+     }
 
-    /* Modal sizes */
-    :host ::ng-deep .p-dialog.dialog-small {
-      width: 400px;
-    }
+     .dark :host ::ng-deep .p-dialog-mask {
+       background: rgba(0, 0, 0, 0.55);
+     }
 
-    :host ::ng-deep .p-dialog.dialog-medium {
-      width: 600px;
-    }
+     .dark :host ::ng-deep .p-dialog-header {
+       background: var(--surface-card);
+       border-bottom-color: var(--surface-border);
+       color: var(--text-primary);
+     }
 
-    :host ::ng-deep .p-dialog.dialog-large {
-      width: 800px;
-    }
+     .dark :host ::ng-deep .p-dialog-header .p-dialog-title {
+       color: var(--text-primary);
+     }
 
-    :host ::ng-deep .p-dialog.dialog-xlarge {
-      width: 1000px;
-    }
+     .dark :host ::ng-deep .p-dialog-content {
+       background: var(--surface-card);
+       color: var(--text-secondary);
+     }
 
-    :host ::ng-deep .p-dialog.dialog-full {
-      width: 90vw;
-      max-width: 1200px;
-      height: 90vh;
-    }
+     .dark :host ::ng-deep .p-dialog-footer {
+       background: var(--surface-card);
+       border-top-color: var(--surface-border);
+     }
 
-    :host ::ng-deep .p-dialog.dialog-auto {
-      width: auto;
-      min-width: 300px;
-      max-width: 90vw;
-    }
+     /* ===== SIZES ===== */
+     :host ::ng-deep .p-dialog.dialog-small { width: 380px; }
+     :host ::ng-deep .p-dialog.dialog-medium { width: 560px; }
+     :host ::ng-deep .p-dialog.dialog-large { width: 760px; }
+     :host ::ng-deep .p-dialog.dialog-xlarge { width: 960px; }
 
-    .modal-body {
-      max-height: 70vh;
-      overflow-y: auto;
-    }
+     :host ::ng-deep .p-dialog.dialog-full {
+       width: 92vw;
+       max-width: 1200px;
+       height: 92vh;
+     }
 
-    .modal-body.no-padding {
-      padding: 0 !important;
-    }
+     :host ::ng-deep .p-dialog.dialog-auto {
+       width: auto;
+       min-width: 280px;
+       max-width: 90vw;
+     }
 
-    .modal-body::-webkit-scrollbar {
-      width: 6px;
-    }
+     /* ===== BODY ===== */
+     .modal-body {
+       max-height: 68vh;
+       overflow-y: auto;
+       scrollbar-width: thin;
+       scrollbar-color: var(--text-tertiary) transparent;
+       font-size: 0.95rem;
+       line-height: 1.65;
+     }
 
-    .modal-body::-webkit-scrollbar-track {
-      background: var(--bitbucket-light-gray);
-      border-radius: 3px;
-    }
+     .modal-body.no-padding {
+       padding: 0 !important;
+     }
 
-    .modal-body::-webkit-scrollbar-thumb {
-      background: var(--bitbucket-gray);
-      border-radius: 3px;
-    }
+     .modal-body::-webkit-scrollbar {
+       width: 6px;
+     }
+     .modal-body::-webkit-scrollbar-track {
+       background: transparent;
+     }
+     .modal-body::-webkit-scrollbar-thumb {
+       background: var(--text-tertiary);
+       border-radius: 8px;
+       transition: all 0.2s ease;
+     }
+     .modal-body::-webkit-scrollbar-thumb:hover {
+       background: var(--text-secondary);
+     }
 
-    .modal-body::-webkit-scrollbar-thumb:hover {
-      background: var(--bitbucket-text-secondary);
-    }
+     /* ===== FOOTER ===== */
+     .modal-footer {
+       display: flex;
+       flex-direction: column;
+       gap: 0.875rem;
+     }
 
-    .modal-footer {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
+     .modal-actions {
+       display: flex;
+       gap: 0.5rem;
+       flex-wrap: wrap;
+       align-items: center;
+     }
 
-    .modal-actions {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      align-items: center;
-    }
+     .modal-actions.left { justify-content: flex-start; }
+     .modal-actions.center { justify-content: center; }
+     .modal-actions.right { justify-content: flex-end; }
 
-    .modal-actions.left {
-      justify-content: flex-start;
-    }
+     /* ===== BUTTONS - Instagram Style ===== */
+     :host ::ng-deep .p-button {
+       border-radius: 10px !important;
+       font-weight: 500 !important;
+       font-size: 0.9rem !important;
+       padding: 0.625rem 1.25rem !important;
+       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+       letter-spacing: -0.01em;
+     }
 
-    .modal-actions.center {
-      justify-content: center;
-    }
+     :host ::ng-deep .p-button:hover {
+       transform: translateY(-1px);
+       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+     }
 
-    .modal-actions.right {
-      justify-content: flex-end;
-    }
+     :host ::ng-deep .p-button:active {
+       transform: translateY(0);
+     }
 
-    /* Responsive */
-    @media (max-width: 640px) {
-      :host ::ng-deep .p-dialog.dialog-small,
-      :host ::ng-deep .p-dialog.dialog-medium,
-      :host ::ng-deep .p-dialog.dialog-large,
-      :host ::ng-deep .p-dialog.dialog-xlarge,
-      :host ::ng-deep .p-dialog.dialog-auto {
-        width: 95vw !important;
-        margin: 0.5rem;
-      }
+     :host ::ng-deep .p-button.p-button-outlined {
+       background: transparent !important;
+       border: 1px solid var(--surface-border) !important;
+       color: var(--text-primary) !important;
+     }
 
-      :host ::ng-deep .p-dialog.dialog-full {
-        width: 100vw !important;
-        height: 100vh !important;
-        max-width: 100vw !important;
-        margin: 0;
-        border-radius: 0 !important;
-      }
+     :host ::ng-deep .p-button.p-button-outlined:hover {
+       background: var(--surface-hover) !important;
+       border-color: var(--surface-border) !important;
+     }
 
-      .modal-body {
-        max-height: 60vh;
-      }
+     :host ::ng-deep .p-button.p-button-text {
+       color: var(--text-secondary) !important;
+       background: transparent !important;
+     }
 
-      .modal-actions {
-        flex-direction: column;
-        width: 100%;
-      }
+     :host ::ng-deep .p-button.p-button-text:hover {
+       background: var(--surface-hover) !important;
+       color: var(--text-primary) !important;
+     }
 
-      .modal-actions .p-button {
-        width: 100%;
-      }
+     /* ===== RESPONSIVE ===== */
+     @media (max-width: 640px) {
+       :host ::ng-deep .p-dialog {
+         border-radius: 20px !important;
+         margin: 0.75rem;
+       }
 
-      :host ::ng-deep .p-button {
-        width: 100%;
-      }
-    }
+       :host ::ng-deep .p-dialog.dialog-small,
+       :host ::ng-deep .p-dialog.dialog-medium,
+       :host ::ng-deep .p-dialog.dialog-large,
+       :host ::ng-deep .p-dialog.dialog-xlarge,
+       :host ::ng-deep .p-dialog.dialog-auto {
+         width: calc(100vw - 1.5rem) !important;
+       }
 
-    @media (max-width: 480px) {
-      :host ::ng-deep .p-dialog-header {
-        padding: 1rem 1.25rem !important;
-        font-size: 1rem !important;
-      }
+       :host ::ng-deep .p-dialog.dialog-full {
+         width: 100vw !important;
+         height: 100dvh !important;
+         max-width: 100vw !important;
+         margin: 0;
+         border-radius: 0 !important;
+       }
 
-      :host ::ng-deep .p-dialog-content {
-        padding: 1rem !important;
-      }
+       .modal-body {
+         max-height: 55vh;
+         padding: 1.25rem;
+       }
 
-      :host ::ng-deep .p-dialog-footer {
-        padding: 0.75rem 1rem !important;
-      }
-    }
-  `]
-})
+       :host ::ng-deep .p-dialog-header {
+         padding: 1.25rem 1.5rem !important;
+         font-size: 1.125rem !important;
+       }
+
+       :host ::ng-deep .p-dialog-content {
+         padding: 1.25rem 1.5rem !important;
+       }
+
+       :host ::ng-deep .p-dialog-footer {
+         padding: 1rem 1.25rem !important;
+       }
+
+       .modal-actions {
+         flex-direction: column;
+         width: 100%;
+         gap: 0.5rem;
+       }
+
+       .modal-actions .p-button,
+       :host ::ng-deep .p-button {
+         width: 100%;
+       }
+     }
+
+     @media (max-width: 480px) {
+       :host ::ng-deep .p-dialog {
+         margin: 0.5rem;
+         border-radius: 16px !important;
+       }
+
+       :host ::ng-deep .p-dialog-header {
+         padding: 1rem 1.25rem !important;
+         font-size: 1rem !important;
+       }
+
+       :host ::ng-deep .p-dialog-content {
+         padding: 1rem !important;
+       }
+
+       :host ::ng-deep .p-dialog-footer {
+         padding: 0.875rem 1rem !important;
+       }
+     }
+
+     /* ===== REDUCED MOTION ===== */
+     @media (prefers-reduced-motion: reduce) {
+       :host ::ng-deep .p-dialog,
+       :host ::ng-deep .p-dialog-mask {
+         animation: none !important;
+         transition: none !important;
+       }
+     }
+   `]
+ })
 export class ModalComponent {
   // ===== Inputs Principales =====
   visible = input<boolean>(false);

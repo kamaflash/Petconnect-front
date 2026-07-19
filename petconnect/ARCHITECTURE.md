@@ -1,4 +1,4 @@
-# Arquitectura Frontend - PetConnect
+# Arquitectura Frontend - Lumio
 
 ## Principios Aplicados
 

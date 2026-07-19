@@ -16,7 +16,7 @@ import { ButtonModule } from 'primeng/button';
               <div class="footer-logo-icon">
                 <i class="pi pi-paw text-white text-base"></i>
               </div>
-              <span class="footer-logo-text">PetConnect</span>
+              <span class="footer-logo-text">Lumio</span>
             </div>
             <p class="footer-description">
               La plataforma definitiva para el cuidado, seguimiento y conexión de tu compañero peludo.
@@ -75,7 +75,7 @@ import { ButtonModule } from 'primeng/button';
         <div class="footer-bottom">
           <div class="footer-bottom-content">
             <span class="footer-copyright">
-              &copy; 2026 PetConnect. Todos los derechos reservados.
+              &copy; 2026 Lumio. Todos los derechos reservados.
             </span>
             <div class="footer-bottom-links">
               <a href="#">Privacidad</a>

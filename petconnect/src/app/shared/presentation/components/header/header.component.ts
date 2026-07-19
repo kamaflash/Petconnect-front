@@ -35,9 +35,7 @@ import { RippleModule } from 'primeng/ripple';
         <!-- Left: Logo + Navigation -->
         <div class="header-left">
            <div class="logo-container" routerLink="/" style="cursor: pointer;">
-             <div class="logo-icon">
-               <img src="https://res.cloudinary.com/dxjcjee8f/image/upload/v1784245378/oxs6hug2kb16gymq5pue.png" alt="PetConnect" class="logo-image" />
-             </div>
+               <img src="https://res.cloudinary.com/dxjcjee8f/image/upload/v1784374711/m9caz3kr9yusdgis1k42.png" alt="Petopia" class="logo-image" />
            </div>
         </div>
 
@@ -192,7 +190,7 @@ import { RippleModule } from 'primeng/ripple';
               pButton
               icon="pi pi-user"
               class="p-button-text p-button-sm header-btn"
-              (click)="openLoginModal()"
+              (click)="onLogin()"
               pTooltip="Acceder"
               tooltipPosition="bottom"
             ></button>
@@ -282,8 +280,8 @@ import { RippleModule } from 'primeng/ripple';
 
     /* ===== LOGO ===== */
     .logo-image {
-      width: 40px !important;
-      height: 40px !important;
+      width: 70px !important;
+      height: 70px !important;
     }
 
     /* ===== USER MENU ===== */
@@ -502,7 +500,7 @@ export class HeaderComponent implements OnInit {
   }
 
   onRegister(): void {
-    this.router.navigate(['/auth/register']);
+    this.router.navigate(['/auth/login']);
   }
 
   onProfile(): void {
@@ -525,5 +523,6 @@ export class HeaderComponent implements OnInit {
     console.log('Cerrar sesión');
     this.authService.logout();
     this.updateMenuItems();
+    this.router.navigate(['/auth/login']);
   }
 }

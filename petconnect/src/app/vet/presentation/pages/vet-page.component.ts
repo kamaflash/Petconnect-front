@@ -11,6 +11,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TableCardComponent, TableCardItem } from '../../../shared/presentation/components/table-card/table-card.component';
+import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ChipModule } from 'primeng/chip';
@@ -105,48 +106,18 @@ interface Product {
     ToastModule,
     ChipModule,
     BadgeModule,
+    TabsComponent,
   ],
   providers: [MessageService],
   template: `
     <div class="vet-page">
       <div class="vet-container">
         <!-- Tabs -->
-        <div class="vet-tabs">
-          <div class="tabs-container">
-            <button
-              class="tab-button"
-              [class.active]="activeTab() === 'vets'"
-              (click)="setActiveTab('vets')"
-            >
-              <i class="pi pi-user-md"></i>
-              <span>Veterinarios</span>
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="activeTab() === 'vaccines'"
-              (click)="setActiveTab('vaccines')"
-            >
-              <i class="pi pi-calendar"></i>
-              <span>Vacunas</span>
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="activeTab() === 'appointments'"
-              (click)="setActiveTab('appointments')"
-            >
-              <i class="pi pi-calendar-plus"></i>
-              <span>Citas</span>
-            </button>
-            <button
-              class="tab-button"
-              [class.active]="activeTab() === 'pharmacy'"
-              (click)="setActiveTab('pharmacy')"
-            >
-              <i class="pi pi-shopping-cart"></i>
-              <span>Farmacia</span>
-            </button>
-          </div>
-        </div>
+        <app-tabs
+          [tabs]="vetTabs()"
+          [activeTab]="activeTab()"
+          (tabChange)="onTabChange($event)"
+        />
 
         <!-- Veterinarios - 2 columnas: tabla + especialidades -->
         <div class="vet-layout" *ngIf="activeTab() === 'vets'">
@@ -173,13 +144,13 @@ interface Product {
           <div class="vet-sidebar">
             <div class="sidebar-card">
               <div class="sidebar-header">
-                <i class="pi pi-heart"></i>
+                <span class="material-symbols-rounded">favorite</span>
                 <h3>Especialidades</h3>
               </div>
               <div class="specialty-list">
                 <div class="specialty-item" *ngFor="let specialty of specialties()">
                   <div class="specialty-icon-small">
-                    <i class="pi" [class]="specialty.icon"></i>
+                    <span class="material-symbols-rounded">{{ specialty.icon }}</span>
                   </div>
                   <div class="specialty-info-small">
                     <span class="specialty-name">{{ specialty.name }}</span>
@@ -193,9 +164,9 @@ interface Product {
 
         <!-- Vacunas - 2 columnas: tabla vacunas + consejos -->
         <div class="vaccines-layout" *ngIf="activeTab() === 'vaccines'">
-          <div class="vaccines-main">
+            <div class="vaccines-main">
             <div class="vaccines-header">
-              <i class="pi pi-calendar"></i>
+              <span class="material-symbols-rounded">calendar_month</span>
               <h3>Calendario de Vacunas</h3>
             </div>
             <div class="vaccine-filters">
@@ -204,7 +175,7 @@ interface Product {
                 [class.active]="activeVaccineFilter() === 'dogs'"
                 (click)="setActiveVaccineFilter('dogs')"
               >
-                <i class="pi pi-dog"></i>
+                <span class="material-symbols-rounded">pets</span>
                 <span>Perros</span>
               </button>
               <button
@@ -212,7 +183,7 @@ interface Product {
                 [class.active]="activeVaccineFilter() === 'cats'"
                 (click)="setActiveVaccineFilter('cats')"
               >
-                <i class="pi pi-cat"></i>
+                <span class="material-symbols-rounded">cat</span>
                 <span>Gatos</span>
               </button>
               <button
@@ -220,7 +191,7 @@ interface Product {
                 [class.active]="activeVaccineFilter() === 'exotic'"
                 (click)="setActiveVaccineFilter('exotic')"
               >
-                <i class="pi pi-sparkles"></i>
+                <span class="material-symbols-rounded">auto_awesome</span>
                 <span>Exóticos</span>
               </button>
             </div>
@@ -239,10 +210,10 @@ interface Product {
               </div>
             </div>
           </div>
-          <div class="vaccines-sidebar">
+            <div class="vaccines-sidebar">
             <div class="sidebar-card">
               <div class="sidebar-header">
-                <i class="pi pi-lightbulb"></i>
+                <span class="material-symbols-rounded">lightbulb</span>
                 <h3>Consejos</h3>
               </div>
               <div class="tips-list">
@@ -263,11 +234,12 @@ interface Product {
           <div class="appointments-header">
             <h2>Mis Citas</h2>
             <p-button
-              icon="pi pi-plus"
               label="Nueva Cita"
               styleClass="p-button-primary"
               (onClick)="showAppointmentDialog()"
-            />
+            >
+              <span class="material-symbols-rounded button-icon">add</span>
+            </p-button>
           </div>
           <div class="appointments-list">
             <div class="appointment-card" *ngFor="let appointment of appointments()">
@@ -289,16 +261,18 @@ interface Product {
               />
               <div class="appointment-actions">
                 <p-button
-                  icon="pi pi-pencil"
                   styleClass="p-button-sm p-button-text"
                   pTooltip="Editar"
-                />
+                >
+                  <span class="material-symbols-rounded button-icon">edit</span>
+                </p-button>
                 <p-button
-                  icon="pi pi-times"
                   styleClass="p-button-sm p-button-text"
                   pTooltip="Cancelar"
                   (onClick)="cancelAppointment(appointment)"
-                />
+                >
+                  <span class="material-symbols-rounded button-icon">close</span>
+                </p-button>
               </div>
             </div>
           </div>
@@ -309,11 +283,12 @@ interface Product {
           <div class="pharmacy-header">
             <h2>Farmacia Veterinaria</h2>
             <p-button
-              icon="pi pi-shopping-cart"
               label="Ver carrito"
               styleClass="p-button-primary"
               [badge]="cartItems().toString()"
-            />
+            >
+              <span class="material-symbols-rounded button-icon">shopping_cart</span>
+            </p-button>
           </div>
           <div class="pharmacy-grid">
             <div class="product-card" *ngFor="let product of products()">
@@ -325,18 +300,19 @@ interface Product {
                 <p-tag [value]="product.category" styleClass="p-tag-info"></p-tag>
                 <div class="product-meta">
                   <span class="product-price">{{ product.price | currency:'EUR' }}</span>
-                  <div class="product-rating">
-                    <i class="pi pi-star-fill" *ngFor="let star of [1,2,3,4,5]"></i>
-                    <span>({{ product.rating }})</span>
-                  </div>
+                <div class="product-rating">
+                  <span class="material-symbols-rounded star-icon" *ngFor="let star of [1,2,3,4,5]">star</span>
+                  <span>({{ product.rating }})</span>
+                </div>
                 </div>
               </div>
               <p-button
-                icon="pi pi-shopping-cart"
                 label="Añadir"
                 styleClass="p-button-sm p-button-primary"
                 (onClick)="addToCart(product)"
-              />
+              >
+                <span class="material-symbols-rounded button-icon">shopping_cart</span>
+              </p-button>
             </div>
           </div>
         </div>
@@ -448,45 +424,6 @@ interface Product {
       padding: 0 1rem 2rem;
     }
 
-    /* Tabs */
-    .vet-tabs {
-      margin-bottom: 2rem;
-    }
-
-    .tabs-container {
-      display: flex;
-      gap: 0.5rem;
-      border-bottom: 2px solid var(--bitbucket-border);
-      padding-bottom: 0.5rem;
-      overflow-x: auto;
-      flex-wrap: nowrap;
-    }
-
-    .tab-button {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.75rem 1.25rem;
-      background: none;
-      border: none;
-      border-radius: 0.375rem;
-      cursor: pointer;
-      color: var(--bitbucket-text-secondary);
-      font-weight: 500;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-
-    .tab-button:hover {
-      background-color: var(--bitbucket-bg-hover);
-      color: var(--bitbucket-text-primary);
-    }
-
-    .tab-button.active {
-      background-color: var(--primary-color);
-      color: white;
-    }
-
     /* Vet Layout - 2 columns */
     .vet-layout {
       display: grid;
@@ -568,7 +505,7 @@ interface Product {
       border-bottom: 1px solid var(--bitbucket-border);
     }
 
-    .sidebar-header i {
+    .sidebar-header .material-symbols-rounded {
       color: var(--primary-color);
       font-size: 1.25rem;
     }
@@ -600,6 +537,10 @@ interface Product {
       align-items: center;
       justify-content: center;
       color: var(--primary-color);
+    }
+
+    .specialty-icon-small .material-symbols-rounded {
+      font-size: 1.25rem;
     }
 
     .specialty-info-small {
@@ -652,7 +593,7 @@ interface Product {
       margin-bottom: 1rem;
     }
 
-    .vaccines-header i {
+    .vaccines-header .material-symbols-rounded {
       color: var(--primary-color);
       font-size: 1.5rem;
     }
@@ -861,8 +802,14 @@ interface Product {
       color: var(--bitbucket-text-secondary);
     }
 
-    .product-rating .pi-star-fill {
+    .product-rating .star-icon {
       color: #fbbf24;
+      font-size: 0.875rem;
+    }
+
+    .button-icon {
+      font-size: 1rem;
+      line-height: 1;
     }
 
     /* Search Dialog */
@@ -938,19 +885,6 @@ interface Product {
     @media (max-width: 768px) {
       .vet-container {
         padding: 0 0.5rem 1rem;
-      }
-
-      .tabs-container {
-        gap: 0.25rem;
-      }
-
-      .tab-button {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.75rem;
-      }
-
-      .tab-button span {
-        display: none;
       }
     }
   `]
@@ -1139,42 +1073,42 @@ export class VetPageComponent {
     {
       id: '1',
       name: 'Medicina General',
-      icon: 'pi-heart',
+      icon: 'favorite',
       description: 'Atención médica básica para todas las mascotas',
       vetsCount: 45
     },
     {
       id: '2',
       name: 'Cirugía',
-      icon: 'pi-heart',
+      icon: 'medical_services',
       description: 'Procedimientos quirúrgicos especializados',
       vetsCount: 23
     },
     {
       id: '3',
       name: 'Dentista',
-      icon: 'pi-star',
+      icon: 'star',
       description: 'Cuidado dental para mascotas',
       vetsCount: 12
     },
     {
       id: '4',
       name: 'Exóticos',
-      icon: 'pi-sparkles',
+      icon: 'auto_awesome',
       description: 'Especialistas en animales exóticos',
       vetsCount: 18
     },
     {
       id: '5',
       name: 'Emergencias',
-      icon: 'pi-bolt',
+      icon: 'bolt',
       description: 'Atención 24/7 para urgencias',
       vetsCount: 8
     },
     {
       id: '6',
       name: 'Nutrición',
-      icon: 'pi-apple',
+      icon: 'nutrition',
       description: 'Asesoría nutricional personalizada',
       vetsCount: 15
     }
@@ -1290,6 +1224,20 @@ export class VetPageComponent {
   });
 
   cartItems = computed(() => this.products().length);
+
+  // Tabs configuration
+  vetTabs = computed((): Tab[] => {
+    return [
+      { id: 'vets', label: 'Veterinarios', icon: 'favorite', iconType: 'material' },
+      { id: 'vaccines', label: 'Vacunas', icon: 'calendar_month', iconType: 'material' },
+      { id: 'appointments', label: 'Citas', icon: 'event', iconType: 'material' },
+      { id: 'pharmacy', label: 'Farmacia', icon: 'shopping_cart', iconType: 'material' },
+    ];
+  });
+
+  onTabChange(tabId: string) {
+    this.setActiveTab(tabId);
+  }
 
   // Methods
   setActiveTab(tab: string) {

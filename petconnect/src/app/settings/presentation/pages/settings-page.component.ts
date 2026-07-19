@@ -33,7 +33,7 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
       <div class="settings-container">
         <div class="settings-header">
           <h1 class="settings-title">Configuración</h1>
-          <p class="settings-subtitle">Personaliza tu experiencia en PetConnect</p>
+          <p class="settings-subtitle">Personaliza tu experiencia en Lumio</p>
         </div>
 
         <!-- Sección de Apariencia -->

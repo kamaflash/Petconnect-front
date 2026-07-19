@@ -1,6 +1,19 @@
 @use 'primeicons/primeicons.css';
 @use 'primeflex/primeflex.css';
 
+/* ===== MATERIAL SYMBOLS ===== */
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL@20..48,100..700,0..1');
+
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded';
+  font-weight: 400;
+  font-style: normal;
+  font-size: 1.25rem;
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+}
+
 /* ===== BACKWARD COMPATIBILITY - Aliases para los componentes existentes ===== */
 :root {
   --bitbucket-header-bg: var(--surface-card);
@@ -28,20 +41,20 @@
   --bitbucket-menu-bg: var(--surface-overlay);
 }
 
-/* ===== MODERN DESIGN SYSTEM - Instagram Style with Green ===== */
+/* ===== MODERN DESIGN SYSTEM - Instagram Style with Orange ===== */
 :root {
-  /* Primary - Verde (color original) - SOLO para logo y stories */
-  --primary-color: #94c748;
-  --primary-color-hover: #7cb33d;
-  --primary-color-active: #659929;
+  /* Primary - Naranja (color por defecto) */
+  --primary-color: #f97316;
+  --primary-color-hover: #ea580c;
+  --primary-color-active: #c2410c;
   --primary-color-text: #ffffff;
-  --primary-color-highlight: rgba(148, 199, 72, 0.12);
-  --primary-color-light: #f0f8e6;
-  --primary-color-rgb: 148, 199, 72;
+  --primary-color-highlight: rgba(249, 115, 22, 0.12);
+  --primary-color-light: #fff7ed;
+  --primary-color-rgb: 249, 115, 22;
 
-  /* Instagram gradient for stories and logo (verde variante) */
-  --instagram-gradient: linear-gradient(45deg, #94c748, #7cb33d, #659929, #4d8015, #366600);
-  --instagram-gradient-stops: #94c748, #7cb33d, #659929, #4d8015, #366600;
+  /* Instagram gradient for stories and logo (naranja variante) */
+  --instagram-gradient: linear-gradient(45deg, #f97316, #ea580c, #c2410c, #9a3412, #7c2d12);
+  --instagram-gradient-stops: #f97316, #ea580c, #c2410c, #9a3412, #7c2d12;
 
   /* Secondary - Azul profundo (uso mínimo, para contraste) */
   --secondary-color: #3b82f6;
@@ -84,8 +97,8 @@
   --sidebar-text-secondary: #8e8e8e;
   --sidebar-text-hover: #262626;
   --sidebar-hover: #f9fafb;
-  --sidebar-active-bg: #f0f8e6;
-  --sidebar-active-text: #94c748;
+  --sidebar-active-bg: #fff7ed;
+  --sidebar-active-text: #f97316;
   --sidebar-scrollbar: #c7c7c7;
   --sidebar-scrollbar-hover: #8e8e8e;
 
@@ -97,11 +110,11 @@
 
 /* ===== DARK MODE ===== */
 .dark {
-  --primary-color: #94c748;
-  --primary-color-hover: #a8d666;
-  --primary-color-active: #7cb33d;
-  --primary-color-light: #1a2a0a;
-  --primary-color-rgb: 148, 199, 72;
+  --primary-color: #f97316;
+  --primary-color-hover: #fb923c;
+  --primary-color-active: #ea580c;
+  --primary-color-light: #431407;
+  --primary-color-rgb: 249, 115, 22;
 
   --secondary-color: #60a5fa;
   --secondary-color-hover: #93c5fd;
@@ -133,8 +146,8 @@
   --sidebar-text-secondary: #737373;
   --sidebar-text-hover: #ffffff;
   --sidebar-hover: #1e1e1e;
-  --sidebar-active-bg: #1a2a0a;
-  --sidebar-active-text: #a8d666;
+  --sidebar-active-bg: #431407;
+  --sidebar-active-text: #fb923c;
   --sidebar-scrollbar: #333333;
   --sidebar-scrollbar-hover: #555555;
 }
@@ -652,6 +665,23 @@ button.primary-button {
   line-height: 1.5rem;
   padding: 0 0.5rem;
   border-radius: var(--radius-full);
+}
+
+/* ===== PRIMENG PROGRESS BAR ===== */
+.p-progressbar {
+  height: 4px !important;
+  background: var(--surface-border) !important;
+  border-radius: var(--radius-full) !important;
+  overflow: hidden;
+}
+
+.p-progressbar .p-progressbar-value {
+  background: var(--primary-color) !important;
+  border-radius: var(--radius-full) !important;
+}
+
+.p-progressbar.p-progressbar-indeterminate .p-progressbar-value {
+  background: var(--primary-color) !important;
 }
 
 /* ===== PRIMENG DROPDOWN ===== */

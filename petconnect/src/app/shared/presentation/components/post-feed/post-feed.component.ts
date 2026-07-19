@@ -198,7 +198,7 @@ export interface PostItem {
     .post-avatar-ring {
       padding: 2px;
       border-radius: var(--radius-full);
-      background: var(--instagram-gradient);
+      background: var(--primary-color);
     }
 
     .post-avatar-ring :host ::ng-deep .p-avatar {
