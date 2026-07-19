@@ -4,12 +4,12 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { AvatarModule } from 'primeng/avatar';
-import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { Router } from '@angular/router';
 import { TableComponent, TableColumn } from '../../../shared/presentation/components/table/table.component';
+import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 
 interface Pet {
   id: string;
@@ -31,11 +31,11 @@ interface Pet {
     CardModule,
     TagModule,
     AvatarModule,
-    DialogModule,
     InputTextModule,
     FormsModule,
     SelectModule,
     TableComponent,
+    ModalComponent,
   ],
   template: `
     <div >
@@ -56,11 +56,15 @@ interface Pet {
           />
         </app-table>
 
-      <p-dialog
+      <app-modal
+        [visible]="dialogVisible"
         header="Nueva Mascota"
-        [(visible)]="dialogVisible"
-        [modal]="true"
-        [style]="{ width: '500px' }"
+        size="medium"
+        (onHide)="dialogVisible = false"
+        (onCancel)="dialogVisible = false"
+        (onConfirm)="savePet()"
+        confirmLabel="Guardar"
+        cancelLabel="Cancelar"
       >
         <div class="flex flex-column gap-3">
           <div class="flex flex-column gap-2">
@@ -88,15 +92,7 @@ interface Pet {
             <input pInputText id="weight" type="number" [(ngModel)]="newPet.weight" />
           </div>
         </div>
-        <ng-template pTemplate="footer">
-          <p-button
-            label="Cancelar"
-            severity="secondary"
-            (onClick)="dialogVisible = false"
-          />
-          <p-button label="Guardar" (onClick)="savePet()" />
-        </ng-template>
-      </p-dialog>
+      </app-modal>
     </div>
   `,
   styles: [``],

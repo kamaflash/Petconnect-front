@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -11,9 +11,9 @@ import { SkeletonModule } from 'primeng/skeleton';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { MenuModule } from 'primeng/menu';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
-import { TableCardComponent, TableCardItem } from '../../../shared/presentation/components/table-card/table-card.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { ProfileService, PetResponse } from '../../infrastructure/services/profile.service';
 import { SocialService } from '../../../social/infrastructure/services/social.service';
@@ -42,9 +42,9 @@ interface PetComment {
     ProgressBarModule,
     SkeletonModule,
     FormsModule,
+    MenuModule,
     TabsComponent,
     DynamicFormComponent,
-    TableCardComponent,
   ],
   providers: [MessageService],
   template: `
@@ -83,6 +83,15 @@ interface PetComment {
               <h1 class="pet-name">{{ pet()?.name }}</h1>
               <p-tag [value]="pet()?.active ? 'Activo' : 'Inactivo'"
                      [severity]="pet()?.active ? 'success' : 'secondary'" />
+              <div class="pet-admin-actions-inline" *ngIf="isOwner()">
+                <p-button
+                  type="button"
+                  icon="pi pi-cog"
+                  styleClass="p-button-outlined p-button-sm"
+                  (onClick)="menu.toggle($event)"
+                />
+                <p-menu #menu [model]="actionMenuItems" [popup]="true" />
+              </div>
             </div>
 
             <!-- Pet Stats -->
@@ -115,22 +124,6 @@ interface PetComment {
                   <span class="stat-label">Peso (kg)</span>
                 </div>
               </div>
-            </div>
-
-            <!-- Admin Actions (only for pet owner) -->
-            <div class="pet-admin-actions" *ngIf="isOwner()">
-              <p-button
-                label="Editar Mascota"
-                icon="pi pi-pencil"
-                styleClass="p-button-outlined"
-                (onClick)="showEditDialog = true"
-              />
-              <p-button
-                label="Eliminar"
-                icon="pi pi-trash"
-                styleClass="p-button-danger"
-                (onClick)="confirmDelete()"
-              />
             </div>
           </div>
         </div>
@@ -166,55 +159,34 @@ interface PetComment {
                 <h3>Información Básica</h3>
                 <div class="info-grid">
                   <div class="info-item">
-                    <i class="pi pi-tag"></i>
-                    <div>
-                      <span class="info-label">Especie</span>
-                      <span class="info-value">{{ getSpeciesLabel(pet()?.species) }}</span>
-                    </div>
+                    <span class="info-label">Especie</span>
+                    <span class="info-value">{{ getSpeciesLabel(pet()?.species) }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-bookmark"></i>
-                    <div>
-                      <span class="info-label">Raza</span>
-                      <span class="info-value">{{ pet()?.breed || '—' }}</span>
-                    </div>
+                    <span class="info-label">Raza</span>
+                    <span class="info-value">{{ pet()?.breed || '—' }}</span>
                   </div>
                   <div class="info-item" *ngIf="pet()?.dateOfBirth; else noBirthDate">
-                    <i class="pi pi-calendar"></i>
-                    <div>
-                      <span class="info-label">Fecha de Nacimiento</span>
-                      <span class="info-value">{{ pet()!.dateOfBirth | date:'dd/MM/yyyy' }}</span>
-                    </div>
+                    <span class="info-label">Fecha de Nacimiento</span>
+                    <span class="info-value">{{ pet()!.dateOfBirth | date:'dd/MM/yyyy' }}</span>
                   </div>
                   <ng-template #noBirthDate>
                     <div class="info-item">
-                      <i class="pi pi-calendar"></i>
-                      <div>
-                        <span class="info-label">Fecha de Nacimiento</span>
-                        <span class="info-value">—</span>
-                      </div>
+                      <span class="info-label">Fecha de Nacimiento</span>
+                      <span class="info-value">—</span>
                     </div>
                   </ng-template>
                   <div class="info-item">
-                    <i class="pi pi-venus-mars"></i>
-                    <div>
-                      <span class="info-label">Género</span>
-                      <span class="info-value">{{ getGenderLabel(pet()?.gender) }}</span>
-                    </div>
+                    <span class="info-label">Género</span>
+                    <span class="info-value">{{ getGenderLabel(pet()?.gender) }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-palette"></i>
-                    <div>
-                      <span class="info-label">Color</span>
-                      <span class="info-value">{{ pet()?.color || '—' }}</span>
-                    </div>
+                    <span class="info-label">Color</span>
+                    <span class="info-value">{{ pet()?.color || '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-microchip"></i>
-                    <div>
-                      <span class="info-label">Microchip</span>
-                      <span class="info-value">{{ pet()?.microchipId || '—' }}</span>
-                    </div>
+                    <span class="info-label">Microchip</span>
+                    <span class="info-value">{{ pet()?.microchipId || '—' }}</span>
                   </div>
                 </div>
 
@@ -228,93 +200,60 @@ interface PetComment {
                 <h3>Información Médica y de Salud</h3>
                 <div class="info-grid">
                   <div class="info-item">
-                    <i class="pi pi-heart"></i>
-                    <div>
-                      <span class="info-label">Tipo de Sangre</span>
-                      <span class="info-value">{{ pet()?.bloodType || '—' }}</span>
-                    </div>
+                    <span class="info-label">Tipo de Sangre</span>
+                    <span class="info-value">{{ pet()?.bloodType || '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-exclamation-triangle"></i>
-                    <div>
-                      <span class="info-label">Alergias</span>
-                      <span class="info-value">{{ pet()?.allergies || '—' }}</span>
-                    </div>
+                    <span class="info-label">Alergias</span>
+                    <span class="info-value">{{ pet()?.allergies || '—' }}</span>
                   </div>
                   <div class="info-item full-width">
-                    <i class="pi pi-file-medical"></i>
-                    <div>
-                      <span class="info-label">Condiciones Médicas</span>
-                      <span class="info-value">{{ pet()?.medicalConditions || '—' }}</span>
-                    </div>
+                    <span class="info-label">Condiciones Médicas</span>
+                    <span class="info-value">{{ pet()?.medicalConditions || '—' }}</span>
                   </div>
                 </div>
 
                 <h4 class="subsection-title">Veterinario</h4>
                 <div class="info-grid">
                   <div class="info-item">
-                    <i class="pi pi-user-md"></i>
-                    <div>
-                      <span class="info-label">Nombre</span>
-                      <span class="info-value">{{ pet()?.vetName || '—' }}</span>
-                    </div>
+                    <span class="info-label">Nombre</span>
+                    <span class="info-value">{{ pet()?.vetName || '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-phone"></i>
-                    <div>
-                      <span class="info-label">Teléfono</span>
-                      <span class="info-value">{{ pet()?.vetPhone || '—' }}</span>
-                    </div>
+                    <span class="info-label">Teléfono</span>
+                    <span class="info-value">{{ pet()?.vetPhone || '—' }}</span>
                   </div>
                   <div class="info-item full-width">
-                    <i class="pi pi-map-marker"></i>
-                    <div>
-                      <span class="info-label">Dirección</span>
-                      <span class="info-value">{{ pet()?.vetAddress || '—' }}</span>
-                    </div>
+                    <span class="info-label">Dirección</span>
+                    <span class="info-value">{{ pet()?.vetAddress || '—' }}</span>
                   </div>
                 </div>
 
                 <h4 class="subsection-title">Vacunación</h4>
                 <div class="info-grid">
                   <div class="info-item">
-                    <i class="pi pi-calendar-check"></i>
-                    <div>
-                      <span class="info-label">Última Vacunación</span>
-                      <span class="info-value">{{ pet()?.lastVaccinationDate ? (pet()!.lastVaccinationDate | date:'dd/MM/yyyy') : '—' }}</span>
-                    </div>
+                    <span class="info-label">Última Vacunación</span>
+                    <span class="info-value">{{ pet()?.lastVaccinationDate ? (pet()!.lastVaccinationDate | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-calendar-times"></i>
-                    <div>
-                      <span class="info-label">Próxima Vacunación</span>
-                      <span class="info-value">{{ pet()?.nextVaccinationDate ? (pet()!.nextVaccinationDate | date:'dd/MM/yyyy') : '—' }}</span>
-                    </div>
+                    <span class="info-label">Próxima Vacunación</span>
+                    <span class="info-value">{{ pet()?.nextVaccinationDate ? (pet()!.nextVaccinationDate | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-calendar"></i>
-                    <div>
-                      <span class="info-label">Última Visita</span>
-                      <span class="info-value">{{ pet()?.lastVetVisit ? (pet()!.lastVetVisit | date:'dd/MM/yyyy') : '—' }}</span>
-                    </div>
+                    <span class="info-label">Última Visita</span>
+                    <span class="info-value">{{ pet()?.lastVetVisit ? (pet()!.lastVetVisit | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
                 </div>
 
                 <h4 class="subsection-title">Seguro Médico</h4>
                 <div class="info-grid">
                   <div class="info-item">
-                    <i class="pi pi-shield"></i>
-                    <div>
-                      <span class="info-label">Aseguradora</span>
-                      <span class="info-value">{{ pet()?.insuranceProvider || '—' }}</span>
-                    </div>
+                    <span class="info-label">Aseguradora</span>
+                    <span class="info-value">{{ pet()?.insuranceProvider || '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-id-card"></i>
-                    <div>
-                      <span class="info-label">Póliza</span>
-                      <span class="info-value">{{ pet()?.insurancePolicyNumber || '—' }}</span>
-                    </div>
+                    <span class="info-label">Póliza</span>
+                    <span class="info-value">{{ pet()?.insurancePolicyNumber || '—' }}</span>
                   </div>
                 </div>
               </div>
@@ -323,67 +262,40 @@ interface PetComment {
                 <h3>Información Adicional</h3>
                 <div class="info-grid">
                   <div class="info-item">
-                    <i class="pi pi-phone"></i>
-                    <div>
-                      <span class="info-label">Contacto de Emergencia</span>
-                      <span class="info-value">{{ pet()?.emergencyContact || '—' }}</span>
-                    </div>
+                    <span class="info-label">Contacto de Emergencia</span>
+                    <span class="info-value">{{ pet()?.emergencyContact || '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-mobile"></i>
-                    <div>
-                      <span class="info-label">Teléfono de Emergencia</span>
-                      <span class="info-value">{{ pet()?.emergencyPhone || '—' }}</span>
-                    </div>
+                    <span class="info-label">Teléfono de Emergencia</span>
+                    <span class="info-value">{{ pet()?.emergencyPhone || '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-home"></i>
-                    <div>
-                      <span class="info-label">Centro de Adopción</span>
-                      <span class="info-value">{{ pet()?.adoptionCenter || '—' }}</span>
-                    </div>
+                    <span class="info-label">Centro de Adopción</span>
+                    <span class="info-value">{{ pet()?.adoptionCenter || '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-calendar"></i>
-                    <div>
-                      <span class="info-label">Fecha de Adopción</span>
-                      <span class="info-value">{{ pet()?.adoptionDate ? (pet()!.adoptionDate | date:'dd/MM/yyyy') : '—' }}</span>
-                    </div>
+                    <span class="info-label">Fecha de Adopción</span>
+                    <span class="info-value">{{ pet()?.adoptionDate ? (pet()!.adoptionDate | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-id-card"></i>
-                    <div>
-                      <span class="info-label">Número de Registro</span>
-                      <span class="info-value">{{ pet()?.registrationNumber || '—' }}</span>
-                    </div>
+                    <span class="info-label">Número de Registro</span>
+                    <span class="info-value">{{ pet()?.registrationNumber || '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-license"></i>
-                    <div>
-                      <span class="info-label">Número de Licencia</span>
-                      <span class="info-value">{{ pet()?.licenseNumber || '—' }}</span>
-                    </div>
+                    <span class="info-label">Número de Licencia</span>
+                    <span class="info-value">{{ pet()?.licenseNumber || '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-calendar-times"></i>
-                    <div>
-                      <span class="info-label">Vencimiento de Licencia</span>
-                      <span class="info-value">{{ pet()?.licenseExpiryDate ? (pet()!.licenseExpiryDate | date:'dd/MM/yyyy') : '—' }}</span>
-                    </div>
+                    <span class="info-label">Vencimiento de Licencia</span>
+                    <span class="info-value">{{ pet()?.licenseExpiryDate ? (pet()!.licenseExpiryDate | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-check-circle"></i>
-                    <div>
-                      <span class="info-label">Esterilizado/Castrado</span>
-                      <span class="info-value">{{ pet()?.spayedNeutered ? 'Sí' : 'No' }}</span>
-                    </div>
+                    <span class="info-label">Esterilizado/Castrado</span>
+                    <span class="info-value">{{ pet()?.spayedNeutered ? 'Sí' : 'No' }}</span>
                   </div>
                   <div class="info-item" *ngIf="pet()?.spayedNeuteredDate">
-                    <i class="pi pi-calendar"></i>
-                    <div>
-                      <span class="info-label">Fecha de Esterilización</span>
-                      <span class="info-value">{{ pet()!.spayedNeuteredDate | date:'dd/MM/yyyy' }}</span>
-                    </div>
+                    <span class="info-label">Fecha de Esterilización</span>
+                    <span class="info-value">{{ pet()!.spayedNeuteredDate | date:'dd/MM/yyyy' }}</span>
                   </div>
                 </div>
               </div>
@@ -392,46 +304,28 @@ interface PetComment {
                 <h3>Comportamiento y Características</h3>
                 <div class="info-grid">
                   <div class="info-item">
-                    <i class="pi pi-smile"></i>
-                    <div>
-                      <span class="info-label">Temperamento</span>
-                      <span class="info-value">{{ getTemperamentLabel(pet()?.temperament) }}</span>
-                    </div>
+                    <span class="info-label">Temperamento</span>
+                    <span class="info-value">{{ getTemperamentLabel(pet()?.temperament) }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-bolt"></i>
-                    <div>
-                      <span class="info-label">Nivel de Energía</span>
-                      <span class="info-value">{{ getEnergyLevelLabel(pet()?.energyLevel) }}</span>
-                    </div>
+                    <span class="info-label">Nivel de Energía</span>
+                    <span class="info-value">{{ getEnergyLevelLabel(pet()?.energyLevel) }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-graduation-cap"></i>
-                    <div>
-                      <span class="info-label">Nivel de Entrenamiento</span>
-                      <span class="info-value">{{ getTrainingLevelLabel(pet()?.trainingLevel) }}</span>
-                    </div>
+                    <span class="info-label">Nivel de Entrenamiento</span>
+                    <span class="info-value">{{ getTrainingLevelLabel(pet()?.trainingLevel) }}</span>
                   </div>
                   <div class="info-item full-width">
-                    <i class="pi pi-star"></i>
-                    <div>
-                      <span class="info-label">Actividades Favoritas</span>
-                      <span class="info-value">{{ pet()?.favoriteActivities || '—' }}</span>
-                    </div>
+                    <span class="info-label">Actividades Favoritas</span>
+                    <span class="info-value">{{ pet()?.favoriteActivities || '—' }}</span>
                   </div>
                   <div class="info-item">
-                    <i class="pi pi-utensils"></i>
-                    <div>
-                      <span class="info-label">Comida Favorita</span>
-                      <span class="info-value">{{ pet()?.favoriteFood || '—' }}</span>
-                    </div>
+                    <span class="info-label">Comida Favorita</span>
+                    <span class="info-value">{{ pet()?.favoriteFood || '—' }}</span>
                   </div>
                   <div class="info-item full-width">
-                    <i class="pi pi-heart"></i>
-                    <div>
-                      <span class="info-label">Necesidades Especiales</span>
-                      <span class="info-value">{{ pet()?.specialNeeds || '—' }}</span>
-                    </div>
+                    <span class="info-label">Necesidades Especiales</span>
+                    <span class="info-value">{{ pet()?.specialNeeds || '—' }}</span>
                   </div>
                 </div>
               </div>
@@ -587,17 +481,19 @@ interface PetComment {
       <p-dialog
         [visible]="showEditDialog"
         [modal]="true"
-        [style]="{ width: '600px' }"
+        [style]="{ width: '90vw', maxWidth: '1000px' }"
         [closable]="true"
         (onHide)="showEditDialog = false"
+        [dismissableMask]="true"
+        styleClass="post-modal-dialog"
         header="Editar Mascota"
       >
-        <app-dynamic-form
-          [config]="editPetFormConfig"
-          [formData]="editPetFormData"
-          (onSubmitClick)="onEditPetSubmit($event)"
-          (onCancel)="showEditDialog = false"
-        />
+      <app-dynamic-form
+        [config]="getCurrentFormConfig()"
+        [formData]="editPetFormData"
+        (onSubmitClick)="onEditPetSubmit($event)"
+        (onCancel)="showEditDialog = false"
+      />
       </p-dialog>
 
       <!-- Delete Confirmation Dialog -->
@@ -627,9 +523,9 @@ interface PetComment {
       transition: background-color 0.3s ease;
     }
 
-    .dark .pet-profile-page {
-      background-color: #111827;
-    }
+  .dark .pet-profile-page {
+    background-color: var(--surface-bg);
+  }
 
     .pet-profile-container {
       max-width: 1000px;
@@ -725,7 +621,18 @@ interface PetComment {
     .pet-title-section {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 1rem;
+    }
+
+    .pet-title-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .pet-admin-actions-inline {
+      flex-shrink: 0;
     }
 
     .pet-name {
@@ -742,7 +649,6 @@ interface PetComment {
     }
 
     .pet-stat-item {
-      background-color: var(--bitbucket-bg-secondary, #f5f5f5);
       padding: 1rem;
       border-radius: 0.5rem;
       display: flex;
@@ -809,18 +715,6 @@ interface PetComment {
     }
 
     .info-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-
-    .info-item i {
-      font-size: 1.5rem;
-      color: var(--primary-color);
-      margin-top: 0.25rem;
-    }
-
-    .info-item div {
       display: flex;
       flex-direction: column;
       gap: 0.25rem;
@@ -1471,6 +1365,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   lightboxVisible = false;
   showEditDialog = false;
   showDeleteDialog = false;
+  showAdoptionDialog = false;
   postModalVisible = false;
   currentPostIndex = signal(0);
 
@@ -1485,13 +1380,66 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   // Edit form data
   editPetFormData = signal<any>({});
 
-  // Edit form configuration
+  // Menu reference
+  @ViewChild('actionMenu') actionMenu: any;
+
+  // Action menu items for dropdown
+  actionMenuItems: any[] = [];
+
+  private buildActionMenuItems(): void {
+    const pet = this.pet();
+    this.actionMenuItems = [
+      {
+        label: 'Editar Información',
+        icon: 'pi pi-pencil',
+        items: [
+          {
+            label: 'Información Básica',
+            icon: 'pi pi-tag',
+            command: () => this.openEditDialog('basic')
+          },
+          {
+            label: 'Información Médica',
+            icon: 'pi pi-heart',
+            command: () => this.openEditDialog('medical')
+          },
+          {
+            label: 'Información Adicional',
+            icon: 'pi pi-info-circle',
+            command: () => this.openEditDialog('additional')
+          },
+          {
+            label: 'Comportamiento',
+            icon: 'pi pi-smile',
+            command: () => this.openEditDialog('behavior')
+          }
+        ]
+      },
+      {
+        label: 'Acciones',
+        icon: 'pi pi-cog',
+        items: [
+          {
+            label: pet?.active ? 'Poner en Adopción' : 'Activar Mascota',
+            icon: pet?.active ? 'pi pi-home' : 'pi pi-check-circle',
+            command: () => this.toggleAdoptionStatus()
+          },
+          {
+            label: 'Eliminar Mascota',
+            icon: 'pi pi-trash',
+            command: () => this.confirmDelete()
+          }
+        ]
+      }
+    ];
+  }
+
+  // Edit form configurations for each category
   editPetFormConfig: DynamicFormConfig = {
-    title: 'Editar Mascota',
+    title: 'Editar Información Básica',
     submitLabel: 'Guardar Cambios',
     showCancel: true,
     fields: [
-      // Información básica
       {
         key: 'name',
         label: 'Nombre',
@@ -1578,9 +1526,16 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         placeholder: 'Información sobre la personalidad y características de tu mascota...',
         rows: 4,
         validation: { maxLength: 500 }
-      },
+      }
+    ]
+  };
 
-      // Información médica y de salud
+  // Medical form configuration
+  medicalFormConfig: DynamicFormConfig = {
+    title: 'Editar Información Médica',
+    submitLabel: 'Guardar Cambios',
+    showCancel: true,
+    fields: [
       {
         key: 'bloodType',
         label: 'Tipo de Sangre',
@@ -1662,9 +1617,16 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         type: 'input',
         placeholder: 'Número de póliza de seguro',
         validation: { maxLength: 100 }
-      },
+      }
+    ]
+  };
 
-      // Información adicional
+  // Additional form configuration
+  additionalFormConfig: DynamicFormConfig = {
+    title: 'Editar Información Adicional',
+    submitLabel: 'Guardar Cambios',
+    showCancel: true,
+    fields: [
       {
         key: 'emergencyContact',
         label: 'Contacto de Emergencia',
@@ -1728,9 +1690,16 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         placeholder: 'Fecha de esterilización/castración',
         showIcon: true,
         dateFormat: 'dd/mm/yy'
-      },
+      }
+    ]
+  };
 
-      // Comportamiento
+  // Behavior form configuration
+  behaviorFormConfig: DynamicFormConfig = {
+    title: 'Editar Comportamiento',
+    submitLabel: 'Guardar Cambios',
+    showCancel: true,
+    fields: [
       {
         key: 'temperament',
         label: 'Temperamento',
@@ -1795,6 +1764,9 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     ]
   };
 
+  // Current edit category
+  currentEditCategory: 'basic' | 'medical' | 'additional' | 'behavior' = 'basic';
+
   // Computed
   petImages = computed(() => {
     const pet = this.pet();
@@ -1821,16 +1793,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     return images;
   });
 
-  petPhotoItems = computed((): TableCardItem[] => {
-    const images = this.petImages();
-    return images.map((image, index) => ({
-      id: `photo-${index}`,
-      name: `${this.pet()?.name || 'Mascota'} - Foto ${index + 1}`,
-      avatar: image,
-      image: image,
-      description: index === 0 ? 'Foto principal' : `Foto ${index + 1}`,
-    }));
-  });
+  // Removed: petPhotoItems no longer used (TableCardComponent was removed)
 
   currentImage = computed(() => {
     const images = this.petImages();
@@ -1879,6 +1842,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         this.loadPetStats(petId);
         this.loadPetPosts(petId);
         this.loadPetComments(petId);
+        this.buildActionMenuItems();
 
         // Initialize edit form
         this.editPetFormData.set({
@@ -2111,6 +2075,48 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       'advanced': 'Avanzado'
     };
     return level ? (labels[level] || level) : '—';
+  }
+
+  // Menu methods
+  toggleActionMenu(event: Event): void {
+    if (this.actionMenu) {
+      this.actionMenu.toggle(event);
+    }
+  }
+
+  // Edit dialog methods
+  openEditDialog(category: 'basic' | 'medical' | 'additional' | 'behavior'): void {
+    this.currentEditCategory = category;
+    this.showEditDialog = true;
+  }
+
+  // Get the current form config based on category
+  getCurrentFormConfig(): DynamicFormConfig {
+    switch (this.currentEditCategory) {
+      case 'basic':
+        return this.editPetFormConfig;
+      case 'medical':
+        return this.medicalFormConfig;
+      case 'additional':
+        return this.additionalFormConfig;
+      case 'behavior':
+        return this.behaviorFormConfig;
+      default:
+        return this.editPetFormConfig;
+    }
+  }
+
+  // Adoption status
+  toggleAdoptionStatus(): void {
+    const pet = this.pet();
+    if (!pet) return;
+
+    // Toggle adoption status logic
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: pet.active ? 'Mascota puesta en adopción' : 'Mascota activada'
+    });
   }
 
   // Admin actions

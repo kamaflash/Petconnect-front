@@ -13,6 +13,7 @@ import { RadioButtonModule } from 'primeng/radiobutton';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { RouterLink } from '@angular/router';
+import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 
 interface Product {
   id: string;
@@ -64,6 +65,7 @@ type SortOption = 'popularity' | 'price-asc' | 'price-desc' | 'name' | 'rating';
     RadioButtonModule,
     ToastModule,
     RouterLink,
+    ModalComponent,
   ],
   providers: [MessageService],
   template: `
@@ -331,12 +333,10 @@ type SortOption = 'popularity' | 'price-asc' | 'price-desc' | 'name' | 'rating';
       </div>
 
       <!-- Product Detail Modal -->
-      <p-dialog
-        [(visible)]="productDetailVisible"
-        [modal]="true"
-        [style]="{width: '800px'}"
-        [draggable]="false"
-        [resizable]="false"
+      <app-modal
+        [visible]="productDetailVisible()"
+        [showCancel]="false"
+        (onHide)="productDetailVisible.set(false)"
       >
         @if (selectedProduct(); as product) {
           <div class="product-detail">
@@ -383,7 +383,7 @@ type SortOption = 'popularity' | 'price-asc' | 'price-desc' | 'name' | 'rating';
             </div>
           </div>
         }
-      </p-dialog>
+      </app-modal>
     </div>
   `,
   styles: [`

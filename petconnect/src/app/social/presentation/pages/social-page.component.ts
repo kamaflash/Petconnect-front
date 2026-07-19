@@ -19,6 +19,7 @@ import { MenuModule } from 'primeng/menu';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
+import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { CloudinaryService, CloudinaryUploadResponse } from '../../../shared/infrastructure/services/cloudinary.service';
@@ -169,6 +170,7 @@ interface Notification {
     PostFeedComponent,
     ProgressBarModule,
     TabsComponent,
+    ModalComponent,
   ],
   providers: [MessageService],
   template: `

@@ -14,6 +14,7 @@ import { AvatarGroupModule } from 'primeng/avatargroup';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { RouterLink } from '@angular/router';
+import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 
 interface Event {
   id: string;
@@ -54,6 +55,7 @@ interface Event {
     AvatarGroupModule,
     ToastModule,
     RouterLink,
+    ModalComponent,
   ],
   providers: [MessageService],
   template: `
@@ -237,12 +239,10 @@ interface Event {
       </div>
 
       <!-- Event Detail Modal -->
-      <p-dialog
-        [(visible)]="eventDetailVisible"
-        [modal]="true"
-        [style]="{width: '900px'}"
-        [draggable]="false"
-        [resizable]="false"
+      <app-modal
+        [visible]="eventDetailVisible()"
+        [showCancel]="false"
+        (onHide)="eventDetailVisible.set(false)"
       >
         @if (selectedEvent(); as event) {
           <div class="event-detail">
@@ -353,7 +353,7 @@ interface Event {
             </div>
           </div>
         }
-      </p-dialog>
+      </app-modal>
     </div>
   `,
   styles: [`

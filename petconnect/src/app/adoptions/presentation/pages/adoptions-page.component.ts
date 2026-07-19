@@ -11,6 +11,7 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { RouterLink } from '@angular/router';
+import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 
 interface Pet {
   id: string;
@@ -48,6 +49,7 @@ interface Pet {
     CheckboxModule,
     ToastModule,
     RouterLink,
+    ModalComponent,
   ],
   providers: [MessageService],
   template: `
@@ -232,12 +234,10 @@ interface Pet {
       </div>
 
       <!-- Pet Detail Modal -->
-      <p-dialog
-        [(visible)]="petDetailVisible"
-        [modal]="true"
-        [style]="{width: '900px'}"
-        [draggable]="false"
-        [resizable]="false"
+      <app-modal
+        [visible]="petDetailVisible()"
+        [showCancel]="false"
+        (onHide)="petDetailVisible.set(false)"
       >
         @if (selectedPet(); as pet) {
           <div class="pet-detail">
@@ -323,7 +323,7 @@ interface Pet {
             </div>
           </div>
         }
-      </p-dialog>
+      </app-modal>
     </div>
   `,
   styles: [`

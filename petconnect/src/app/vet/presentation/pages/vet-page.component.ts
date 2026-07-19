@@ -12,6 +12,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TableCardComponent, TableCardItem } from '../../../shared/presentation/components/table-card/table-card.component';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
+import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ChipModule } from 'primeng/chip';
@@ -107,6 +108,7 @@ interface Product {
     ChipModule,
     BadgeModule,
     TabsComponent,
+    ModalComponent,
   ],
   providers: [MessageService],
   template: `
@@ -319,11 +321,12 @@ interface Product {
       </div>
 
       <!-- Diálogo de Búsqueda -->
-      <p-dialog
+      <app-modal
+        [visible]="searchDialogVisible()"
         header="Buscar Veterinario"
-        [(visible)]="searchDialogVisible"
-        [modal]="true"
-        [style]="{ width: '450px' }"
+        size="medium"
+        (onHide)="searchDialogVisible.set(false)"
+        (onCancel)="searchDialogVisible.set(false)"
       >
         <div class="search-content">
           <div class="p-input-icon-left w-full mb-3">
@@ -350,28 +353,32 @@ interface Product {
             </div>
           </div>
         </div>
-      </p-dialog>
+      </app-modal>
 
       <!-- Diálogo de Nueva Cita -->
-      <p-dialog
+      <app-modal
+        [visible]="appointmentDialogVisible()"
         header="Programar Nueva Cita"
-        [(visible)]="appointmentDialogVisible"
-        [modal]="true"
-        [style]="{ width: '500px' }"
+        size="medium"
+        (onHide)="closeAppointmentDialog()"
+        (onCancel)="closeAppointmentDialog()"
+        (onConfirm)="scheduleAppointment()"
+        confirmLabel="Programar"
+        cancelLabel="Cancelar"
       >
         <div class="appointment-form">
           <div class="form-group">
             <label>Veterinario</label>
             <select [(ngModel)]="selectedVet" class="w-full">
               <option value="">Seleccionar veterinario</option>
-              <option *ngFor="let vet of vetOptions" [value]="vet.value">{{ vet.label }}</option>
+              <option *ngFor="let option of vetOptions" [ngValue]="option.value">{{ option.label }}</option>
             </select>
           </div>
           <div class="form-group">
             <label>Mascota</label>
             <select [(ngModel)]="selectedPet" class="w-full">
               <option value="">Seleccionar mascota</option>
-              <option *ngFor="let pet of petOptions" [value]="pet.value">{{ pet.label }}</option>
+              <option *ngFor="let option of petOptions" [ngValue]="option.value">{{ option.label }}</option>
             </select>
           </div>
           <div class="form-group">
@@ -386,24 +393,11 @@ interface Product {
             <label>Tipo de consulta</label>
             <select [(ngModel)]="selectedAppointmentType" class="w-full">
               <option value="">Seleccionar tipo</option>
-              <option *ngFor="let type of appointmentTypes" [value]="type.value">{{ type.label }}</option>
+              <option *ngFor="let option of appointmentTypes" [ngValue]="option.value">{{ option.label }}</option>
             </select>
           </div>
         </div>
-        <div class="dialog-footer">
-          <p-button
-            label="Cancelar"
-            styleClass="p-button-text"
-            (onClick)="closeAppointmentDialog()"
-          />
-          <p-button
-            label="Programar"
-            icon="pi pi-check"
-            styleClass="p-button-primary"
-            (onClick)="scheduleAppointment()"
-          />
-        </div>
-      </p-dialog>
+      </app-modal>
     </div>
   `,
   styles: [`
