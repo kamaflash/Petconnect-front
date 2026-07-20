@@ -1,10 +1,11 @@
-import { Component, input, output, signal, computed } from '@angular/core';
+import { Component, input, output, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { SkeletonModule } from 'primeng/skeleton';
-import { RouterLink } from '@angular/router';
+import { RouterModule } from '@angular/router';
+import { LikeService, LikeTargetType } from '../../../infrastructure/services/like.service';
 
 export interface PostUser {
   name: string;
@@ -23,6 +24,7 @@ export interface PostItem {
   liked: boolean;
   saved: boolean;
   timestamp: Date;
+  likeAvatars?: string[];
 }
 
 export type PostViewMode = 'feed' | 'grid';
@@ -36,7 +38,7 @@ export type PostViewMode = 'feed' | 'grid';
     AvatarModule,
     AvatarGroupModule,
     SkeletonModule,
-    RouterLink,
+    RouterModule,
   ],
   template: `
     <div [class.posts-feed]="mode() === 'feed'" [class.posts-grid]="mode() === 'grid'">
@@ -135,9 +137,7 @@ export type PostViewMode = 'feed' | 'grid';
           <!-- Likes -->
           <div class="post-likes">
             <p-avatar-group>
-              <p-avatar image="https://i.pravatar.cc/150?img=11" shape="circle" size="normal"></p-avatar>
-              <p-avatar image="https://i.pravatar.cc/150?img=12" shape="circle" size="normal"></p-avatar>
-              <p-avatar image="https://i.pravatar.cc/150?img=13" shape="circle" size="normal"></p-avatar>
+              <p-avatar *ngFor="let avatar of getLikeAvatars(post)" [image]="avatar" shape="circle" size="normal"></p-avatar>
             </p-avatar-group>
             <span class="likes-text">Le gusta a <strong>{{ post.likes }}</strong> personas</span>
           </div>
@@ -415,14 +415,61 @@ export class PostFeedComponent {
   posts = input<PostItem[]>([]);
   loading = input(false);
   mode = input<PostViewMode>('feed');
+  currentUserId = input<string>('');
 
   likeToggled = output<PostItem>();
   saveToggled = output<PostItem>();
 
+  private readonly likeService = inject(LikeService);
+
   toggleLike(post: PostItem): void {
+    const previousLiked = post.liked;
     post.liked = !post.liked;
     post.likes += post.liked ? 1 : -1;
+
+    // Llamar al servicio genérico de likes para persistir
+    const userId = this.currentUserId();
+    if (userId) {
+      const targetType: LikeTargetType = 'POST';
+      if (previousLiked) {
+        this.likeService.unlike(targetType, post.id, userId).subscribe({
+          error: (err: any) => {
+            // Revertir el cambio en caso de error
+            console.error('Error toggling like:', err);
+            post.liked = previousLiked;
+            post.likes += post.liked ? 1 : -1;
+          }
+        });
+      } else {
+        this.likeService.like(targetType, post.id, userId).subscribe({
+          error: (err: any) => {
+            // Revertir el cambio en caso de error
+            console.error('Error toggling like:', err);
+            post.liked = previousLiked;
+            post.likes += post.liked ? 1 : -1;
+          }
+        });
+      }
+    } else {
+      console.warn('No user ID available, like not persisted');
+    }
+
     this.likeToggled.emit(post);
+  }
+
+  getLikeAvatars(post: PostItem): string[] {
+    // Use real avatars from post if available, otherwise return empty array
+    if (post.likeAvatars && post.likeAvatars.length > 0) {
+      return post.likeAvatars.slice(0, 3);
+    }
+    // Return empty array - no hardcoded placeholders
+    return [];
+  }
+
+  // Generate a deterministic avatar URL based on userId (for debugging)
+  private generateAvatarFromUserId(userId: string): string {
+    const hash = userId.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+    return 'https://i.pravatar.cc/150?img=' + (Math.abs(hash) % 70);
   }
 
   toggleSave(post: PostItem): void {

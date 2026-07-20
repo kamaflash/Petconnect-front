@@ -613,7 +613,7 @@ export class AdminPageComponent implements OnInit {
     });
 // Get the current user ID
     const user = this.authService.user();
-    const ownerId:string = user?.id || '';
+    const ownerId:string = user?.authUserId || '';
     // Load all pets (for admin)
     this.petService.getPetsByOwner(ownerId).subscribe({
       next: (pets) => this.adminPets.set(pets),
@@ -697,6 +697,7 @@ export class AdminPageComponent implements OnInit {
     // Get the current user ID
     const user = this.authService.user();
     const ownerId = user?.id;
+    const authUserId = user?.authUserId;
 
     // Create the request for the backend with only fundamental fields
     const request = {
@@ -713,7 +714,7 @@ export class AdminPageComponent implements OnInit {
     };
 
     // Send to backend
-    this.petService.createPet(request, imageFile, imageFiles, ownerId).subscribe({
+    this.petService.createPet(request, imageFile, imageFiles, ownerId, authUserId).subscribe({
       next: (response) => {
         this.adminPets.update(pets => [...pets, response]);
         this.showCreatePetForm.set(false);

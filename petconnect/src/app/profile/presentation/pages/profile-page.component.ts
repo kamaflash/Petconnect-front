@@ -37,6 +37,8 @@ interface BaseProfile {
   joinDate: Date;
   isFollowing: boolean;
   type: ProfileType;
+  phone?: string;
+  dateOfBirth?: Date | string;
 }
 
 interface UserProfile extends BaseProfile {
@@ -187,6 +189,11 @@ interface Pet {
               </div>
               @if (!loading()) {
                 <h1 class="profile-name-instagram">{{ userProfile()?.name }}</h1>
+                <div class="profile-type-badge">
+                  <span class="type-badge" [ngClass]="'type-' + userProfile()?.type">
+                    {{ getProfileTypeLabel(userProfile()?.type) }}
+                  </span>
+                </div>
                 <p class="profile-bio-instagram">{{ userProfile()?.bio }}</p>
               } @else {
                 <p-skeleton width="8rem" height="1.125rem" class="mb-2 mt-2"></p-skeleton>
@@ -286,18 +293,18 @@ interface Pet {
           <div class="knowme-content-instagram" *ngIf="activeTab() === 'knowme' && !isOwnProfile() && !loading()">
             <div class="knowme-card-instagram">
               <h3>Conóceme</h3>
-              <p class="knowme-bio-instagram">{{ userProfile()?.bio }}</p>
+              <p class="knowme-bio-instagram">{{ userProfile()?.bio || 'Sin descripción disponible' }}</p>
               <div class="knowme-info-instagram">
-                <div class="knowme-item-instagram">
+                <div class="knowme-item-instagram" *ngIf="userProfile()?.location">
                   <i class="pi pi-map-marker"></i>
                   <span>{{ userProfile()?.location }}</span>
                 </div>
-                <div class="knowme-item-instagram">
-                  <i class="pi pi-globe"></i>
-                  <span>{{ userProfile()?.website }}</span>
+                <div class="knowme-item-instagram" *ngIf="userPhone() !== '—'">
+                  <i class="pi pi-phone"></i>
+                  <span>{{ userPhone() }}</span>
                 </div>
-                <div class="knowme-item-instagram">
-                  <i class="pi pi-calendar"></i>
+                <div class="knowme-item-instagram" *ngIf="userProfile()?.joinDate">
+                  <i class="pi pi-clock"></i>
                   <span>Se unió en {{ userProfile()?.joinDate | date:'MMMM yyyy' }}</span>
                 </div>
               </div>
@@ -430,6 +437,50 @@ interface Pet {
       font-size: 0.875rem;
       margin: 0;
       line-height: 1.5;
+    }
+
+    .profile-type-badge {
+      margin: 0.25rem 0;
+    }
+
+    .type-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .type-user {
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .type-vet {
+      background: #dc2626;
+      color: white;
+    }
+
+    .type-shelter {
+      background: #2563eb;
+      color: white;
+    }
+
+    .type-seller {
+      background: #7c3aed;
+      color: white;
+    }
+
+    .type-trainer {
+      background: #ea580c;
+      color: white;
+    }
+
+    .type-pet {
+      background: #16a34a;
+      color: white;
     }
 
     .profile-actions-instagram {
@@ -604,7 +655,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   profileType = signal<ProfileType>('user');
 
   // Perfil del usuario logueado (se obtiene del AuthService)
-  ownProfile: UserProfile = {
+  ownProfile: AnyProfile = {
     id: '',
     type: 'user',
     name: '',
@@ -687,11 +738,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       // Inicializar perfil con datos del usuario autenticado
       const user = this.authService.user();
       if (user) {
-        this.ownProfile = {
+        // Crear el perfil con el tipo correcto del usuario
+        // Normalizar a minúsculas para manejar tanto 'VET' como 'vet'
+        const userType = (user.profileType?.toLowerCase() as ProfileType) || 'user';
+        const baseProfile: BaseProfile = {
           id: user.id,
-          type: 'user',
           name: user.firstName + ' ' + user.lastName,
-          username: user.firstName.toLowerCase() + user.lastName.toLowerCase(),
           avatar: user.avatarUrl || '',
           coverImage: user.coverImageUrl || '',
           bio: user.bio || '',
@@ -699,13 +751,43 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           website: '',
           joinDate: user.createdAt,
           isFollowing: false,
-          stats: {
-            pets: 0,
-            followers: 0,
-            following: 0,
-            posts: 0,
-          },
+          type: userType,
         };
+
+        // Crear el perfil según el tipo
+        switch (userType) {
+          case 'shelter':
+            this.ownProfile = {
+              ...baseProfile,
+              type: 'shelter',
+              stats: { pets: 0, followers: 0, adoptions: 0, reviews: 0 },
+            } as ShelterProfile;
+            break;
+          case 'vet':
+            this.ownProfile = {
+              ...baseProfile,
+              type: 'vet',
+              specialty: 'Veterinaria General',
+              rating: 4.5,
+              reviews: 0,
+              stats: { patients: 0, followers: 0, posts: 0, likes: 0 },
+            } as VetProfile;
+            break;
+          case 'seller':
+            this.ownProfile = {
+              ...baseProfile,
+              type: 'seller',
+              stats: { products: 0, followers: 0, sales: 0, reviews: 0 },
+            } as SellerProfile;
+            break;
+          default:
+            this.ownProfile = {
+              ...baseProfile,
+              type: 'user',
+              username: user.firstName.toLowerCase() + '.' + user.lastName.toLowerCase(),
+              stats: { pets: 0, followers: 0, following: 0, posts: 0 },
+            } as UserProfile;
+        }
       }
 
       // Cargar datos del perfil
@@ -716,13 +798,26 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   private loadProfileData(): void {
     this.loading.set(true);
 
-    // Cargar perfiles de otros usuarios desde backend
-    this.loadAllProfiles();
-
-    // Cargar mascotas del propio perfil
     const user = this.authService.user();
-    if (user && this.isOwnProfile()) {
+
+    if (this.isOwnProfile()) {
+      // Cargar el propio perfil usando getProfileByAuthUserId
+      if (user?.authUserId) {
+        this.loadOwnProfile(user.authUserId);
+      }
+    } else {
+      // Cargar perfil específico por ID
+      const id = this.profileId();
+      if (id) {
+        this.loadProfileById(id);
+      }
+    }
+
+    // Cargar mascotas del perfil
+    if (this.isOwnProfile() && user) {
       this.loadPetsForProfile(user.id);
+    } else if (!this.isOwnProfile() && this.profileId()) {
+      this.loadPetsForProfile(this.profileId()!);
     }
 
     // Ensure loading is visible for at least 1 second
@@ -732,67 +827,127 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
-  private loadAllProfiles(): void {
-    this.profileService.getAllProfiles().subscribe({
-      next: (profiles) => {
-        const profileMap: Record<string, AnyProfile> = {};
-        for (const p of profiles) {
-          // Saltar el perfil del usuario logueado
-          const currentUser = this.authService.user();
-          if (currentUser && p.id === currentUser.id) continue;
+  private loadOwnProfile(authUserId: string): void {
+    this.profileService.getProfileByAuthUserId(authUserId).subscribe({
+      next: (profile) => {
+        // Normalizar profileType a minúsculas para manejar tanto 'VET' como 'vet'
+        const normalizedProfileType = profile.profileType?.toLowerCase() as ProfileType || 'user';
+        const baseProfile: BaseProfile = {
+          id: profile.id,
+          name: profile.firstName + ' ' + profile.lastName,
+          avatar: profile.avatarUrl || '',
+          coverImage: profile.coverImageUrl || '',
+          bio: profile.bio || '',
+          location: profile.city ? profile.city + (profile.country ? ', ' + profile.country : '') : '',
+          website: '',
+          joinDate: new Date(),
+          isFollowing: false,
+          type: normalizedProfileType,
+        };
 
-          const baseProfile: BaseProfile = {
-            id: p.id,
-            name: p.firstName + ' ' + p.lastName,
-            avatar: p.avatarUrl || '',
-            coverImage: p.coverImageUrl || '',
-            bio: p.bio || '',
-            location: p.city ? p.city + (p.country ? ', ' + p.country : '') : '',
-            website: '',
-            joinDate: new Date(),
-            isFollowing: false,
-            type: p.profileType as ProfileType,
-          };
-
-          switch (p.profileType) {
-            case 'shelter':
-              profileMap[p.id] = {
-                ...baseProfile,
-                type: 'shelter',
-                stats: { pets: 0, followers: 0, adoptions: 0, reviews: 0 },
-              } as ShelterProfile;
-              break;
-            case 'vet':
-              profileMap[p.id] = {
-                ...baseProfile,
-                type: 'vet',
-                specialty: 'Veterinaria General',
-                rating: 4.5,
-                reviews: 0,
-                stats: { patients: 0, followers: 0, posts: 0, likes: 0 },
-              } as VetProfile;
-              break;
-            case 'seller':
-              profileMap[p.id] = {
-                ...baseProfile,
-                type: 'seller',
-                stats: { products: 0, followers: 0, sales: 0, reviews: 0 },
-              } as SellerProfile;
-              break;
-            default:
-              profileMap[p.id] = {
-                ...baseProfile,
-                type: 'user',
-                username: (p.firstName + p.lastName).toLowerCase(),
-                stats: { pets: 0, followers: 0, following: 0, posts: 0 },
-              } as UserProfile;
-          }
+        let loadedProfile: AnyProfile;
+        switch (normalizedProfileType) {
+          case 'shelter':
+            loadedProfile = {
+              ...baseProfile,
+              type: 'shelter',
+              stats: { pets: 0, followers: 0, adoptions: 0, reviews: 0 },
+            } as ShelterProfile;
+            break;
+          case 'vet':
+            loadedProfile = {
+              ...baseProfile,
+              type: 'vet',
+              specialty: 'Veterinaria General',
+              rating: 4.5,
+              reviews: 0,
+              stats: { patients: 0, followers: 0, posts: 0, likes: 0 },
+            } as VetProfile;
+            break;
+          case 'seller':
+            loadedProfile = {
+              ...baseProfile,
+              type: 'seller',
+              stats: { products: 0, followers: 0, sales: 0, reviews: 0 },
+            } as SellerProfile;
+            break;
+          default:
+            loadedProfile = {
+              ...baseProfile,
+              type: 'user',
+              username: profile.firstName.toLowerCase() + '.' + profile.lastName.toLowerCase(),
+              stats: { pets: 0, followers: 0, following: 0, posts: 0 },
+            } as UserProfile;
         }
-        this.loadedProfiles.set(profileMap);
+
+        this.ownProfile = loadedProfile;
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Error loading profiles:', err);
+        console.error('Error loading own profile:', err);
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  private loadProfileById(profileId: string): void {
+    this.profileService.getProfileById(profileId).subscribe({
+      next: (profile) => {
+        // Normalizar profileType a minúsculas para manejar tanto 'VET' como 'vet'
+        const normalizedProfileType = profile.profileType?.toLowerCase() as ProfileType || 'user';
+        const baseProfile: BaseProfile = {
+          id: profile.id,
+          name: profile.firstName + ' ' + profile.lastName,
+          avatar: profile.avatarUrl || '',
+          coverImage: profile.coverImageUrl || '',
+          bio: profile.bio || '',
+          location: profile.city ? profile.city + (profile.country ? ', ' + profile.country : '') : '',
+          website: '',
+          joinDate: new Date(),
+          isFollowing: false,
+          type: normalizedProfileType,
+        };
+
+        let loadedProfile: AnyProfile;
+        switch (normalizedProfileType) {
+          case 'shelter':
+            loadedProfile = {
+              ...baseProfile,
+              type: 'shelter',
+              stats: { pets: 0, followers: 0, adoptions: 0, reviews: 0 },
+            } as ShelterProfile;
+            break;
+          case 'vet':
+            loadedProfile = {
+              ...baseProfile,
+              type: 'vet',
+              specialty: 'Veterinaria General',
+              rating: 4.5,
+              reviews: 0,
+              stats: { patients: 0, followers: 0, posts: 0, likes: 0 },
+            } as VetProfile;
+            break;
+          case 'seller':
+            loadedProfile = {
+              ...baseProfile,
+              type: 'seller',
+              stats: { products: 0, followers: 0, sales: 0, reviews: 0 },
+            } as SellerProfile;
+            break;
+          default:
+            loadedProfile = {
+              ...baseProfile,
+              type: 'user',
+              username: (profile.firstName + profile.lastName).toLowerCase(),
+              stats: { pets: 0, followers: 0, following: 0, posts: 0 },
+            } as UserProfile;
+        }
+
+        this.loadedProfiles.set({ [profileId]: loadedProfile });
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error loading profile by id:', err);
         this.cdr.detectChanges();
       },
     });
@@ -1043,26 +1198,27 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       }
     }
 
-    // Llamada al backend usando ProfileService
-    this.profileService.updateProfile(formData).subscribe({
-      next: (response: any) => {
-        console.log('Profile updated successfully:', response);
-        // Actualizar el perfil local con la respuesta
-        this.ownProfile = {
-          ...this.ownProfile,
-          name: response.firstName + ' ' + response.lastName,
-          avatar: response.avatarUrl || this.ownProfile.avatar,
-          coverImage: response.coverImageUrl || this.ownProfile.coverImage,
-          bio: response.bio || this.ownProfile.bio,
-          location: response.city || this.ownProfile.location,
-        };
-        // Actualizar el usuario en el AuthService
-        this.updateAuthUser(response);
-      },
-      error: (error: any) => {
-        console.error('Error updating profile:', error);
-      }
-    });
+      // Llamada al backend usando ProfileService
+      this.profileService.updateProfile(formData).subscribe({
+        next: (response: any) => {
+          console.log('Profile updated successfully:', response);
+          // Actualizar el perfil local con la respuesta
+          const currentProfile = this.ownProfile;
+          this.ownProfile = {
+            ...currentProfile,
+            name: response.firstName + ' ' + response.lastName,
+            avatar: response.avatarUrl || currentProfile.avatar,
+            coverImage: response.coverImageUrl || currentProfile.coverImage,
+            bio: response.bio || currentProfile.bio,
+            location: response.city || currentProfile.location,
+          } as AnyProfile;
+          // Actualizar el usuario en el AuthService
+          this.updateAuthUser(response);
+        },
+        error: (error: any) => {
+          console.error('Error updating profile:', error);
+        }
+      });
   }
 
   // Método para actualizar el usuario en el AuthService
@@ -1111,5 +1267,20 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
   setActiveTab(tab: string) {
     this.activeTab.set(tab);
+  }
+
+  // Método para obtener la etiqueta del tipo de perfil
+  getProfileTypeLabel(type: ProfileType | string | undefined): string {
+    const labels: Record<string, string> = {
+      user: 'Usuario',
+      vet: 'Veterinario',
+      shelter: 'Protectora',
+      seller: 'Vendedor',
+      trainer: 'Adiestrador',
+      pet: 'Mascota'
+    };
+    // Normalizar a minúsculas para manejar tanto 'VET' como 'vet'
+    const normalizedType = type?.toLowerCase() || '';
+    return labels[normalizedType] || 'Usuario';
   }
 }

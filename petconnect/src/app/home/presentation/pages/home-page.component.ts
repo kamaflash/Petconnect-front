@@ -14,6 +14,9 @@ import { Story, Post, Suggestion, PromoItem, User, VetService, Adoption, Achieve
 import { finalize, catchError } from 'rxjs/operators';
 import { forkJoin, Observable, of } from 'rxjs';
 import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
+import { ProfileService } from '../../../profile/infrastructure/services/profile.service';
+import { AuthService } from '../../../auth/infrastructure/services/auth.service';
+import { LikeService } from '../../../shared/infrastructure/services/like.service';
 
 @Component({
   selector: 'app-home-page',
@@ -54,22 +57,25 @@ import { PostFeedComponent, PostItem } from '../../../shared/presentation/compon
             </div>
           </div>
 
-          <!-- Servicios Veterinarios -->
+          <!-- Veterinarios -->
           <div class="card-modern">
             <div class="card-header">
               <i class="pi pi-user-md card-header-icon"></i>
-              <span class="card-header-title">Veterinario</span>
+              <span class="card-header-title">Veterinarios</span>
             </div>
             <div class="card-body">
-              <div class="service-item" *ngFor="let service of vetServices">
-                <div class="service-icon">
-                  <i class="pi" [class]="service.icon"></i>
+              <a class="suggestion-item" *ngFor="let vet of vets" [routerLink]="'/profile/' + vet.userId">
+                <p-avatar [image]="vet.avatar" shape="circle" size="normal"></p-avatar>
+                <div class="suggestion-info">
+                  <span class="suggestion-name">{{ vet.name }}</span>
+                  <span class="suggestion-username">{{ vet.username }}</span>
+                  <span class="suggestion-followers">{{ vet.followers }} seguidores</span>
                 </div>
-                <div class="service-info">
-                  <p class="service-title">{{ service.title }}</p>
-                  <p class="service-desc">{{ service.description }}</p>
-                </div>
-              </div>
+                <p-button
+                  label="Seguir"
+                  styleClass="p-button-sm p-button-outlined"
+                />
+              </a>
             </div>
           </div>
 
@@ -121,6 +127,7 @@ import { PostFeedComponent, PostItem } from '../../../shared/presentation/compon
           <app-post-feed
             [posts]="postItems()"
             [loading]="loadingPosts()"
+            [currentUserId]="currentUserId()"
             (likeToggled)="onLikeToggled($event)"
             (saveToggled)="onSaveToggled($event)"
           />
@@ -165,7 +172,7 @@ import { PostFeedComponent, PostItem } from '../../../shared/presentation/compon
             </div>
           </div>
 
-          <!-- Suggestions -->
+          <!-- Suggestions - Perfiles -->
           <div class="card-modern">
             <div class="card-header">
               <span class="card-header-title">Quién seguir</span>
@@ -174,7 +181,8 @@ import { PostFeedComponent, PostItem } from '../../../shared/presentation/compon
               <a class="suggestion-item" *ngFor="let suggestion of suggestions" [routerLink]="'/profile/' + suggestion.userId">
                 <p-avatar [image]="suggestion.avatar" shape="circle" size="normal"></p-avatar>
                 <div class="suggestion-info">
-                  <span class="suggestion-name">{{ suggestion.username }}</span>
+                  <span class="suggestion-name">{{ suggestion.name }}</span>
+                  <span class="suggestion-username">{{ suggestion.username }}</span>
                   <span class="suggestion-followers">{{ suggestion.followers }} seguidores</span>
                 </div>
                 <p-button
@@ -608,6 +616,13 @@ import { PostFeedComponent, PostItem } from '../../../shared/presentation/compon
       font-size: 0.8125rem;
     }
 
+    .suggestion-username {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 0.0625rem;
+    }
+
     .suggestion-followers {
       display: block;
       font-size: 0.75rem;
@@ -695,23 +710,29 @@ import { PostFeedComponent, PostItem } from '../../../shared/presentation/compon
 })
 export class HomePageComponent implements OnInit {
   private readonly homeService = inject(HomeService);
+  private readonly profileService = inject(ProfileService);
+  private readonly authService = inject(AuthService);
+  private readonly likeService = inject(LikeService);
   private readonly cdr = inject(ChangeDetectorRef);
 
   stories: Story[] = [];
   posts = signal<Post[]>([]);
   suggestions: Suggestion[] = [];
   marketPromos: PromoItem[] = [];
-  vetServices: VetService[] = [];
+  vets: Suggestion[] = [];
   newAdoptions: Adoption[] = [];
   upcomingAchievements: Achievement[] = [];
   userLevel: UserLevel = { level: 12, currentXp: 650, totalXp: 1000 };
+
+  // Current user
+  currentUserId = signal('');
 
   // Loading states
   loadingPosts = signal(true);
   loadingStories = signal(true);
   loadingSuggestions = signal(true);
   loadingPromos = signal(true);
-  loadingServices = signal(true);
+  loadingVets = signal(true);
   loadingAdoptions = signal(true);
   loadingAchievements = signal(true);
 
@@ -734,12 +755,21 @@ export class HomePageComponent implements OnInit {
       comments: post.comments,
       liked: post.liked,
       saved: post.saved,
-      timestamp: post.timestamp
+      timestamp: post.timestamp,
+      likeAvatars: post.likeAvatars
     }));
   });
 
   ngOnInit(): void {
+    this.initializeCurrentUser();
     this.loadAllData();
+  }
+
+  private initializeCurrentUser(): void {
+    const currentUser = this.authService.user();
+    if (currentUser) {
+      this.currentUserId.set(currentUser.id);
+    }
   }
 
   private loadAllData(): void {
@@ -747,7 +777,7 @@ export class HomePageComponent implements OnInit {
     this.loadPosts();
     this.loadSuggestions();
     this.loadMarketPromos();
-    this.loadVetServices();
+    this.loadVets();
     this.loadNewAdoptions();
     this.loadAchievements();
     this.loadUserLevel();
@@ -816,8 +846,10 @@ export class HomePageComponent implements OnInit {
       next: (response) => {
         if (response.posts && response.posts.length > 0) {
           const profiles = response.profiles || [];
+          const userId = this.currentUserId();
 
-          this.posts.set(response.posts.map(post => {
+          // First, create posts with basic data
+          const loadedPosts = response.posts.map(post => {
             const profile = profiles.find(p => p.authUserId === post.authorId);
             return new Post({
               id: post.id,
@@ -835,8 +867,64 @@ export class HomePageComponent implements OnInit {
               liked: false,
               saved: false
             });
-          }));
-          this.cdr.detectChanges();
+          });
+
+          // If user is logged in, fetch like status and avatars for each post
+          if (userId && loadedPosts.length > 0) {
+            const likeStatusRequests = loadedPosts.map(post =>
+              this.likeService.getLikeStatus('POST', post.id, userId).pipe(
+                catchError(() => of({ liked: false, count: post.likes }))
+              )
+            );
+
+            forkJoin(likeStatusRequests).subscribe({
+              next: (likeStatuses) => {
+                // Update liked status and likes count
+                loadedPosts.forEach((post, index) => {
+                  post.liked = likeStatuses[index].liked;
+                  post.likes = likeStatuses[index].count;
+                });
+
+                // Fetch like avatars for each post (up to 3)
+                const likeAvatarsRequests = loadedPosts.map(post =>
+                  this.likeService.getLikes('POST', post.id).pipe(
+                    catchError(() => of([]))
+                  )
+                );
+
+                forkJoin(likeAvatarsRequests).subscribe({
+                  next: (likesArrays) => {
+                    loadedPosts.forEach((post, index) => {
+                      const likes = likesArrays[index];
+                      // Get avatar URLs for users who liked the post
+                      const avatarUrls = likes
+                        .map(like => {
+                          const profile = profiles.find(p => p.authUserId === like.userId);
+                          return profile?.avatarUrl;
+                        })
+                        .filter((url): url is string => !!url)
+                        .slice(0, 3);
+                      post.likeAvatars = avatarUrls;
+                    });
+                    this.posts.set(loadedPosts);
+                    this.cdr.detectChanges();
+                  },
+                  error: () => {
+                    this.posts.set(loadedPosts);
+                    this.cdr.detectChanges();
+                  }
+                });
+              },
+              error: () => {
+                // If like status check fails, still show posts with liked: false
+                this.posts.set(loadedPosts);
+                this.cdr.detectChanges();
+              }
+            });
+          } else {
+            this.posts.set(loadedPosts);
+            this.cdr.detectChanges();
+          }
         } else {
           this.posts.set([]);
           this.cdr.detectChanges();
@@ -853,7 +941,7 @@ export class HomePageComponent implements OnInit {
   private loadSuggestions(): void {
     this.loadingSuggestions.set(true);
 
-    this.homeService.getSuggestions().pipe(
+    this.profileService.getAllProfiles().pipe(
       finalize(() => {
         this.loadingSuggestions.set(false);
         this.cdr.detectChanges();
@@ -861,13 +949,42 @@ export class HomePageComponent implements OnInit {
     ).subscribe({
       next: (response) => {
         if (response && response.length > 0) {
-          this.suggestions = response.map(s => new Suggestion({
-            username: s.username,
-            avatar: s.avatar || 'https://i.pravatar.cc/150?img=1',
-            followers: this.formatFollowers(s.followers || 0),
-            userId: s.id
-          }));
-          this.cdr.detectChanges();
+          // Get current user's authUserId to filter out from suggestions
+          const currentUser = this.homeService.getSuggestions().subscribe({
+            next: (suggestionsResponse) => {
+              // Get the IDs of users that are already followed or are the current user
+              const followedUserIds = new Set(
+                (suggestionsResponse || []).map(s => s.id)
+              );
+
+              // Map profiles to suggestions, excluding the current user
+              this.suggestions = response
+                .filter(profile => profile.profileType !== 'PET') // Exclude pet profiles
+                .slice(0, 5) // Limit to 5 suggestions
+                .map(profile => new Suggestion({
+                  name: `${profile.firstName} ${profile.lastName}`,
+                  username: `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}`,
+                  avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=1',
+                  followers: this.formatFollowers(Math.floor(Math.random() * 1000) + 100),
+                  userId: profile.id
+                }));
+              this.cdr.detectChanges();
+            },
+            error: () => {
+              // If suggestions endpoint fails, still show profiles
+              this.suggestions = response
+                .filter(profile => profile.profileType !== 'PET')
+                .slice(0, 5)
+                .map(profile => new Suggestion({
+                  name: `${profile.firstName} ${profile.lastName}`,
+                  username: `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}`,
+                  avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=1',
+                  followers: this.formatFollowers(Math.floor(Math.random() * 1000) + 100),
+                  userId: profile.id
+                }));
+              this.cdr.detectChanges();
+            }
+          });
         } else {
           this.suggestions = [];
           this.cdr.detectChanges();
@@ -907,27 +1024,37 @@ export class HomePageComponent implements OnInit {
     });
   }
 
-  private loadVetServices(): void {
-    this.loadingServices.set(true);
+  private loadVets(): void {
+    this.loadingVets.set(true);
 
-    this.homeService.getVetServices().pipe(
+    this.profileService.getAllProfiles().pipe(
       finalize(() => {
-        this.loadingServices.set(false);
+        this.loadingVets.set(false);
         this.cdr.detectChanges();
       })
     ).subscribe({
       next: (response) => {
         if (response && response.length > 0) {
-          this.vetServices = response.map(service => new VetService(service));
+          // Filter profiles with profileType equal to 'vet'
+          this.vets = response
+            .filter(profile => profile.profileType?.toLowerCase() === 'vet')
+            .slice(0, 5) // Limit to 5 vets
+            .map(profile => new Suggestion({
+              name: `${profile.firstName} ${profile.lastName}`,
+              username: `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}`,
+              avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=1',
+              followers: this.formatFollowers(Math.floor(Math.random() * 1000) + 100),
+              userId: profile.id
+            }));
           this.cdr.detectChanges();
         } else {
-          this.vetServices = [];
+          this.vets = [];
           this.cdr.detectChanges();
         }
       },
       error: (err) => {
-        console.error('Error loading vet services:', err);
-        this.vetServices = [];
+        console.error('Error loading vets:', err);
+        this.vets = [];
         this.cdr.detectChanges();
       }
     });

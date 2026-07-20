@@ -45,6 +45,7 @@ export class Post {
   caption: string;
   liked: boolean;
   saved: boolean;
+  likeAvatars?: string[];
 
   constructor(data: {
     id: string;
@@ -56,6 +57,7 @@ export class Post {
     caption: string;
     liked?: boolean;
     saved?: boolean;
+    likeAvatars?: string[];
   }) {
     this.id = data.id;
     this.user = data.user;
@@ -66,21 +68,25 @@ export class Post {
     this.caption = data.caption;
     this.liked = data.liked || false;
     this.saved = data.saved || false;
+    this.likeAvatars = data.likeAvatars;
   }
 }
 
 export class Suggestion {
+  name: string;
   username: string;
   avatar: string;
   followers: string;
   userId: string;
 
   constructor(data: {
+    name: string;
     username: string;
     avatar: string;
     followers: string;
     userId: string;
   }) {
+    this.name = data.name;
     this.username = data.username;
     this.avatar = data.avatar;
     this.followers = data.followers;

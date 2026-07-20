@@ -1,5 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { AuthRepository } from '../../domain/repositories/auth.repository';
+import { AuthRepository, RegisterData } from '../../domain/repositories/auth.repository';
 import { User } from '../../domain/entities/user.entity';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
@@ -63,14 +63,8 @@ export class AuthService extends AuthRepository {
     throw new Error('Login failed');
   }
 
-  async register(email: string, password: string, firstName: string, lastName: string, profileType: string = 'user'): Promise<User> {
-    const response = await this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, {
-      email,
-      password,
-      firstName,
-      lastName,
-      profileType
-    }).toPromise();
+  async register(data: RegisterData): Promise<User> {
+    const response = await this.http.post<AuthResponse>(`${this.apiUrl}/auth/register`, data).toPromise();
 
     if (response) {
       // Guardar refresh token en sessionStorage

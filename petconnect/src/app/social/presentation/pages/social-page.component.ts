@@ -23,7 +23,10 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
 import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { CloudinaryService, CloudinaryUploadResponse } from '../../../shared/infrastructure/services/cloudinary.service';
-import { SocialService, PostResponse, EventResponse, GroupResponse, NotificationResponse, TrendingTopicResponse, FollowResponse } from '../../infrastructure/services/social.service';
+import { SocialService, PostResponse, EventResponse, GroupResponse, NotificationResponse, TrendingTopicResponse, FollowResponse, UserProfileResponse } from '../../infrastructure/services/social.service';
+import { LikeService } from '../../../shared/infrastructure/services/like.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 
@@ -1966,7 +1969,7 @@ export class SocialPageComponent implements OnInit {
     post.likes += post.liked ? 1 : -1;
 
     if (post.liked) {
-      this.socialService.likePost(post.id).subscribe({
+      this.socialService.likePost(post.id, this.currentUserId()).subscribe({
         next: () => {
           this.messageService.add({
             severity: 'success',
@@ -1981,7 +1984,7 @@ export class SocialPageComponent implements OnInit {
         }
       });
     } else {
-      this.socialService.unlikePost(post.id).subscribe({
+      this.socialService.unlikePost(post.id, this.currentUserId()).subscribe({
         next: () => {
           this.messageService.add({
             severity: 'info',

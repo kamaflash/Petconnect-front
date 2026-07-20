@@ -3,6 +3,8 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { Observable } from 'rxjs';
 
+// ========== INTERFACES ==========
+
 export interface PostResponse {
   id: string;
   authorId: string;
@@ -83,6 +85,44 @@ export interface StoryResponse {
   createdAt: string;
 }
 
+export interface UserProfileResponse {
+  id: string;
+  authUserId: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  coverImageUrl: string | null;
+  dateOfBirth: string | null;
+  city: string | null;
+  country: string | null;
+  profilePublic: boolean;
+  notificationsEnabled: boolean;
+  profileType: string;
+}
+
+// Like interfaces
+export interface Like {
+  id: string;
+  userId: string;
+  targetId: string;
+  targetType: string;
+  createdAt: string;
+}
+
+export interface LikeResponse {
+  liked: boolean;
+  message: string;
+}
+
+export interface LikeStatusResponse {
+  liked: boolean;
+  count: number;
+}
+
+// ========== SERVICE ==========
+
 @Injectable({
   providedIn: 'root'
 })
@@ -122,18 +162,60 @@ export class SocialService {
     return this.http.delete<void>(`${this.apiUrl}/social/posts/${postId}`);
   }
 
-  likePost(postId: string): Observable<PostResponse> {
-    return this.http.post<PostResponse>(`${this.apiUrl}/social/posts/${postId}/like`, {});
+  // ========== POSTS - LIKES ==========
+
+  likePost(postId: string, userId: string): Observable<LikeResponse> {
+    return this.http.post<LikeResponse>(`${this.apiUrl}/social/posts/${postId}/like?userId=${userId}`, {});
   }
 
-  unlikePost(postId: string): Observable<PostResponse> {
-    return this.http.post<PostResponse>(`${this.apiUrl}/social/posts/${postId}/unlike`, {});
+  unlikePost(postId: string, userId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/social/posts/${postId}/unlike?userId=${userId}`);
+  }
+
+  getPostLikeStatus(postId: string, userId: string): Observable<LikeStatusResponse> {
+    return this.http.get<LikeStatusResponse>(`${this.apiUrl}/social/posts/${postId}/like/status?userId=${userId}`);
   }
 
   // ========== STORIES ==========
 
   getStories(): Observable<StoryResponse[]> {
     return this.http.get<StoryResponse[]>(`${this.apiUrl}/social/stories`);
+  }
+
+  likeStory(storyId: string, userId: string): Observable<LikeResponse> {
+    return this.http.post<LikeResponse>(`${this.apiUrl}/social/stories/${storyId}/like?userId=${userId}`, {});
+  }
+
+  unlikeStory(storyId: string, userId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/social/stories/${storyId}/like?userId=${userId}`);
+  }
+
+  getStoryLikeStatus(storyId: string, userId: string): Observable<LikeStatusResponse> {
+    return this.http.get<LikeStatusResponse>(`${this.apiUrl}/social/stories/${storyId}/like/status?userId=${userId}`);
+  }
+
+  // ========== PETS - LIKES ==========
+
+  likePet(petId: string, userId: string): Observable<LikeResponse> {
+    return this.http.post<LikeResponse>(`${this.apiUrl}/pets/${petId}/like?userId=${userId}`, {});
+  }
+
+  unlikePet(petId: string, userId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/pets/${petId}/like?userId=${userId}`);
+  }
+
+  getPetLikeStatus(petId: string, userId: string): Observable<LikeStatusResponse> {
+    return this.http.get<LikeStatusResponse>(`${this.apiUrl}/pets/${petId}/like/status?userId=${userId}`);
+  }
+
+  // ========== GENERIC LIKES ==========
+
+  getLikeCount(targetType: string, targetId: string): Observable<number> {
+    return this.http.get<number>(`${this.apiUrl}/likes/${targetType}/${targetId}/count`);
+  }
+
+  getUserLikes(userId: string): Observable<Like[]> {
+    return this.http.get<Like[]>(`${this.apiUrl}/likes/user/${userId}`);
   }
 
   // ========== EVENTS ==========
@@ -212,5 +294,11 @@ export class SocialService {
 
   getTrendingTopics(): Observable<TrendingTopicResponse[]> {
     return this.http.get<TrendingTopicResponse[]>(`${this.apiUrl}/social/trending`);
+  }
+
+  // ========== PROFILES ==========
+
+  getAllProfiles(): Observable<UserProfileResponse[]> {
+    return this.http.get<UserProfileResponse[]>(`${this.apiUrl}/users/profiles`);
   }
 }
