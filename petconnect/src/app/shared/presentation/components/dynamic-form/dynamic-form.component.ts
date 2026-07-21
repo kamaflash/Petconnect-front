@@ -335,12 +335,14 @@ export interface DynamicFormConfig {
               type="button"
             />
           }
-          <p-button
-            [label]="config().submitLabel || 'Guardar'"
-            icon="pi pi-check"
-            [disabled]="form().invalid"
+          <button
             type="submit"
-          />
+            class="submit-btn"
+            [disabled]="form().invalid"
+          >
+            <i class="pi pi-check"></i>
+            {{ config().submitLabel || 'Guardar' }}
+          </button>
         </div>
       </form>
     </div>
@@ -557,6 +559,38 @@ export interface DynamicFormConfig {
 
     :host ::ng-deep .p-fileupload-content {
       padding: 0;
+    }
+
+    .submit-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid var(--primary-color);
+      background: var(--primary-color);
+      color: white;
+      line-height: 1;
+      font-family: inherit;
+    }
+
+    .submit-btn:hover:not(:disabled) {
+      opacity: 0.9;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .submit-btn i {
+      font-size: 0.875rem;
     }
 
     :host ::ng-deep .p-button {

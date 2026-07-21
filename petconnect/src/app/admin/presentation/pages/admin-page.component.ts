@@ -611,9 +611,9 @@ export class AdminPageComponent implements OnInit {
       next: (groups) => this.adminGroups.set(groups),
       error: (err) => console.error('Error loading groups:', err)
     });
-// Get the current user ID
+    // Get the current user ID (user.id is the authUserId)
     const user = this.authService.user();
-    const ownerId:string = user?.authUserId || '';
+    const ownerId:string = user?.id || '';
     // Load all pets (for admin)
     this.petService.getPetsByOwner(ownerId).subscribe({
       next: (pets) => this.adminPets.set(pets),
@@ -694,10 +694,9 @@ export class AdminPageComponent implements OnInit {
     console.log('handleCreatePet - imageFiles length:', imageFiles.length);
     console.log('handleCreatePet - imageFiles:', imageFiles);
 
-    // Get the current user ID
+    // Get the current user ID (user.id is the authUserId)
     const user = this.authService.user();
     const ownerId = user?.id;
-    const authUserId = user?.authUserId;
 
     // Create the request for the backend with only fundamental fields
     const request = {
@@ -714,7 +713,7 @@ export class AdminPageComponent implements OnInit {
     };
 
     // Send to backend
-    this.petService.createPet(request, imageFile, imageFiles, ownerId, authUserId).subscribe({
+    this.petService.createPet(request, imageFile, imageFiles, ownerId).subscribe({
       next: (response) => {
         this.adminPets.update(pets => [...pets, response]);
         this.showCreatePetForm.set(false);

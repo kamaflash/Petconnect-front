@@ -1,6 +1,6 @@
 export interface User {
+  /** Unique identifier - maps to authUserId from backend (the user's auth ID) */
   id: string;
-  authUserId: string;
   email: string;
   firstName: string;
   lastName: string;

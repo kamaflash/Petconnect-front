@@ -303,12 +303,13 @@ interface Notification {
                     <p class="following-detail">{{ pet.age }} · {{ pet.posts }} publicaciones</p>
                   </div>
                   <div class="following-actions">
-                    <p-button
-                      label="Dejar de seguir"
-                      icon="pi pi-user-minus"
-                      styleClass="p-button-sm p-button-outlined"
-                      (onClick)="toggleFollowPet(pet)"
-                    />
+                    <button
+                      class="follow-btn following"
+                      (click)="toggleFollowPet(pet)"
+                    >
+                      <i class="pi pi-check"></i>
+                      Siguiendo
+                    </button>
                   </div>
                 </div>
               </div>
@@ -330,12 +331,13 @@ interface Notification {
                     <p class="following-detail">{{ user.pets }} mascotas · {{ user.followers }} seguidores</p>
                   </div>
                   <div class="following-actions">
-                    <p-button
-                      label="Dejar de seguir"
-                      icon="pi pi-user-minus"
-                      styleClass="p-button-sm p-button-outlined"
-                      (onClick)="toggleFollow(user)"
-                    />
+                    <button
+                      class="follow-btn following"
+                      (click)="toggleFollow(user)"
+                    >
+                      <i class="pi pi-check"></i>
+                      Siguiendo
+                    </button>
                   </div>
                 </div>
               </div>
@@ -357,12 +359,14 @@ interface Notification {
                     <p class="following-detail">{{ user.pets }} mascotas · {{ user.followers }} seguidores</p>
                   </div>
                   <div class="following-actions">
-                    <p-button
-                      [label]="user.isFollowing ? 'Siguiendo' : 'Seguir'"
-                      [icon]="user.isFollowing ? 'pi pi-user-minus' : 'pi pi-user-plus'"
-                      [ngClass]="user.isFollowing ? 'p-button-sm p-button-outlined' : 'p-button-sm p-button-outlined'"
-                      (onClick)="toggleFollow(user)"
-                    />
+                    <button
+                      class="follow-btn"
+                      [class.following]="user.isFollowing"
+                      (click)="toggleFollow(user)"
+                    >
+                      <i [class]="user.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"></i>
+                      {{ user.isFollowing ? 'Siguiendo' : 'Seguir' }}
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1084,6 +1088,48 @@ interface Notification {
       flex-shrink: 0;
     }
 
+    /* Follow button - modern minimal style */
+    .follow-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.875rem;
+      border-radius: 9999px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid var(--surface-border);
+      background: transparent;
+      color: var(--text-primary);
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .follow-btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--text-secondary);
+    }
+
+    .follow-btn.following {
+      background: var(--surface-card);
+      border-color: var(--surface-border);
+      color: var(--text-secondary);
+    }
+
+    .follow-btn.following:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .follow-btn.following:hover i {
+      color: #ef4444;
+    }
+
+    .follow-btn i {
+      font-size: 0.8125rem;
+    }
+
     /* Events Layout */
     .events-layout {
       display: flex;
@@ -1712,10 +1758,11 @@ export class SocialPageComponent implements OnInit {
   private initializeCurrentUser(): void {
     const currentUser = this.authService.user();
     if (currentUser) {
+      // user.id is the authUserId - the unique identifier for the user
       this.currentUserId.set(currentUser.id);
       this.currentUserName.set(`${currentUser.firstName} ${currentUser.lastName}`);
       this.currentUserAvatar.set(currentUser.avatarUrl || 'https://i.pravatar.cc/150?img=1');
-      this.currentUserUsername.set(`@${currentUser.firstName.toLowerCase()}_${currentUser.authUserId.substring(0, 6)}`);
+      this.currentUserUsername.set(`@${currentUser.firstName.toLowerCase()}_${currentUser.id.substring(0, 6)}`);
     }
   }
 
@@ -1728,11 +1775,117 @@ export class SocialPageComponent implements OnInit {
     this.loadGroups();
     this.loadTrendingTopics();
     this.loadNotifications();
+    this.loadFollowingData();
 
     // Set loading to false after a short delay (data will be populated as it arrives)
     setTimeout(() => {
       this.loading.set(false);
     }, 1000);
+  }
+
+  private loadFollowingData(): void {
+    const userId = this.currentUserId();
+    if (!userId) return;
+
+    // Load following users
+    this.socialService.getFollowing(userId).subscribe({
+      next: (following) => {
+        // Fetch real user profiles for each following relationship
+        const profileRequests = following.map(f =>
+          this.socialService.getProfileByAuthUserId(f.followingId).pipe(
+            catchError(() => of(null))
+          )
+        );
+
+        if (profileRequests.length > 0) {
+          forkJoin(profileRequests).subscribe({
+            next: (profiles) => {
+              const validProfiles = profiles.filter((p): p is UserProfileResponse => p !== null);
+              this.followingUsers.set(
+                validProfiles.map((profile) => ({
+                    id: profile.id,
+                    name: `${profile.firstName} ${profile.lastName}`,
+                    avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=1',
+                    username: `@${profile.firstName.toLowerCase()}_${profile.authUserId.substring(0, 6)}`,
+                    userId: profile.authUserId,
+                    pets: 0,
+                    level: 1,
+                    isFollowing: true,
+                    followers: 0,
+                    following: 0,
+                    posts: 0,
+                    joinedDate: new Date(),
+                    isVerified: false
+                  }))
+              );
+              // Log warning for profiles not found
+              const notFoundCount = following.length - validProfiles.length;
+              if (notFoundCount > 0) {
+                console.warn(`${notFoundCount} perfiles de usuarios seguidos no encontrados`);
+              }
+            },
+            error: (error) => {
+              console.error('Error loading following profiles:', error);
+            }
+          });
+        } else {
+          this.followingUsers.set([]);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading following:', error);
+      }
+    });
+
+    // Load followers
+    this.socialService.getFollowers(userId).subscribe({
+      next: (followers) => {
+        // Fetch real user profiles for each follower relationship
+        const profileRequests = followers.map(f =>
+          this.socialService.getProfileByAuthUserId(f.followerId).pipe(
+            catchError(() => of(null))
+          )
+        );
+
+        if (profileRequests.length > 0) {
+          forkJoin(profileRequests).subscribe({
+            next: (profiles) => {
+              const validProfiles = profiles.filter((p): p is UserProfileResponse => p !== null);
+              this.followersUsers.set(
+                validProfiles.map((profile) => ({
+                    id: profile.id,
+                    name: `${profile.firstName} ${profile.lastName}`,
+                    avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=1',
+                    username: `@${profile.firstName.toLowerCase()}_${profile.authUserId.substring(0, 6)}`,
+                    userId: profile.authUserId,
+                    pets: 0,
+                    level: 1,
+                    isFollowing: false,
+                    followers: 0,
+                    following: 0,
+                    posts: 0,
+                    joinedDate: new Date(),
+                    isVerified: false
+                  }))
+              );
+              // Log warning for profiles not found
+              const notFoundCount = followers.length - validProfiles.length;
+              if (notFoundCount > 0) {
+                console.warn(`${notFoundCount} perfiles de seguidores no encontrados`);
+              }
+            },
+            error: (error) => {
+              console.error('Error loading follower profiles:', error);
+            }
+          });
+        } else {
+          this.followersUsers.set([]);
+        }
+      },
+      error: (error) => {
+        console.error('Error loading followers:', error);
+      }
+    });
   }
 
   private loadPosts(): void {
@@ -2011,20 +2164,71 @@ export class SocialPageComponent implements OnInit {
   }
 
   toggleFollow(user: CommunityUser) {
+    const wasFollowing = user.isFollowing;
+    const currentUserId = this.currentUserId();
+
+    if (!currentUserId) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Debes estar logueado para seguir usuarios'
+      });
+      return;
+    }
+
     user.isFollowing = !user.isFollowing;
-    this.messageService.add({
-      severity: 'success',
-      summary: user.isFollowing ? 'Siguiendo' : 'Dejaste de seguir',
-      detail: `${user.isFollowing ? 'Ahora sigues a' : 'Ya no sigues a'} ${user.name}`
-    });
+
+    if (user.isFollowing) {
+      // Follow the user
+      this.socialService.followUser(currentUserId, user.userId).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Siguiendo',
+            detail: `Ahora sigues a ${user.name}`
+          });
+        },
+        error: () => {
+          // Revert on error
+          user.isFollowing = wasFollowing;
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo seguir al usuario'
+          });
+        }
+      });
+    } else {
+      // Unfollow the user
+      this.socialService.unfollowUser(currentUserId, user.userId).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Dejaste de seguir',
+            detail: `Ya no sigues a ${user.name}`
+          });
+        },
+        error: () => {
+          // Revert on error
+          user.isFollowing = wasFollowing;
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo dejar de seguir al usuario'
+          });
+        }
+      });
+    }
   }
 
   toggleFollowPet(pet: Pet) {
+    // Note: Backend doesn't support following pets, only users
+    // This is a local-only functionality for now
     pet.isFollowing = !pet.isFollowing;
     this.messageService.add({
-      severity: 'success',
-      summary: pet.isFollowing ? 'Siguiendo' : 'Dejaste de seguir',
-      detail: `${pet.isFollowing ? 'Ahora sigues a' : 'Ya no sigues a'} ${pet.name}`
+      severity: 'info',
+      summary: 'Funcionalidad en desarrollo',
+      detail: 'El seguimiento de mascotas será implementado próximamente'
     });
   }
 

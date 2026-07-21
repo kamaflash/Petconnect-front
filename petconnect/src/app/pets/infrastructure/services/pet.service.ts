@@ -27,13 +27,10 @@ export class PetService {
   }
 
   // Create pet
-  createPet(request: CreatePetRequest, imageFile?: File, imageFiles?: File[], ownerId?: string, authUserId?: string): Observable<PetResponse> {
+  createPet(request: CreatePetRequest, imageFile?: File, imageFiles?: File[], ownerId?: string): Observable<PetResponse> {
     const formData = new FormData();
     if (ownerId) {
       formData.append('ownerId', ownerId);
-    }
-    if (authUserId) {
-      formData.append('authUserId', authUserId);
     }
     formData.append('name', request.name);
     formData.append('species', request.species.toUpperCase());

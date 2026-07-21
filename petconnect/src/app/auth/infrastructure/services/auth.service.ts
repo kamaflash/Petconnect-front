@@ -34,27 +34,26 @@ export class AuthService extends AuthRepository {
         sessionStorage.setItem('refresh_token', response.refreshToken);
       }
 
-      const user: User = {
-        id: response.userId,
-        authUserId: response.profile.authUserId,
-        email: response.email,
-        firstName: response.profile.firstName,
-        lastName: response.profile.lastName,
-        phone: response.profile.phone,
-        bio: response.profile.bio,
-        avatarUrl: response.profile.avatarUrl,
-        coverImageUrl: response.profile.coverImageUrl,
-        dateOfBirth: response.profile.dateOfBirth,
-        city: response.profile.city,
-        country: response.profile.country,
-        profilePublic: response.profile.profilePublic,
-        notificationsEnabled: response.profile.notificationsEnabled,
-        profileType: response.profile.profileType,
-        role: response.role as 'USER' | 'ADMIN' | 'PREMIUM',
-        isVerified: false,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
+       const user: User = {
+         id: response.userId, // This is the authUserId - the unique identifier for the user
+         email: response.email,
+         firstName: response.profile.firstName,
+         lastName: response.profile.lastName,
+         phone: response.profile.phone,
+         bio: response.profile.bio,
+         avatarUrl: response.profile.avatarUrl,
+         coverImageUrl: response.profile.coverImageUrl,
+         dateOfBirth: response.profile.dateOfBirth,
+         city: response.profile.city,
+         country: response.profile.country,
+         profilePublic: response.profile.profilePublic,
+         notificationsEnabled: response.profile.notificationsEnabled,
+         profileType: response.profile.profileType,
+         role: response.role as 'USER' | 'ADMIN' | 'PREMIUM',
+         isVerified: false,
+         createdAt: new Date(),
+         updatedAt: new Date()
+       };
       this._user.set(user);
       this._token.set(response.accessToken);
       this.saveToStorage();
@@ -73,8 +72,7 @@ export class AuthService extends AuthRepository {
       }
 
       const user: User = {
-        id: response.userId,
-        authUserId: response.profile.authUserId,
+        id: response.userId, // This is the authUserId - the unique identifier for the user
         email: response.email,
         firstName: response.profile.firstName,
         lastName: response.profile.lastName,

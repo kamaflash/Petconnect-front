@@ -11,7 +11,7 @@ import { TagModule } from 'primeng/tag';
 import { RatingModule } from 'primeng/rating';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, catchError, of } from 'rxjs';
 import { TableCardComponent, TableCardItem } from '../../../shared/presentation/components/table-card/table-card.component';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
@@ -23,6 +23,8 @@ import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { SkeletonModule } from 'primeng/skeleton';
+import { MenuModule } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
 
 type ProfileType = 'user' | 'shelter' | 'seller' | 'vet' | 'pet' | 'trainer';
 
@@ -144,6 +146,7 @@ interface Pet {
     ProgressBarModule,
     SkeletonModule,
     TabsComponent,
+    MenuModule,
   ],
   providers: [MessageService],
   template: `
@@ -153,18 +156,30 @@ interface Pet {
         <div class="profile-header-instagram">
           <div class="profile-cover-instagram">
             @if (loading()) {
-              <p-skeleton height="200px" class="cover-skeleton"></p-skeleton>
+              <p-skeleton height="280px" class="cover-skeleton"></p-skeleton>
             } @else {
-              <img [src]="userProfile()?.coverImage" alt="Cover" class="cover-image-instagram" />
+              <img [src]="userCoverAvatar()" alt="Cover" class="cover-image-instagram" />
+              @if (isOwnProfile()) {
+                <button class="cover-change-btn" (click)="triggerCoverUpload()">
+                  <i class="pi pi-camera"></i>
+                </button>
+              }
             }
           </div>
           <div class="profile-info-instagram">
             <div class="profile-avatar-section-instagram">
               @if (loading()) {
-                <p-skeleton shape="circle" size="8rem" class="avatar-skeleton-instagram"></p-skeleton>
+                <p-skeleton shape="circle" size="12rem" class="avatar-skeleton-instagram"></p-skeleton>
               } @else {
                 <div class="avatar-ring">
-                  <p-avatar [image]="userProfile()?.avatar" shape="circle" size="xlarge" class="profile-avatar-instagram"></p-avatar>
+                  <div class="avatar-wrapper">
+                    <p-avatar [image]="userAvatar()" shape="circle" size="xlarge" class="profile-avatar-instagram avatar-large"></p-avatar>
+                    @if (isOwnProfile()) {
+                      <button class="avatar-change-btn" (click)="triggerAvatarUpload()">
+                        <i class="pi pi-camera"></i>
+                      </button>
+                    }
+                  </div>
                 </div>
               }
             </div>
@@ -203,16 +218,20 @@ interface Pet {
               }
             </div>
             <div class="profile-actions-instagram">
-              <div *ngIf="isOwnProfile() && !loading()">
-                <p-button label="Editar Perfil" icon="pi pi-pencil" styleClass="p-button-outlined" (onClick)="setActiveTab('knowme')" />
-              </div>
-              <div *ngIf="!isOwnProfile() && !loading()">
-                <p-button
-                  [label]="userProfile()?.isFollowing ? 'Siguiendo' : 'Seguir'"
-                  [icon]="userProfile()?.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"
-                  [styleClass]="userProfile()?.isFollowing ? 'p-button-success' : 'p-button-primary'"
-                />
-              </div>
+              @if (isOwnProfile() && !loading()) {
+                <p-menu #profileMenu [model]="profileMenuItems" [popup]="true" appendTo="body"></p-menu>
+                <button pButton type="button" icon="pi pi-ellipsis-v" class="p-button-outlined p-button-sm" (click)="profileMenu.toggle($event)"></button>
+              }
+              @if (!isOwnProfile() && !loading()) {
+                <button
+                  class="follow-btn"
+                  [class.following]="userProfile()?.isFollowing"
+                  (click)="toggleFollow()"
+                >
+                  <i [class]="userProfile()?.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"></i>
+                  {{ userProfile()?.isFollowing ? 'Siguiendo' : 'Seguir' }}
+                </button>
+              }
             </div>
           </div>
         </div>
@@ -349,6 +368,7 @@ interface Pet {
     }
 
     .profile-cover-instagram {
+      position: relative;
       height: 200px;
       overflow: hidden;
       border-radius: 0.5rem 0.5rem 0 0;
@@ -388,8 +408,81 @@ interface Pet {
       border: 3px solid var(--bitbucket-header-bg);
     }
 
+    .avatar-large {
+      width: 180px !important;
+      height: 180px !important;
+      min-width: 180px;
+      min-height: 180px;
+    }
+
+    .avatar-large :host ::ng-deep .p-avatar {
+      width: 180px !important;
+      height: 180px !important;
+    }
+
     .avatar-skeleton-instagram {
       margin-top: -60px;
+    }
+
+    .avatar-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .avatar-change-btn {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      color: white;
+      border: 2px solid var(--bitbucket-header-bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      z-index: 10;
+    }
+
+    .avatar-change-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .avatar-change-btn i {
+      font-size: 0.875rem;
+    }
+
+    .cover-change-btn {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary-color);
+      color: white;
+      border: 2px solid var(--bitbucket-header-bg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      z-index: 10;
+    }
+
+    .cover-change-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .cover-change-btn i {
+      font-size: 1rem;
     }
 
     .profile-details-instagram {
@@ -485,6 +578,46 @@ interface Pet {
 
     .profile-actions-instagram {
       flex-shrink: 0;
+    }
+
+    /* Follow button - modern minimal style */
+    .follow-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1.25rem;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid var(--surface-border);
+      background: transparent;
+      color: var(--text-primary);
+    }
+
+    .follow-btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--text-secondary);
+    }
+
+    .follow-btn.following {
+      background: var(--surface-card);
+      border-color: var(--surface-border);
+      color: var(--text-secondary);
+    }
+
+    .follow-btn.following:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .follow-btn.following:hover i {
+      color: #ef4444;
+    }
+
+    .follow-btn i {
+      font-size: 0.875rem;
     }
 
     /* Posts Grid estilo Instagram - 3 columnas */
@@ -792,6 +925,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
       // Cargar datos del perfil
       this.loadProfileData();
+
+      // Inicializar menú de perfil
+      this.initializeProfileMenu();
     });
   }
 
@@ -802,18 +938,26 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
     if (this.isOwnProfile()) {
       // Cargar el propio perfil usando getProfileByAuthUserId
-      if (user?.authUserId) {
-        this.loadOwnProfile(user.authUserId);
+      // user.id is the authUserId
+      if (user?.id) {
+        this.loadOwnProfile(user.id);
+        // Cargar estadísticas de seguidores y seguidos
+        this.loadFollowersCount(user.id);
+        this.loadFollowingCount(user.id);
       }
     } else {
       // Cargar perfil específico por ID
       const id = this.profileId();
       if (id) {
         this.loadProfileById(id);
+        // Cargar estadísticas de seguidores y seguidos
+        this.loadFollowersCount(id);
+        this.loadFollowingCount(id);
       }
     }
 
     // Cargar mascotas del perfil
+    // user.id is the authUserId
     if (this.isOwnProfile() && user) {
       this.loadPetsForProfile(user.id);
     } else if (!this.isOwnProfile() && this.profileId()) {
@@ -832,11 +976,24 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       next: (profile) => {
         // Normalizar profileType a minúsculas para manejar tanto 'VET' como 'vet'
         const normalizedProfileType = profile.profileType?.toLowerCase() as ProfileType || 'user';
+
+        // Check if we recently updated (within last 2 seconds) - if so, preserve cache-busted URLs
+        const currentAvatar = this.ownProfile.avatar;
+        const currentCover = this.ownProfile.coverImage;
+        const avatarTimestamp = currentAvatar.includes('?t=') ? parseInt(currentAvatar.split('?t=')[1]) : 0;
+        const coverTimestamp = currentCover.includes('?t=') ? parseInt(currentCover.split('?t=')[1]) : 0;
+        const now = Date.now();
+        const recentlyUpdated = (now - avatarTimestamp < 2000) || (now - coverTimestamp < 2000);
+
+        // Use cache-busted URLs if recently updated, otherwise use backend URLs
+        const avatarUrl = recentlyUpdated && avatarTimestamp ? currentAvatar : (profile.avatarUrl || '');
+        const coverImageUrl = recentlyUpdated && coverTimestamp ? currentCover : (profile.coverImageUrl || '');
+
         const baseProfile: BaseProfile = {
           id: profile.id,
           name: profile.firstName + ' ' + profile.lastName,
-          avatar: profile.avatarUrl || '',
-          coverImage: profile.coverImageUrl || '',
+          avatar: avatarUrl,
+          coverImage: coverImageUrl,
           bio: profile.bio || '',
           location: profile.city ? profile.city + (profile.country ? ', ' + profile.country : '') : '',
           website: '',
@@ -890,8 +1047,10 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadProfileById(profileId: string): void {
-    this.profileService.getProfileById(profileId).subscribe({
+  private loadProfileById(authUserId: string): void {
+    // Use getProfileByAuthUserId since the route param :id is the authUserId
+    // (navigation links use authUserId, e.g. [routerLink]="'/profile/' + vet.userId")
+    this.profileService.getProfileByAuthUserId(authUserId).subscribe({
       next: (profile) => {
         // Normalizar profileType a minúsculas para manejar tanto 'VET' como 'vet'
         const normalizedProfileType = profile.profileType?.toLowerCase() as ProfileType || 'user';
@@ -943,12 +1102,73 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
             } as UserProfile;
         }
 
-        this.loadedProfiles.set({ [profileId]: loadedProfile });
+        this.loadedProfiles.set({ [authUserId]: loadedProfile });
         this.cdr.detectChanges();
+        // Load follow status from backend
+        this.loadFollowStatus(authUserId);
       },
       error: (err) => {
-        console.error('Error loading profile by id:', err);
-        this.cdr.detectChanges();
+        console.error('Error loading profile by authUserId:', err);
+        // Fallback: try to load by profile ID instead
+        this.profileService.getProfileById(authUserId).subscribe({
+          next: (profile) => {
+            const normalizedProfileType = profile.profileType?.toLowerCase() as ProfileType || 'user';
+            const baseProfile: BaseProfile = {
+              id: profile.id,
+              name: profile.firstName + ' ' + profile.lastName,
+              avatar: profile.avatarUrl || '',
+              coverImage: profile.coverImageUrl || '',
+              bio: profile.bio || '',
+              location: profile.city ? profile.city + (profile.country ? ', ' + profile.country : '') : '',
+              website: '',
+              joinDate: new Date(),
+              isFollowing: false,
+              type: normalizedProfileType,
+            };
+
+            let loadedProfile: AnyProfile;
+            switch (normalizedProfileType) {
+              case 'shelter':
+                loadedProfile = {
+                  ...baseProfile,
+                  type: 'shelter',
+                  stats: { pets: 0, followers: 0, adoptions: 0, reviews: 0 },
+                } as ShelterProfile;
+                break;
+              case 'vet':
+                loadedProfile = {
+                  ...baseProfile,
+                  type: 'vet',
+                  specialty: 'Veterinaria General',
+                  rating: 4.5,
+                  reviews: 0,
+                  stats: { patients: 0, followers: 0, posts: 0, likes: 0 },
+                } as VetProfile;
+                break;
+              case 'seller':
+                loadedProfile = {
+                  ...baseProfile,
+                  type: 'seller',
+                  stats: { products: 0, followers: 0, sales: 0, reviews: 0 },
+                } as SellerProfile;
+                break;
+              default:
+                loadedProfile = {
+                  ...baseProfile,
+                  type: 'user',
+                  username: (profile.firstName + profile.lastName).toLowerCase(),
+                  stats: { pets: 0, followers: 0, following: 0, posts: 0 },
+                } as UserProfile;
+            }
+
+            this.loadedProfiles.set({ [authUserId]: loadedProfile });
+            this.cdr.detectChanges();
+          },
+          error: (fallbackErr) => {
+            console.error('Error loading profile by id (fallback):', fallbackErr);
+            this.cdr.detectChanges();
+          }
+        });
       },
     });
   }
@@ -967,7 +1187,33 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Error loading pets:', err);
         this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private loadFollowersCount(userId: string): void {
+    this.socialService.getFollowers(userId).subscribe({
+      next: (followers) => {
+        this.followersCount.set(followers.length);
+        this.cdr.detectChanges();
       },
+      error: (err) => {
+        console.error('Error loading followers count:', err);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private loadFollowingCount(userId: string): void {
+    this.socialService.getFollowing(userId).subscribe({
+      next: (following) => {
+        this.followingCount.set(following.length);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error loading following count:', err);
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -982,7 +1228,21 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     }
     return this.loadedProfiles()[id] || this.ownProfile;
   });
+  userAvatar = computed(() => {
+    const profile = this.userProfile();
+    if (this.isOwnProfile()) {
+      return this.authService.user()?.avatarUrl || 'https://i.pravatar.cc/150?img=1';
+    }
+    return profile?.avatar || 'https://i.pravatar.cc/150?img=1';
+  });
 
+  userCoverAvatar = computed(() => {
+    const profile = this.userProfile();
+    if (this.isOwnProfile()) {
+      return this.authService.user()?.coverImageUrl || 'https://i.pravatar.cc/150?img=1';
+    }
+    return profile?.coverImage || 'https://i.pravatar.cc/150?img=1';
+  });
   // Determinar tipo de perfil
   isUser = computed(() => this.userProfile()?.type === 'user');
   isShelter = computed(() => this.userProfile()?.type === 'shelter');
@@ -1089,20 +1349,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           placeholder: 'https://mi-sitio.com',
           validation: { maxLength: 255 }
         },
-        {
-          key: 'avatar',
-          label: 'Avatar',
-          type: 'file' as const,
-          accept: 'image/*',
-          maxFileSize: 5000000
-        },
-        {
-          key: 'coverImage',
-          label: 'Imagen de fondo',
-          type: 'file' as const,
-          accept: 'image/*',
-          maxFileSize: 5000000
-        }
       ]
     } as DynamicFormConfig;
   });
@@ -1130,28 +1376,28 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       case 'user':
         return [
           { value: profile.stats.pets, label: 'Família' },
-          { value: profile.stats.followers, label: 'Seguidores' },
-          { value: profile.stats.following, label: 'Siguiendo' },
+          { value: this.followersCount(), label: 'Seguidores' },
+          { value: this.followingCount(), label: 'Siguiendo' },
           { value: profile.stats.posts, label: 'Publicaciones' },
         ];
       case 'shelter':
         return [
           { value: profile.stats.pets, label: 'Família' },
-          { value: profile.stats.followers, label: 'Seguidores' },
+          { value: this.followersCount(), label: 'Seguidores' },
           { value: profile.stats.adoptions, label: 'Adopciones' },
           { value: profile.stats.reviews, label: 'Reseñas' },
         ];
       case 'vet':
         return [
           { value: profile.stats.patients, label: 'Pacientes' },
-          { value: profile.stats.followers, label: 'Seguidores' },
+          { value: this.followersCount(), label: 'Seguidores' },
           { value: profile.stats.posts, label: 'Publicaciones' },
           { value: profile.stats.likes, label: 'Likes dados' },
         ];
       case 'seller':
         return [
           { value: profile.stats.products, label: 'Productos' },
-          { value: profile.stats.followers, label: 'Seguidores' },
+          { value: this.followersCount(), label: 'Seguidores' },
           { value: profile.stats.sales, label: 'Ventas' },
           { value: profile.stats.reviews, label: 'Reseñas' },
         ];
@@ -1165,9 +1411,15 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     }
   });
 
+  // Contadores de seguidores y seguidos
+  followersCount = signal(0);
+  followingCount = signal(0);
+
   // Manejar envío del formulario de perfil
   async onProfileSubmit(data: any): Promise<void> {
     console.log('Profile form submitted:', data);
+
+    this.loading.set(true);
 
     const formData = new FormData();
 
@@ -1202,21 +1454,18 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       this.profileService.updateProfile(formData).subscribe({
         next: (response: any) => {
           console.log('Profile updated successfully:', response);
-          // Actualizar el perfil local con la respuesta
-          const currentProfile = this.ownProfile;
-          this.ownProfile = {
-            ...currentProfile,
-            name: response.firstName + ' ' + response.lastName,
-            avatar: response.avatarUrl || currentProfile.avatar,
-            coverImage: response.coverImageUrl || currentProfile.coverImage,
-            bio: response.bio || currentProfile.bio,
-            location: response.city || currentProfile.location,
-          } as AnyProfile;
-          // Actualizar el usuario en el AuthService
-          this.updateAuthUser(response);
+          // Reload profile from backend to get the latest data
+          this.updateOwnProfileFromResponse(response);
         },
         error: (error: any) => {
           console.error('Error updating profile:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo actualizar el perfil'
+          });
+          this.loading.set(false);
+          this.cdr.detectChanges();
         }
       });
   }
@@ -1249,8 +1498,34 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     ];
   });
 
+  // Menu items for profile actions
+  profileMenuItems: MenuItem[] = [];
+
   onTabChange(tabId: string) {
     this.setActiveTab(tabId);
+  }
+
+  onEditProfile() {
+    this.setActiveTab('knowme');
+  }
+
+  onAdmin() {
+    this.router.navigate(['/admin']);
+  }
+
+  initializeProfileMenu(): void {
+    this.profileMenuItems = [
+      {
+        label: 'Editar Perfil',
+        icon: 'pi pi-pencil',
+        command: () => this.onEditProfile()
+      },
+      {
+        label: 'Administrar',
+        icon: 'pi pi-cog',
+        command: () => this.onAdmin()
+      }
+    ];
   }
 
   ngOnDestroy(): void {
@@ -1267,6 +1542,260 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
   setActiveTab(tab: string) {
     this.activeTab.set(tab);
+  }
+
+  // Hidden file inputs for avatar and cover uploads
+  private avatarInput: HTMLInputElement | null = null;
+  private coverInput: HTMLInputElement | null = null;
+
+  triggerAvatarUpload(): void {
+    if (!this.avatarInput) {
+      this.avatarInput = document.createElement('input');
+      this.avatarInput.type = 'file';
+      this.avatarInput.accept = 'image/*';
+      this.avatarInput.hidden = true;
+      this.avatarInput.addEventListener('change', (e) => this.onAvatarChange(e));
+      document.body.appendChild(this.avatarInput);
+    }
+    this.avatarInput.click();
+  }
+
+  triggerCoverUpload(): void {
+    if (!this.coverInput) {
+      this.coverInput = document.createElement('input');
+      this.coverInput.type = 'file';
+      this.coverInput.accept = 'image/*';
+      this.coverInput.hidden = true;
+      this.coverInput.addEventListener('change', (e) => this.onCoverChange(e));
+      document.body.appendChild(this.coverInput);
+    }
+    this.coverInput.click();
+  }
+
+  onAvatarChange(event: any): void {
+    const file = event.target?.files?.[0];
+    if (file) {
+      this.loading.set(true);
+      const formData = new FormData();
+
+      // Add data blob with current profile info (required by backend)
+      const user = this.authService.user();
+      formData.append('data', new Blob([JSON.stringify({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        phone: user?.phone || '',
+        bio: user?.bio || '',
+        city: user?.city || '',
+        country: user?.country || '',
+        website: ''
+      })], { type: 'application/json' }));
+
+      // Add avatar file
+      formData.append('avatar', file);
+
+      this.profileService.updateProfile(formData).subscribe({
+        next: (response: any) => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Foto actualizada',
+            detail: 'Tu foto de perfil ha sido actualizada'
+          });
+          // Update local profile and auth user
+          this.updateOwnProfileFromResponse(response);
+        },
+        error: (error) => {
+          console.error('Error updating avatar:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo actualizar la foto de perfil'
+          });
+          this.loading.set(false);
+          this.cdr.detectChanges();
+        }
+      });
+    }
+    // Reset the input so the same file can be selected again
+    if (this.avatarInput) this.avatarInput.value = '';
+  }
+
+  onCoverChange(event: any): void {
+    const file = event.target?.files?.[0];
+    if (file) {
+      this.loading.set(true);
+      const formData = new FormData();
+
+      // Add data blob with current profile info (required by backend)
+      const user = this.authService.user();
+      formData.append('data', new Blob([JSON.stringify({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        phone: user?.phone || '',
+        bio: user?.bio || '',
+        city: user?.city || '',
+        country: user?.country || '',
+        website: ''
+      })], { type: 'application/json' }));
+
+      // Add cover image file
+      formData.append('coverImage', file);
+
+      this.profileService.updateProfile(formData).subscribe({
+        next: (response: any) => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Portada actualizada',
+            detail: 'Tu imagen de portada ha sido actualizada'
+          });
+          // Update local profile and auth user
+          this.updateOwnProfileFromResponse(response);
+        },
+        error: (error) => {
+          console.error('Error updating cover:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo actualizar la imagen de portada'
+          });
+          this.loading.set(false);
+          this.cdr.detectChanges();
+        }
+      });
+    }
+    // Reset the input so the same file can be selected again
+    if (this.coverInput) this.coverInput.value = '';
+  }
+
+  private updateOwnProfileFromResponse(response: any): void {
+    // Generate a timestamp for cache-busting
+    const timestamp = new Date().getTime();
+
+    // Update auth user with cache-busted URLs
+    const currentUser = this.authService.user();
+    if (currentUser) {
+      const updatedUser: User = {
+        ...currentUser,
+        firstName: response.firstName || currentUser.firstName,
+        lastName: response.lastName || currentUser.lastName,
+        phone: response.phone || currentUser.phone,
+        bio: response.bio || currentUser.bio,
+        avatarUrl: response.avatarUrl ? `${response.avatarUrl}?t=${timestamp}` : currentUser.avatarUrl,
+        coverImageUrl: response.coverImageUrl ? `${response.coverImageUrl}?t=${timestamp}` : currentUser.coverImageUrl,
+        city: response.city || currentUser.city,
+        country: response.country || currentUser.country,
+      };
+      this.authService.updateUser(updatedUser);
+    }
+
+    // Update ownProfile with cache-busted URLs
+    const currentProfile = this.ownProfile;
+    this.ownProfile = {
+      ...currentProfile,
+      name: response.firstName + ' ' + response.lastName,
+      avatar: response.avatarUrl ? `${response.avatarUrl}?t=${timestamp}` : currentProfile.avatar,
+      coverImage: response.coverImageUrl ? `${response.coverImageUrl}?t=${timestamp}` : currentProfile.coverImage,
+      bio: response.bio || currentProfile.bio,
+      location: response.city ? response.city + (response.country ? ', ' + response.country : '') : currentProfile.location,
+    } as AnyProfile;
+
+    this.cdr.detectChanges();
+
+    // Hide loading after a short delay
+    setTimeout(() => {
+      this.loading.set(false);
+      this.cdr.detectChanges();
+    }, 500);
+  }
+
+  private reloadOwnProfile(): void {
+    const user = this.authService.user();
+    if (user?.id) {
+      this.loadOwnProfile(user.id);
+      // Ensure loading is visible for at least 1 second
+      setTimeout(() => {
+        this.loading.set(false);
+        this.cdr.detectChanges();
+      }, 1000);
+    }
+  }
+
+  // Cargar el estado de follow desde el backend
+  private loadFollowStatus(authUserId: string): void {
+    const currentUserId = this.authService.user()?.id;
+    if (!currentUserId) return;
+
+    this.socialService.getFollowing(currentUserId).subscribe({
+      next: (following) => {
+        const isFollowing = following.some(f => f.followingId === authUserId);
+        const currentProfiles = this.loadedProfiles();
+        const profile = currentProfiles[authUserId];
+        if (profile) {
+          profile.isFollowing = isFollowing;
+          this.loadedProfiles.set({ ...currentProfiles });
+          this.cdr.detectChanges();
+        }
+      },
+      error: () => {
+        // If the endpoint fails, just leave isFollowing as false
+      }
+    });
+  }
+
+  // Toggle follow/unfollow for the viewed profile
+  toggleFollow(): void {
+    const currentUserId = this.authService.user()?.id;
+    const targetUserId = this.profileId();
+    if (!currentUserId || !targetUserId) return;
+
+    const currentProfiles = this.loadedProfiles();
+    const profile = currentProfiles[targetUserId];
+    if (!profile) return;
+
+    const wasFollowing = profile.isFollowing;
+    profile.isFollowing = !profile.isFollowing;
+    this.loadedProfiles.set({ ...currentProfiles });
+
+    if (profile.isFollowing) {
+      this.socialService.followUser(currentUserId, targetUserId).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Siguiendo',
+            detail: `Ahora sigues a ${profile.name}`
+          });
+        },
+        error: () => {
+          // Revert on error
+          profile.isFollowing = wasFollowing;
+          this.loadedProfiles.set({ ...currentProfiles });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo seguir al usuario'
+          });
+        }
+      });
+    } else {
+      this.socialService.unfollowUser(currentUserId, targetUserId).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Dejaste de seguir',
+            detail: `Ya no sigues a ${profile.name}`
+          });
+        },
+        error: () => {
+          // Revert on error
+          profile.isFollowing = wasFollowing;
+          this.loadedProfiles.set({ ...currentProfiles });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo dejar de seguir al usuario'
+          });
+        }
+      });
+    }
   }
 
   // Método para obtener la etiqueta del tipo de perfil

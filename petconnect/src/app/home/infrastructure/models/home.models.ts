@@ -78,6 +78,7 @@ export class Suggestion {
   avatar: string;
   followers: string;
   userId: string;
+  isFollowing?: boolean;
 
   constructor(data: {
     name: string;
@@ -85,12 +86,14 @@ export class Suggestion {
     avatar: string;
     followers: string;
     userId: string;
+    isFollowing?: boolean;
   }) {
     this.name = data.name;
     this.username = data.username;
     this.avatar = data.avatar;
     this.followers = data.followers;
     this.userId = data.userId;
+    this.isFollowing = data.isFollowing || false;
   }
 }
 

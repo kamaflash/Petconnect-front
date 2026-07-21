@@ -301,4 +301,14 @@ export class SocialService {
   getAllProfiles(): Observable<UserProfileResponse[]> {
     return this.http.get<UserProfileResponse[]>(`${this.apiUrl}/users/profiles`);
   }
+
+  // Get profile by authUserId (used for follow relationships)
+  getProfileByAuthUserId(authUserId: string): Observable<UserProfileResponse> {
+    return this.http.get<UserProfileResponse>(`${this.apiUrl}/users/by-auth/${authUserId}`);
+  }
+
+  // Get profile by profile ID
+  getProfileById(profileId: string): Observable<UserProfileResponse> {
+    return this.http.get<UserProfileResponse>(`${this.apiUrl}/users/profile/${profileId}`);
+  }
 }

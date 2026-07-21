@@ -62,6 +62,14 @@ export interface SuggestionResponse {
   followers: number;
 }
 
+// Follow response for following endpoint
+export interface FollowResponse {
+  id: string;
+  followerId: string;
+  followingId: string;
+  createdAt: string;
+}
+
 export interface MarketplacePromoResponse {
   id: string;
   type: 'marketplace' | 'service' | 'adoption';
@@ -160,8 +168,28 @@ export class HomeService {
     return this.http.get<AchievementResponse[]>(`${this.apiUrl}/home/achievements`);
   }
 
-  // User level
-  getUserLevel(): Observable<UserLevelResponse> {
-    return this.http.get<UserLevelResponse>(`${this.apiUrl}/home/user-level`);
-  }
-}
+   // User level
+   getUserLevel(): Observable<UserLevelResponse> {
+     return this.http.get<UserLevelResponse>(`${this.apiUrl}/home/user-level`);
+   }
+
+   // Posts from followed users (for home feed)
+   getPostsByFollowing(userId: string): Observable<PostResponse[]> {
+     return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts/following/${userId}`);
+   }
+
+   // Following - get users that the current user follows
+   getFollowing(userId: string): Observable<FollowResponse[]> {
+     return this.http.get<FollowResponse[]>(`${this.apiUrl}/social/follows/following/${userId}`);
+   }
+
+   // Follow a user
+   followUser(followerId: string, followingId: string): Observable<SuggestionResponse> {
+     return this.http.post<SuggestionResponse>(`${this.apiUrl}/social/follows`, { followerId, followingId });
+   }
+
+   // Unfollow a user
+   unfollowUser(followerId: string, followingId: string): Observable<void> {
+     return this.http.delete<void>(`${this.apiUrl}/social/follows/${followerId}/${followingId}`);
+   }
+ }
