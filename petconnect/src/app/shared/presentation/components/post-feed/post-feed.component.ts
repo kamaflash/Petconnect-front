@@ -6,6 +6,7 @@ import { AvatarGroupModule } from 'primeng/avatargroup';
 import { SkeletonModule } from 'primeng/skeleton';
 import { RouterModule } from '@angular/router';
 import { LikeService, LikeTargetType } from '../../../infrastructure/services/like.service';
+import { CommentSectionComponent } from '../comment-section/comment-section.component';
 
 export interface PostUser {
   name: string;
@@ -39,6 +40,7 @@ export type PostViewMode = 'feed' | 'grid';
     AvatarGroupModule,
     SkeletonModule,
     RouterModule,
+    CommentSectionComponent,
   ],
   template: `
     <div [class.posts-feed]="mode() === 'feed'" [class.posts-grid]="mode() === 'grid'">
@@ -154,15 +156,15 @@ export type PostViewMode = 'feed' | 'grid';
             <span class="comment-time">{{ post.timestamp | date:'d MMM' }}</span>
           </div>
 
-          <!-- Comment Input -->
-          <div class="post-comment-input">
-            <input
-              type="text"
-              placeholder="Añade un comentario..."
-              class="comment-input"
+          <!-- Comment Section -->
+          @if (currentUserId()) {
+            <app-comment-section
+              [targetId]="post.id"
+              [targetType]="'POST'"
+              [currentUserId]="currentUserId()"
+              (commentsChanged)="onCommentsChanged(post, $event)"
             />
-            <button class="comment-post-btn">Publicar</button>
-          </div>
+          }
         </div>
       }
     </div>
@@ -419,6 +421,7 @@ export class PostFeedComponent {
 
   likeToggled = output<PostItem>();
   saveToggled = output<PostItem>();
+  commentsChanged = output<{ postId: string; count: number }>();
 
   private readonly likeService = inject(LikeService);
 
@@ -475,5 +478,10 @@ export class PostFeedComponent {
   toggleSave(post: PostItem): void {
     post.saved = !post.saved;
     this.saveToggled.emit(post);
+  }
+
+  onCommentsChanged(post: PostItem, count: number): void {
+    post.comments = count;
+    this.commentsChanged.emit({ postId: post.id, count });
   }
 }

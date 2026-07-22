@@ -121,6 +121,32 @@ export interface LikeStatusResponse {
   count: number;
 }
 
+// ========== COMMENTS ==========
+
+export interface CommentResponse {
+  id: string;
+  userId: string;
+  targetId: string;
+  targetType: string;
+  content: string;
+  authorFirstName: string;
+  authorLastName: string;
+  authorAvatarUrl: string;
+  createdAt: string;
+}
+
+export interface CreateCommentRequest {
+  userId: string;
+  targetId: string;
+  targetType: string;
+  content: string;
+}
+
+export interface UpdateCommentRequest {
+  userId: string;
+  content: string;
+}
+
 // ========== SERVICE ==========
 
 @Injectable({
@@ -310,5 +336,27 @@ export class SocialService {
   // Get profile by profile ID
   getProfileById(profileId: string): Observable<UserProfileResponse> {
     return this.http.get<UserProfileResponse>(`${this.apiUrl}/users/profile/${profileId}`);
+  }
+
+  // ========== COMMENTS ==========
+
+  createComment(request: CreateCommentRequest): Observable<CommentResponse> {
+    return this.http.post<CommentResponse>(`${this.apiUrl}/social/comments`, request);
+  }
+
+  getComments(targetType: string, targetId: string): Observable<CommentResponse[]> {
+    return this.http.get<CommentResponse[]>(`${this.apiUrl}/social/comments/${targetType}/${targetId}`);
+  }
+
+  updateComment(commentId: string, request: UpdateCommentRequest): Observable<CommentResponse> {
+    return this.http.put<CommentResponse>(`${this.apiUrl}/social/comments/${commentId}`, request);
+  }
+
+  deleteComment(commentId: string, userId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/social/comments/${commentId}?userId=${userId}`);
+  }
+
+  getUserComments(userId: string): Observable<CommentResponse[]> {
+    return this.http.get<CommentResponse[]>(`${this.apiUrl}/social/comments/user/${userId}`);
   }
 }
