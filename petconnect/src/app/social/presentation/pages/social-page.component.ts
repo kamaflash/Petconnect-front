@@ -83,6 +83,7 @@ interface CommunityPost {
   shares: number;
   liked: boolean;
   saved: boolean;
+  likeAvatars?: string[];
   tags?: string[];
   type?: 'update' | 'question' | 'event' | 'tip' | 'milestone';
   petMention?: {
@@ -214,8 +215,10 @@ interface Notification {
             <app-post-feed
               [posts]="postItems()"
               [loading]="loading()"
+              [currentUserId]="currentUserId()"
               (likeToggled)="onLikeToggled($event)"
               (saveToggled)="onSaveToggled($event)"
+              (commentsChanged)="onCommentsChanged($event)"
             />
 
             <div class="load-more-container">
@@ -234,12 +237,10 @@ interface Notification {
               <div class="sidebar-header">
                 <h3>Tendencias</h3>
               </div>
-              <div class="trending-item" *ngFor="let trend of trendingTopics()">
-                <span class="trend-rank">#{{ trend.rank }}</span>
-                <div class="trend-info">
-                  <span class="trend-name">{{ trend.name }}</span>
-                  <span class="trend-posts">{{ trend.posts }} publicaciones</span>
-                </div>
+              <div class="trend-item" *ngFor="let trend of trendingTopics()">
+                <span class="trend-category">#{{ trend.rank }} Tendencia</span>
+                <span class="trend-name">{{ trend.name }}</span>
+                <span class="trend-posts">{{ trend.posts }} publicaciones</span>
               </div>
             </div>
 
@@ -899,36 +900,43 @@ interface Notification {
       font-weight: 600;
     }
 
-    .trending-item {
+    .trend-item {
+      padding: 0.75rem;
+      background: var(--surface-hover);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      margin-bottom: 0.5rem;
       display: flex;
-      gap: 0.75rem;
-      padding: 0.5rem 0;
-      border-bottom: 1px solid var(--bitbucket-border);
+      flex-direction: column;
+      gap: 0.125rem;
     }
 
-    .trending-item:last-child {
-      border-bottom: none;
+    .trend-item:last-child {
+      margin-bottom: 0;
     }
 
-    .trend-rank {
-      font-weight: 600;
-      color: var(--primary-color);
-      font-size: 0.875rem;
+    .trend-item:hover {
+      background: var(--surface-hover);
+      transform: translateX(2px);
     }
 
-    .trend-info {
-      flex: 1;
+    .trend-category {
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
     }
 
     .trend-name {
-      display: block;
-      font-weight: 500;
+      font-weight: 600;
+      color: var(--text-primary);
       font-size: 0.875rem;
     }
 
     .trend-posts {
-      font-size: 0.7rem;
-      color: var(--bitbucket-text-secondary);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
     }
 
     .popular-pet {
@@ -1620,6 +1628,7 @@ export class SocialPageComponent implements OnInit {
   private authService = inject(AuthService);
   private cloudinaryService = inject(CloudinaryService);
   private socialService = inject(SocialService);
+  private likeService = inject(LikeService);
   private http = inject(HttpClient);
 
   private readonly apiUrl = environment.apiUrl;
@@ -1670,7 +1679,11 @@ export class SocialPageComponent implements OnInit {
         key: 'tags',
         label: 'Etiquetas',
         type: 'input',
-        placeholder: 'Añade etiquetas (separadas por comas)'
+        placeholder: 'Añade etiquetas (ej: #perro, @usuario, #gato)',
+        validation: {
+          pattern: '^([#@][a-zA-Z0-9_]+)(\\s*,\\s*[#@][a-zA-Z0-9_]+)*$',
+          customMessage: 'Las etiquetas deben empezar por # o @ y separarse por comas'
+        }
       }
     ]
   };
@@ -1746,6 +1759,7 @@ export class SocialPageComponent implements OnInit {
       comments: post.comments,
       liked: post.liked,
       saved: post.saved,
+      likeAvatars: post.likeAvatars,
       timestamp: post.timestamp
     }));
   });
@@ -1889,10 +1903,83 @@ export class SocialPageComponent implements OnInit {
   }
 
   private loadPosts(): void {
-    this.socialService.getAllPosts().subscribe({
+    this.socialService.getPublicFeed().subscribe({
       next: (posts) => {
-        this.communityPosts.set(posts.map(post => this.mapPostToCommunityPost(post)));
-        this.totalPosts = posts.length;
+        // Load all profiles to map author data
+        this.socialService.getAllProfiles().subscribe({
+          next: (profiles) => {
+            // Create a map for faster lookup (keyed by authUserId)
+            const profileMap = new Map(profiles.map(p => [p.authUserId, p]));
+
+            const mappedPosts = posts.map(post =>
+              this.mapPostToCommunityPost(post, profileMap)
+            );
+
+            // Load like status and avatars for each post if user is logged in
+            const userId = this.currentUserId();
+            if (userId && mappedPosts.length > 0) {
+              const likeStatusRequests = mappedPosts.map(post =>
+                this.likeService.getLikeStatus('POST', post.id, userId).pipe(
+                  catchError(() => of({ liked: false, count: post.likes }))
+                )
+              );
+
+              forkJoin(likeStatusRequests).subscribe({
+                next: (likeStatuses) => {
+                  // Update liked status and likes count
+                  mappedPosts.forEach((post, index) => {
+                    post.liked = likeStatuses[index].liked;
+                    post.likes = likeStatuses[index].count;
+                  });
+
+                  // Load like avatars for each post (up to 3)
+                  const likeAvatarsRequests = mappedPosts.map(post =>
+                    this.likeService.getLikes('POST', post.id).pipe(
+                      catchError(() => of([]))
+                    )
+                  );
+
+                  forkJoin(likeAvatarsRequests).subscribe({
+                    next: (likesArrays) => {
+                      mappedPosts.forEach((post, index) => {
+                        const likes = likesArrays[index] || [];
+                        // Map likes to real avatar URLs using profileMap
+                        post.likeAvatars = likes
+                          .map(like => {
+                            const profile = profileMap.get(like.userId);
+                            return profile?.avatarUrl;
+                          })
+                          .filter((url): url is string => !!url)
+                          .slice(0, 3);
+                      });
+                      this.communityPosts.set(mappedPosts);
+                      this.totalPosts = posts.length;
+                    },
+                    error: () => {
+                      // If avatars fail, continue without them
+                      this.communityPosts.set(mappedPosts);
+                      this.totalPosts = posts.length;
+                    }
+                  });
+                },
+                error: () => {
+                  // If like status fails, use default values
+                  this.communityPosts.set(mappedPosts);
+                  this.totalPosts = posts.length;
+                }
+              });
+            } else {
+              this.communityPosts.set(mappedPosts);
+              this.totalPosts = posts.length;
+            }
+          },
+          error: () => {
+            // If profiles fail to load, use default mapping
+            const mappedPosts = posts.map(post => this.mapPostToCommunityPost(post, new Map()));
+            this.communityPosts.set(mappedPosts);
+            this.totalPosts = posts.length;
+          }
+        });
       },
       error: (error) => {
         console.error('Error loading posts:', error);
@@ -1942,7 +2029,9 @@ export class SocialPageComponent implements OnInit {
   private loadTrendingTopics(): void {
     this.socialService.getTrendingTopics().subscribe({
       next: (topics) => {
-        this.trendingTopics.set(topics.map((topic, index) => ({
+        // Show only top 3 trending topics
+        const topTopics = topics.slice(0, 3);
+        this.trendingTopics.set(topTopics.map((topic, index) => ({
           rank: index + 1,
           name: topic.name,
           posts: topic.postsCount
@@ -1978,13 +2067,15 @@ export class SocialPageComponent implements OnInit {
     }
   }
 
-  private mapPostToCommunityPost(post: PostResponse): CommunityPost {
+  private mapPostToCommunityPost(post: PostResponse, profileMap: Map<string, UserProfileResponse>): CommunityPost {
+    const profile = profileMap.get(post.authorId);
+    const tags = post.tags ? post.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [];
     return {
       id: post.id,
       user: {
-        name: 'Usuario',
-        username: '@usuario',
-        avatar: 'https://i.pravatar.cc/150?img=1',
+        name: profile ? `${profile.firstName} ${profile.lastName}` : 'Usuario',
+        username: profile ? `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}` : '@usuario',
+        avatar: profile?.avatarUrl || 'https://i.pravatar.cc/150?img=1',
         userId: post.authorId,
         isVerified: false
       },
@@ -1995,7 +2086,8 @@ export class SocialPageComponent implements OnInit {
       comments: post.commentsCount,
       shares: 0,
       liked: false,
-      saved: false
+      saved: false,
+      tags: tags
     };
   }
 
@@ -2077,6 +2169,12 @@ export class SocialPageComponent implements OnInit {
     return icons[type] || 'pi pi-bell';
   }
 
+  // Generate a deterministic avatar URL based on userId (for likes)
+  private generateAvatarFromUserId(userId: string): string {
+    const hash = userId.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+    return 'https://i.pravatar.cc/150?img=' + (Math.abs(hash) % 70);
+  }
+
   // Tabs configuration
   socialTabs = computed((): Tab[] => {
     return [
@@ -2112,6 +2210,15 @@ export class SocialPageComponent implements OnInit {
     const post = currentPosts.find(p => p.id === postItem.id);
     if (post) {
       post.saved = postItem.saved;
+      this.communityPosts.set([...currentPosts]);
+    }
+  }
+
+  onCommentsChanged(event: { postId: string; count: number }): void {
+    const currentPosts = this.communityPosts();
+    const post = currentPosts.find(p => p.id === event.postId);
+    if (post) {
+      post.comments = event.count;
       this.communityPosts.set([...currentPosts]);
     }
   }
@@ -2288,7 +2395,8 @@ export class SocialPageComponent implements OnInit {
 
   async onPostFormSubmit(formData: any) {
     const content = formData.content || '';
-    const tags = formData.tags ? formData.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t) : [];
+    const rawTags = formData.tags || '';
+    const tags = rawTags.split(',').map((t: string) => t.trim()).filter((t: string) => t).join(',');
     const uploadedFiles = formData.images || [];
 
     if (!content.trim()) {
@@ -2322,7 +2430,8 @@ export class SocialPageComponent implements OnInit {
     this.socialService.createPost({
       authorId: this.currentUserId(),
       caption: content,
-      imageUrl: ''
+      imageUrl: '',
+      tags: tags
     }, imageFile)
       .subscribe({
         next: (createdPost) => {

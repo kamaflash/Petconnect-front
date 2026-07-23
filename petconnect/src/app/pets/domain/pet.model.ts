@@ -40,6 +40,10 @@ export interface PetResponse {
   favoriteActivities: string | null;
   favoriteFood: string | null;
   specialNeeds: string | null;
+  lastKnownLocation: string | null;
+  lost: boolean;
+  lostDate: string | null;
+  availableForAdoption: boolean;
 }
 
 export interface CreatePetRequest {

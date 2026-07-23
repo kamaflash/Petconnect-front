@@ -1,4 +1,4 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -8,8 +8,12 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { TableComponent, TableColumn } from '../../../shared/presentation/components/table/table.component';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
+import { PetService } from '../../infrastructure/services/pet.service';
+import { AuthService } from '../../../auth/infrastructure/services/auth.service';
+import { PetResponse } from '../../domain/pet.model';
 
 interface Pet {
   id: string;
@@ -97,31 +101,13 @@ interface Pet {
   `,
   styles: [``],
 })
-export class PetsPageComponent {
+export class PetsPageComponent implements OnInit {
   private router = inject(Router);
+  private petService = inject(PetService);
+  private authService = inject(AuthService);
+  private messageService = inject(MessageService);
 
-  pets = signal<Pet[]>([
-    {
-      id: '1',
-      name: 'Max',
-      species: 'Perro',
-      breed: 'Golden Retriever',
-      age: 3,
-      weight: 25,
-      status: 'active',
-      avatar: 'https://i.pravatar.cc/150?img=5',
-    },
-    {
-      id: '2',
-      name: 'Luna',
-      species: 'Gato',
-      breed: 'Siamés',
-      age: 2,
-      weight: 4,
-      status: 'active',
-      avatar: 'https://i.pravatar.cc/150?img=6',
-    },
-  ]);
+  pets = signal<Pet[]>([]);
 
   dialogVisible = false;
   newPet: Partial<Pet> = {};
@@ -159,6 +145,48 @@ export class PetsPageComponent {
     { label: 'Hámster', value: 'Hámster' },
   ];
 
+  ngOnInit(): void {
+    this.loadPets();
+  }
+
+  // Load pets from the backend
+  loadPets(): void {
+    const user = this.authService.user();
+    if (!user?.id) return;
+
+    this.petService.getPetsByOwner(user.id).subscribe({
+      next: (petResponses: PetResponse[]) => {
+        this.pets.set(petResponses.map(p => this.mapPetResponseToPet(p)));
+      },
+      error: (err) => {
+        console.error('Error loading pets:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las mascotas'
+        });
+      }
+    });
+  }
+
+  // Map PetResponse from backend to the Pet interface used in the UI
+  mapPetResponseToPet(p: PetResponse): Pet {
+    const age = p.dateOfBirth
+      ? new Date().getFullYear() - new Date(p.dateOfBirth).getFullYear()
+      : 0;
+
+    return {
+      id: p.id,
+      name: p.name,
+      species: p.species || 'Desconocido',
+      breed: p.breed || 'Sin raza',
+      age,
+      weight: p.weight || 0,
+      status: p.active ? 'active' : 'inactive',
+      avatar: p.avatarUrl || 'https://i.pravatar.cc/150',
+    };
+  }
+
   showAddDialog() {
     this.newPet = {};
     this.dialogVisible = true;
@@ -170,7 +198,24 @@ export class PetsPageComponent {
   }
 
   deletePet(pet: Pet) {
-    this.pets.set(this.pets().filter((p) => p.id !== pet.id));
+    this.petService.deletePet(pet.id).subscribe({
+      next: () => {
+        this.pets.set(this.pets().filter((p) => p.id !== pet.id));
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Mascota eliminada',
+          detail: `La mascota "${pet.name}" ha sido eliminada`
+        });
+      },
+      error: (err) => {
+        console.error('Error deleting pet:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo eliminar la mascota'
+        });
+      }
+    });
   }
 
   onView(pet: Pet) {
@@ -187,15 +232,36 @@ export class PetsPageComponent {
 
   savePet() {
     if (this.newPet.id) {
-      this.pets.update((pets) =>
-        pets.map((p) => (p.id === this.newPet.id ? { ...p, ...this.newPet } : p))
-      );
+      // Update existing pet
+      this.petService.updatePet(this.newPet.id, {
+        name: this.newPet.name || '',
+        species: this.newPet.species || '',
+        breed: this.newPet.breed,
+      }).subscribe({
+        next: (updatedPet) => {
+          this.pets.update((pets) =>
+            pets.map((p) => (p.id === this.newPet.id ? { ...p, ...this.newPet } : p))
+          );
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Mascota actualizada',
+            detail: `La mascota "${this.newPet.name}" ha sido actualizada`
+          });
+          this.dialogVisible = false;
+        },
+        error: (err) => {
+          console.error('Error updating pet:', err);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo actualizar la mascota'
+          });
+        }
+      });
     } else {
-      this.pets.update((pets) => [
-        ...pets,
-        { ...this.newPet, id: Date.now().toString() } as Pet,
-      ]);
+      // Create new pet - navigate to the create page
+      this.router.navigate(['/pets/create']);
+      this.dialogVisible = false;
     }
-    this.dialogVisible = false;
   }
 }

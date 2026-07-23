@@ -10,6 +10,7 @@ export interface PostResponse {
   authorId: string;
   imageUrl: string;
   caption: string;
+  tags?: string;
   likesCount: number;
   commentsCount: number;
   active: boolean;
@@ -20,6 +21,7 @@ export interface CreatePostRequest {
   authorId: string;
   imageUrl: string;
   caption: string;
+  tags?: string;
 }
 
 export interface UpdatePostRequest {
@@ -133,6 +135,8 @@ export interface CommentResponse {
   authorLastName: string;
   authorAvatarUrl: string;
   createdAt: string;
+  parentId?: string | null;
+  replies?: CommentResponse[];
 }
 
 export interface CreateCommentRequest {
@@ -140,6 +144,7 @@ export interface CreateCommentRequest {
   targetId: string;
   targetType: string;
   content: string;
+  parentId?: string | null;
 }
 
 export interface UpdateCommentRequest {
@@ -162,6 +167,11 @@ export class SocialService {
     return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts`);
   }
 
+  // Public feed - all active posts (for social page)
+  getPublicFeed(): Observable<PostResponse[]> {
+    return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts/feed`);
+  }
+
   getPost(postId: string): Observable<PostResponse> {
     return this.http.get<PostResponse>(`${this.apiUrl}/social/posts/${postId}`);
   }
@@ -174,6 +184,9 @@ export class SocialService {
     const formData = new FormData();
     formData.append('authorId', request.authorId);
     formData.append('caption', request.caption);
+    if (request.tags) {
+      formData.append('tags', request.tags);
+    }
     if (imageFile) {
       formData.append('image', imageFile);
     }

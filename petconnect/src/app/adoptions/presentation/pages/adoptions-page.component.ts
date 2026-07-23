@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -10,11 +10,15 @@ import { SelectModule } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
+import { AdoptionService } from '../../infrastructure/services/adoption.service';
+import { AvailablePetResponse } from '../../infrastructure/services/adoption.service';
+import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 
 interface Pet {
   id: string;
+  petId: string;
   name: string;
   species: string;
   breed: string;
@@ -181,7 +185,7 @@ interface Pet {
           <!-- Pets Grid -->
           <div class="pets-grid">
             @for (pet of filteredPets(); track pet.id) {
-              <div class="pet-card" (click)="openPetDetail(pet)">
+              <div class="pet-card" (click)="goToPetProfile(pet)">
                 <div class="pet-image-container">
                   <img [src]="pet.image" [alt]="pet.name" />
                   @if (pet.status !== 'available') {
@@ -327,534 +331,89 @@ interface Pet {
     </div>
   `,
   styles: [`
-    .adoptions-page {
-      min-height: 100vh;
-      background: var(--surface-bg);
-    }
-
-    /* Header */
-    .adoptions-header {
-      padding: 2rem 0;
-      margin-bottom: 2rem;
-    }
-
-    .header-content {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .header-left h1 {
-      margin: 0;
-      font-size: 2rem;
-      font-weight: 700;
-      color: white;
-    }
-
-    .header-left p {
-      margin: 0.25rem 0 0;
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 1rem;
-    }
-
-    .header-stats {
-      display: flex;
-      align-items: center;
-      gap: 2rem;
-      background: rgba(255, 255, 255, 0.15);
-      padding: 1rem 2rem;
-      border-radius: var(--radius-md);
-      backdrop-filter: blur(10px);
-    }
-
-    .stat-item {
-      text-align: center;
-    }
-
-    .stat-value {
-      display: block;
-      font-size: 1.5rem;
-      font-weight: 400;
-      color: white;
-    }
-
-    .stat-label {
-      font-size: 0.875rem;
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    .stat-divider {
-      width: 1px;
-      height: 3rem;
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    /* Container */
-    .adoptions-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 2rem 2rem;
-      display: grid;
-      grid-template-columns: 280px 1fr;
-      gap: 2rem;
-    }
-
-    /* Filters Sidebar */
-    .filters-sidebar {
-      background: var(--surface-card);
-      border-radius: var(--radius-md);
-      padding: 1.5rem;
-      height: fit-content;
-      position: sticky;
-      top: 1rem;
-    }
-
-    .filter-section {
-      margin-bottom: 1.5rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 1px solid var(--surface-border);
-    }
-
-    .filter-section:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-
-    .filter-section h3 {
-      margin: 0 0 1rem;
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .search-filter {
-      position: relative;
-    }
-
-    .search-filter i {
-      position: absolute;
-      left: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-tertiary);
-    }
-
-    .search-filter input {
-      width: 100%;
-      padding: 0.625rem 1rem 0.625rem 2.5rem;
-      border: 1px solid var(--surface-border);
-      border-radius: var(--radius-sm);
-      background: var(--surface-hover);
-      color: var(--text-primary);
-    }
-
-    .filter-options {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .filter-option {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .filter-option label {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      cursor: pointer;
-    }
-
-    .clear-filters-btn {
-      width: 100%;
-      padding: 0.75rem;
-      background: none;
-      border: 1px solid var(--surface-border);
-      border-radius: var(--radius-sm);
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .clear-filters-btn:hover {
-      background: var(--surface-hover);
-      color: var(--text-primary);
-    }
-
-    /* Main Content */
-    .pets-main {
-      min-height: 600px;
-    }
-
-    .results-header {
-      margin-bottom: 1.5rem;
-    }
-
-    .results-count {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-
-    /* Pets Grid */
-    .pets-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .pet-card {
-      background: var(--surface-card);
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      transition: all var(--transition-fast);
-      cursor: pointer;
-    }
-
-    .pet-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-    }
-
-    .pet-image-container {
-      position: relative;
-      width: 100%;
-      height: 250px;
-      overflow: hidden;
-      background: var(--surface-hover);
-    }
-
-    .pet-image-container img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform var(--transition-normal);
-    }
-
-    .pet-card:hover .pet-image-container img {
-      transform: scale(1.05);
-    }
-
-    .pet-status-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .status-badge {
-      padding: 0.5rem 1.5rem;
-      border-radius: var(--radius-full);
-      font-weight: 600;
-      font-size: 0.875rem;
-    }
-
-    .status-pending {
-      background: #fbbf24;
-      color: white;
-    }
-
-    .status-adopted {
-      background: #10b981;
-      color: white;
-    }
-
-    .pet-info {
-      padding: 1.25rem;
-    }
-
-    .pet-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.5rem;
-    }
-
-    .pet-header h3 {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .pet-gender {
-      font-size: 1.25rem;
-      color: var(--primary-color);
-    }
-
-    .pet-breed {
-      margin: 0 0 0.5rem;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-
-    .pet-age {
-      margin: 0 0 0.75rem;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-
-    .pet-tags {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      margin-bottom: 0.75rem;
-    }
-
-    .pet-tag {
-      padding: 0.25rem 0.5rem;
-      background: var(--primary-color-light);
-      color: var(--primary-color);
-      border-radius: var(--radius-sm);
-      font-size: 0.75rem;
-      font-weight: 500;
-    }
-
-    .pet-location {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-      color: var(--text-tertiary);
-    }
-
-    .pet-location i {
-      color: var(--primary-color);
-    }
-
-    .no-pets {
-      text-align: center;
-      padding: 4rem 2rem;
-      background: var(--surface-card);
-      border-radius: var(--radius-md);
-    }
-
-    .no-pets i {
-      font-size: 3rem;
-      color: var(--text-tertiary);
-      margin-bottom: 1rem;
-    }
-
-    .no-pets p {
-      font-size: 1.125rem;
-      color: var(--text-secondary);
-      margin: 0 0 1rem;
-    }
-
-    /* Pet Detail */
-    .pet-detail {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-    }
-
-    .pet-detail-image {
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      height: 100%;
-      min-height: 400px;
-    }
-
-    .pet-detail-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .pet-detail-info {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .pet-detail-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
-    .pet-detail-header h2 {
-      margin: 0;
-      font-size: 1.75rem;
-    }
-
-    .pet-breed-detail {
-      margin: 0.5rem 0 0;
-      font-size: 1rem;
-      color: var(--text-secondary);
-    }
-
-    .pet-gender-icon {
-      font-size: 2rem;
-      color: var(--primary-color);
-    }
-
-    .pet-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .meta-item {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-
-    .meta-item i {
-      color: var(--primary-color);
-      width: 1.25rem;
-    }
-
-    .pet-characteristics h3,
-    .pet-description h3,
-    .pet-personality h3 {
-      margin: 0 0 0.75rem;
-      font-size: 1rem;
-      font-weight: 600;
-    }
-
-    .characteristics-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .characteristic-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-      color: var(--text-tertiary);
-    }
-
-    .characteristic-item.active {
-      color: #10b981;
-    }
-
-    .characteristic-item i {
-      font-size: 1rem;
-    }
-
-    .pet-description p {
-      margin: 0;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      line-height: 1.6;
-    }
-
-    .personality-tags {
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-
-    .personality-tag {
-      padding: 0.5rem 1rem;
-      background: var(--primary-color-light);
-      color: var(--primary-color);
-      border-radius: var(--radius-full);
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
-
-    .pet-actions {
-      margin-top: auto;
-    }
-
-    .adopt-btn,
-    .pending-btn,
-    .adopted-btn {
-      width: 100%;
-      padding: 1rem;
-      border: none;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 1rem;
-      transition: all var(--transition-fast);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .adopt-btn {
-      background: var(--primary-color);
-      color: white;
-    }
-
-    .adopt-btn:hover {
-      background: var(--primary-color-dark);
-      transform: translateY(-2px);
-    }
-
-    .pending-btn {
-      background: #fbbf24;
-      color: white;
-      cursor: not-allowed;
-      opacity: 0.7;
-    }
-
-    .adopted-btn {
-      background: #10b981;
-      color: white;
-      cursor: not-allowed;
-      opacity: 0.7;
-    }
-
-    /* Responsive */
-    @media (max-width: 1024px) {
-      .adoptions-container {
-        grid-template-columns: 1fr;
-      }
-
-      .filters-sidebar {
-        display: none;
-      }
-    }
-
-    @media (max-width: 768px) {
-      .header-content {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      .header-stats {
-        width: 100%;
-        justify-content: center;
-      }
-
-      .pets-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .pet-detail {
-        grid-template-columns: 1fr;
-      }
-
-      .pet-detail-image {
-        min-height: 250px;
-      }
-    }
+    .adoptions-page { min-height: 100vh; background: var(--surface-bg); }
+    .adoptions-header { padding: 2rem 0; margin-bottom: 2rem; }
+    .header-content { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+    .header-left h1 { margin: 0; font-size: 2rem; font-weight: 700; color: white; }
+    .header-left p { margin: 0.25rem 0 0; color: rgba(255,255,255,0.9); font-size: 1rem; }
+    .header-stats { display: flex; align-items: center; gap: 2rem; background: rgba(255,255,255,0.15); padding: 1rem 2rem; border-radius: var(--radius-md); backdrop-filter: blur(10px); }
+    .stat-item { text-align: center; }
+    .stat-value { display: block; font-size: 1.5rem; font-weight: 400; color: white; }
+    .stat-label { font-size: 0.875rem; color: rgba(255,255,255,0.9); }
+    .stat-divider { width: 1px; height: 3rem; background: rgba(255,255,255,0.3); }
+    .adoptions-container { max-width: 1400px; margin: 0 auto; padding: 0 2rem 2rem; display: grid; grid-template-columns: 280px 1fr; gap: 2rem; }
+    .filters-sidebar { background: var(--surface-card); border-radius: var(--radius-md); padding: 1.5rem; height: fit-content; position: sticky; top: 1rem; }
+    .filter-section { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--surface-border); }
+    .filter-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .filter-section h3 { margin: 0 0 1rem; font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
+    .search-filter { position: relative; }
+    .search-filter i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); }
+    .search-filter input { width: 100%; padding: 0.625rem 1rem 0.625rem 2.5rem; border: 1px solid var(--surface-border); border-radius: var(--radius-sm); background: var(--surface-hover); color: var(--text-primary); }
+    .filter-options { display: flex; flex-direction: column; gap: 0.75rem; }
+    .filter-option { display: flex; align-items: center; gap: 0.5rem; }
+    .filter-option label { font-size: 0.875rem; color: var(--text-secondary); cursor: pointer; }
+    .clear-filters-btn { width: 100%; padding: 0.75rem; background: none; border: 1px solid var(--surface-border); border-radius: var(--radius-sm); color: var(--text-secondary); cursor: pointer; transition: all var(--transition-fast); display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+    .clear-filters-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
+    .pets-main { min-height: 600px; }
+    .results-header { margin-bottom: 1.5rem; }
+    .results-count { font-size: 0.875rem; color: var(--text-secondary); }
+    .pets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+    .pet-card { background: var(--surface-card); border-radius: var(--radius-md); overflow: hidden; transition: all var(--transition-fast); cursor: pointer; }
+    .pet-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .pet-image-container { position: relative; width: 100%; height: 250px; overflow: hidden; background: var(--surface-hover); }
+    .pet-image-container img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-normal); }
+    .pet-card:hover .pet-image-container img { transform: scale(1.05); }
+    .pet-status-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+    .status-badge { padding: 0.5rem 1.5rem; border-radius: var(--radius-full); font-weight: 600; font-size: 0.875rem; }
+    .status-pending { background: #fbbf24; color: white; }
+    .status-adopted { background: #10b981; color: white; }
+    .pet-info { padding: 1.25rem; }
+    .pet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+    .pet-header h3 { margin: 0; font-size: 1.25rem; font-weight: 600; color: var(--text-primary); }
+    .pet-gender { font-size: 1.25rem; color: var(--primary-color); }
+    .pet-breed { margin: 0 0 0.5rem; font-size: 0.875rem; color: var(--text-secondary); }
+    .pet-age { margin: 0 0 0.75rem; font-size: 0.875rem; color: var(--text-secondary); }
+    .pet-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    .pet-tag { padding: 0.25rem 0.5rem; background: var(--primary-color-light); color: var(--primary-color); border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 500; }
+    .pet-location { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-tertiary); }
+    .pet-location i { color: var(--primary-color); }
+    .no-pets { text-align: center; padding: 4rem 2rem; background: var(--surface-card); border-radius: var(--radius-md); }
+    .no-pets i { font-size: 3rem; color: var(--text-tertiary); margin-bottom: 1rem; }
+    .no-pets p { font-size: 1.125rem; color: var(--text-secondary); margin: 0 0 1rem; }
+    .pet-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    .pet-detail-image { border-radius: var(--radius-md); overflow: hidden; height: 100%; min-height: 400px; }
+    .pet-detail-image img { width: 100%; height: 100%; object-fit: cover; }
+    .pet-detail-info { display: flex; flex-direction: column; gap: 1.5rem; }
+    .pet-detail-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .pet-detail-header h2 { margin: 0; font-size: 1.75rem; }
+    .pet-breed-detail { margin: 0.5rem 0 0; font-size: 1rem; color: var(--text-secondary); }
+    .pet-gender-icon { font-size: 2rem; color: var(--primary-color); }
+    .pet-meta { display: flex; flex-direction: column; gap: 0.75rem; }
+    .meta-item { display: flex; align-items: center; gap: 0.75rem; font-size: 0.875rem; color: var(--text-secondary); }
+    .meta-item i { color: var(--primary-color); width: 1.25rem; }
+    .pet-characteristics h3, .pet-description h3, .pet-personality h3 { margin: 0 0 0.75rem; font-size: 1rem; font-weight: 600; }
+    .characteristics-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .characteristic-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-tertiary); }
+    .characteristic-item.active { color: #10b981; }
+    .characteristic-item i { font-size: 1rem; }
+    .pet-description p { margin: 0; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; }
+    .personality-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .personality-tag { padding: 0.5rem 1rem; background: var(--primary-color-light); color: var(--primary-color); border-radius: var(--radius-full); font-size: 0.875rem; font-weight: 500; }
+    .pet-actions { margin-top: auto; }
+    .adopt-btn, .pending-btn, .adopted-btn { width: 100%; padding: 1rem; border: none; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600; font-size: 1rem; transition: all var(--transition-fast); display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+    .adopt-btn { background: var(--primary-color); color: white; }
+    .adopt-btn:hover { background: var(--primary-color-dark); transform: translateY(-2px); }
+    .pending-btn { background: #fbbf24; color: white; cursor: not-allowed; opacity: 0.7; }
+    .adopted-btn { background: #10b981; color: white; cursor: not-allowed; opacity: 0.7; }
+    @media (max-width: 1024px) { .adoptions-container { grid-template-columns: 1fr; } .filters-sidebar { display: none; } }
+    @media (max-width: 768px) { .header-content { flex-direction: column; align-items: stretch; } .header-stats { width: 100%; justify-content: center; } .pets-grid { grid-template-columns: 1fr; } .pet-detail { grid-template-columns: 1fr; } .pet-detail-image { min-height: 250px; } }
   `]
 })
-export class AdoptionsPageComponent {
+export class AdoptionsPageComponent implements OnInit {
   private messageService = inject(MessageService);
+  private adoptionService = inject(AdoptionService);
+  private router = inject(Router);
+  private authService = inject(AuthService);
 
   // Filters
   searchQuery = '';
@@ -871,6 +430,9 @@ export class AdoptionsPageComponent {
   petDetailVisible = signal(false);
   selectedPet = signal<Pet | null>(null);
 
+  // Pets data (loaded from backend)
+  pets = signal<Pet[]>([]);
+
   // Computed
   totalPets = computed(() => this.pets().length);
   availablePets = computed(() => this.pets().filter(p => p.status === 'available'));
@@ -878,7 +440,6 @@ export class AdoptionsPageComponent {
   filteredPets = computed(() => {
     let result = [...this.pets()];
 
-    // Search filter
     if (this.searchQuery) {
       const query = this.searchQuery.toLowerCase();
       result = result.filter(p =>
@@ -887,17 +448,14 @@ export class AdoptionsPageComponent {
       );
     }
 
-    // Species filter
     if (this.selectedSpecies.length > 0) {
       result = result.filter(p => this.selectedSpecies.includes(p.species));
     }
 
-    // Gender filter
     if (this.selectedGenders.length > 0) {
       result = result.filter(p => this.selectedGenders.includes(p.gender));
     }
 
-    // Characteristics filters
     if (this.filters.vaccinated) {
       result = result.filter(p => p.vaccinated);
     }
@@ -911,142 +469,76 @@ export class AdoptionsPageComponent {
     return result;
   });
 
-  // Pets data
-  pets = signal<Pet[]>([
-    {
-      id: '1',
-      name: 'Toby',
-      species: 'Perro',
-      breed: 'Labrador Retriever',
-      age: '2 años',
-      gender: 'male',
-      location: 'Madrid, España',
-      shelter: 'Refugio Esperanza',
-      shelterImage: 'https://i.pravatar.cc/150?img=1',
-      description: 'Toby es un perro muy cariñoso y juguetón. Le encanta correr en el parque y jugar con pelotas. Es muy bueno con los niños y otros animales. Está buscando una familia activa que le pueda dar mucho amor y ejercicio.',
-      personality: ['Juguetón', 'Cariñoso', 'Energético', 'Sociable'],
-      image: 'https://images.unsplash.com/photo-1552053831-71594a27632d?w=600&h=400&fit=crop',
-      images: [
-        'https://images.unsplash.com/photo-1552053831-71594a27632d?w=600&h=400&fit=crop',
-        'https://images.unsplash.com/photo-1587300003388-59608b8b3653?w=600&h=400&fit=crop'
-      ],
-      status: 'available',
-      vaccinated: true,
-      sterilized: true,
-      microchipped: true,
-      arrivalDate: new Date('2024-01-15')
-    },
-    {
-      id: '2',
-      name: 'Coco',
-      species: 'Gato',
-      breed: 'Mestizo',
-      age: '1 año',
-      gender: 'female',
-      location: 'Barcelona, España',
-      shelter: 'Protección Animal',
-      shelterImage: 'https://i.pravatar.cc/150?img=2',
-      description: 'Coco es una gata tranquila y dulce. Le gusta pasar las tardes en el sofá y recibir caricias. Es un poco tímida al principio, pero una vez que confía en ti, es muy cariñosa. Ideal para hogares tranquilos.',
-      personality: ['Tranquilo', 'Cariñoso', 'Independiente', 'Tímido'],
-      image: 'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=600&h=400&fit=crop',
-      images: [
-        'https://images.unsplash.com/photo-1574158622682-e40e69881006?w=600&h=400&fit=crop'
-      ],
-      status: 'available',
-      vaccinated: true,
-      sterilized: true,
-      microchipped: false,
-      arrivalDate: new Date('2024-02-01')
-    },
-    {
-      id: '3',
-      name: 'Rocky',
-      species: 'Perro',
-      breed: 'Pastor Alemán',
-      age: '3 años',
-      gender: 'male',
-      location: 'Valencia, España',
-      shelter: 'Huellas Solidarias',
-      shelterImage: 'https://i.pravatar.cc/150?img=3',
-      description: 'Rocky es un perro inteligente y leal. Necesita un dueño con experiencia que pueda dedicarle tiempo a su educación y ejercicio. Es muy protector y sería un excelente compañero para una familia con niños mayores.',
-      personality: ['Inteligente', 'Leal', 'Protector', 'Activo'],
-      image: 'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?w=600&h=400&fit=crop',
-      images: [
-        'https://images.unsplash.com/photo-1589941013453-ec89f33b5e95?w=600&h=400&fit=crop'
-      ],
-      status: 'pending',
-      vaccinated: true,
-      sterilized: true,
-      microchipped: true,
-      arrivalDate: new Date('2024-01-20')
-    },
-    {
-      id: '4',
-      name: 'Luna',
-      species: 'Gato',
-      breed: 'Siamés',
-      age: '6 meses',
-      gender: 'female',
-      location: 'Sevilla, España',
-      shelter: 'Amigos de los Animales',
-      shelterImage: 'https://i.pravatar.cc/150?img=4',
-      description: 'Luna es una gatita curiosa y juguetona. Le encanta explorar y jugar con todo lo que se mueve. Es muy social y se lleva bien con otros gatos. Busca una familia que le pueda dar atención y juegos.',
-      personality: ['Curioso', 'Juguetón', 'Social', 'Ágil'],
-      image: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600&h=400&fit=crop',
-      images: [
-        'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600&h=400&fit=crop'
-      ],
-      status: 'available',
-      vaccinated: true,
-      sterilized: false,
-      microchipped: true,
-      arrivalDate: new Date('2024-03-01')
-    },
-    {
-      id: '5',
-      name: 'Max',
-      species: 'Perro',
-      breed: 'Bulldog Francés',
-      age: '4 años',
-      gender: 'male',
-      location: 'Madrid, España',
-      shelter: 'Refugio Esperanza',
-      shelterImage: 'https://i.pravatar.cc/150?img=5',
-      description: 'Max es un perro adorable y tranquilo. Le gusta dormir largas siestas y recibir mimos. Es perfecto para apartamentos y para personas que buscan un compañero relajado. Ya ha sido adoptado pero queremos darle otra oportunidad.',
-      personality: ['Tranquilo', 'Cariñoso', 'Divertido', 'Leal'],
-      image: 'https://images.unsplash.com/photo-1583511655857-1c1bb0b7dc2e?w=600&h=400&fit=crop',
-      images: [
-        'https://images.unsplash.com/photo-1583511655857-1c1bb0b7dc2e?w=600&h=400&fit=crop'
-      ],
-      status: 'adopted',
-      vaccinated: true,
-      sterilized: true,
-      microchipped: true,
-      arrivalDate: new Date('2024-01-10')
-    },
-    {
-      id: '6',
-      name: 'Mia',
-      species: 'Gato',
-      breed: 'Persa',
-      age: '2 años',
-      gender: 'female',
-      location: 'Barcelona, España',
-      shelter: 'Protección Animal',
-      shelterImage: 'https://i.pravatar.cc/150?img=6',
-      description: 'Mia es una gata elegante y serena. Requiere cuidados regulares de su pelaje, pero te recompensará con su compañía tranquila. Es ideal para personas que buscan un gato de compañía relajado.',
-      personality: ['Sereno', 'Elegante', 'Independiente', 'Cariñoso'],
-      image: 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=600&h=400&fit=crop',
-      images: [
-        'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?w=600&h=400&fit=crop'
-      ],
-      status: 'available',
-      vaccinated: true,
-      sterilized: true,
-      microchipped: true,
-      arrivalDate: new Date('2024-02-15')
-    }
-  ]);
+  ngOnInit(): void {
+    this.loadAvailablePets();
+  }
+
+  // Load available pets from the backend
+  loadAvailablePets(): void {
+    this.adoptionService.getAvailablePets().subscribe({
+      next: (petResponses: AvailablePetResponse[]) => {
+        // Filter only pets available for adoption and map to Pet interface
+        const mappedPets: Pet[] = petResponses
+          .filter(p => p.pet.availableForAdoption)
+          .map(p => this.mapPetResponseToPet(p));
+        this.pets.set(mappedPets);
+      },
+      error: (err) => {
+        console.error('Error loading available pets:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar las mascotas disponibles'
+        });
+      }
+    });
+  }
+
+  // Map PetResponse from backend to the Pet interface used in the UI
+  mapPetResponseToPet(p: AvailablePetResponse): Pet {
+    const petDetail = p.pet;
+    const age = petDetail.dateOfBirth
+      ? `${new Date().getFullYear() - new Date(petDetail.dateOfBirth).getFullYear()} años`
+      : 'Edad desconocida';
+
+    const personality = petDetail.temperament
+      ? petDetail.temperament.split(',').map(t => t.trim())
+      : [];
+
+    return {
+      id: p.id,
+      petId: petDetail.id,
+      name: p.name,
+      species: this.translateSpecies(petDetail.species),
+      breed: p.breed || 'Sin raza',
+      age,
+      gender: (petDetail.gender as 'male' | 'female') || 'male',
+      location: petDetail.lastKnownLocation || 'Ubicación desconocida',
+      shelter: petDetail.adoptionCenter || 'Sin refugio',
+      shelterImage: '',
+      description: petDetail.bio || 'Sin descripción disponible',
+      personality,
+      image: p.image || petDetail.avatarUrl || 'https://i.pravatar.cc/300',
+      images: petDetail.imageUrls || [],
+      status: p.status === 'AVAILABLE' ? 'available' : p.status === 'PENDING' ? 'pending' : 'adopted',
+      vaccinated: !!petDetail.lastVaccinationDate,
+      sterilized: petDetail.spayedNeutered,
+      microchipped: !!petDetail.microchipId,
+      arrivalDate: petDetail.adoptionDate ? new Date(petDetail.adoptionDate) : new Date()
+    };
+  }
+
+  translateSpecies(species: string): string {
+    const speciesMap: Record<string, string> = {
+      'dog': 'Perro',
+      'cat': 'Gato',
+      'bird': 'Ave',
+      'rabbit': 'Conejo',
+      'hamster': 'Hámster',
+      'other': 'Otro'
+    };
+    return speciesMap[species.toLowerCase()] || species;
+  }
 
   // Methods
   applyFilters() {
@@ -1069,18 +561,43 @@ export class AdoptionsPageComponent {
     });
   }
 
-  openPetDetail(pet: Pet) {
-    this.selectedPet.set(pet);
-    this.petDetailVisible.set(true);
+  goToPetProfile(pet: Pet) {
+    this.router.navigate(['/profile/pet', pet.petId]);
   }
 
   requestAdoption(pet: Pet) {
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Solicitud enviada',
-      detail: `Tu solicitud de adopción para ${pet.name} ha sido enviada al refugio`
+    const user = this.authService.user();
+    if (!user) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'Inicia sesión',
+        detail: 'Debes iniciar sesión para solicitar una adopción'
+      });
+      return;
+    }
+
+    this.adoptionService.requestAdoption({ petId: pet.id }).subscribe({
+      next: (response) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Solicitud enviada',
+          detail: `Tu solicitud de adopción para ${pet.name} ha sido enviada al refugio`
+        });
+        this.petDetailVisible.set(false);
+        // Update the pet status to pending
+        this.pets.update(pets =>
+          pets.map(p => p.id === pet.id ? { ...p, status: 'pending' } : p)
+        );
+      },
+      error: (err) => {
+        console.error('Error requesting adoption:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo enviar la solicitud de adopción. Inténtalo de nuevo.'
+        });
+      }
     });
-    this.petDetailVisible.set(false);
   }
 
   getStatusLabel(status: string): string {

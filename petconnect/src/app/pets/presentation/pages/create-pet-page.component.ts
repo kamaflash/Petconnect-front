@@ -1,7 +1,11 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { PetService } from '../../infrastructure/services/pet.service';
+import { AuthService } from '../../../auth/infrastructure/services/auth.service';
+import { CreatePetRequest } from '../../domain/pet.model';
 
 @Component({
   selector: 'app-create-pet-page',
@@ -137,13 +141,55 @@ export class CreatePetPageComponent {
     ]
   };
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private petService: PetService,
+    private authService: AuthService,
+    private messageService: MessageService
+  ) {}
 
   handleSubmit(data: any) {
-    console.log('Nueva mascota creada:', data);
-    // Aquí se enviaría a un servicio
-    // Por ahora, simulamos éxito y volvemos al perfil
-    this.router.navigate(['/profile']);
+    const user = this.authService.user();
+    const ownerId = user?.id || '';
+
+    // Extract uploaded files from the photos field
+    const photos = data.photos || [];
+    const imageFiles: File[] = photos
+      .filter((f: any) => f.originalFile instanceof File)
+      .map((f: any) => f.originalFile as File);
+
+    const imageFile: File | undefined = imageFiles[0];
+
+    // Build the CreatePetRequest
+    const request: CreatePetRequest = {
+      name: data.name,
+      species: data.species,
+      breed: data.breed || undefined,
+      dateOfBirth: data.dateOfBirth || undefined,
+      gender: data.gender || undefined,
+      color: data.color || null,
+      microchipId: data.microchipId || null
+    };
+
+    // Call the backend service to create the pet
+    this.petService.createPet(request, imageFile, imageFiles, ownerId).subscribe({
+      next: (pet) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Mascota creada',
+          detail: `La mascota "${pet.name}" ha sido creada correctamente`
+        });
+        this.router.navigate(['/profile']);
+      },
+      error: (err) => {
+        console.error('Error creating pet:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo crear la mascota. Inténtalo de nuevo.'
+        });
+      }
+    });
   }
 
   handleCancel() {

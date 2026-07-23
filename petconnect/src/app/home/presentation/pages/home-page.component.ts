@@ -207,20 +207,10 @@ import { LikeService } from '../../../shared/infrastructure/services/like.servic
               <span class="card-header-title">Tendencias</span>
             </div>
             <div class="card-body">
-              <div class="trend-item">
-                <span class="trend-category">Tendencia en Comunidad</span>
-                <span class="trend-name">#PaseoPerruno</span>
-                <span class="trend-posts">1.2k publicaciones</span>
-              </div>
-              <div class="trend-item">
-                <span class="trend-category">Tendencia en Eventos</span>
-                <span class="trend-name">#CarreraSolidaria</span>
-                <span class="trend-posts">856 publicaciones</span>
-              </div>
-              <div class="trend-item">
-                <span class="trend-category">Tendencia en Adopciones</span>
-                <span class="trend-name">#HistoriasFelices</span>
-                <span class="trend-posts">2.1k publicaciones</span>
+              <div class="trend-item" *ngFor="let trend of trendingTopics()">
+                <span class="trend-category">#{{ trend.rank }} Tendencia</span>
+                <span class="trend-name">{{ trend.name }}</span>
+                <span class="trend-posts">{{ trend.posts }} publicaciones</span>
               </div>
             </div>
           </div>
@@ -773,6 +763,7 @@ export class HomePageComponent implements OnInit {
   newAdoptions: Adoption[] = [];
   upcomingAchievements: Achievement[] = [];
   userLevel: UserLevel = { level: 12, currentXp: 650, totalXp: 1000 };
+  trendingTopics = signal<{ rank: number; name: string; posts: number }[]>([]);
 
   // Current user
   currentUserId = signal('');
@@ -833,6 +824,7 @@ export class HomePageComponent implements OnInit {
     this.loadNewAdoptions();
     this.loadAchievements();
     this.loadUserLevel();
+    this.loadTrendingTopics();
   }
 
   private loadVetsAndSuggestions(): void {
@@ -1299,6 +1291,23 @@ export class HomePageComponent implements OnInit {
       return `${(count / 1000).toFixed(1)}k`;
     }
     return count.toString();
+  }
+
+  private loadTrendingTopics(): void {
+    this.homeService.getTrendingTopics().subscribe({
+      next: (topics) => {
+        // Show only top 3 trending topics
+        const topTopics = topics.slice(0, 3);
+        this.trendingTopics.set(topTopics.map((topic, index) => ({
+          rank: index + 1,
+          name: topic.name,
+          posts: topic.postsCount
+        })));
+      },
+      error: (err) => {
+        console.error('Error loading trending topics:', err);
+      }
+    });
   }
 
   onLikeToggled(post: PostItem): void {

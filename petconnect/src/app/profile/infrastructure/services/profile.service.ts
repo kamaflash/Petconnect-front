@@ -18,6 +18,11 @@ export interface UserProfileResponse {
   profilePublic: boolean;
   notificationsEnabled: boolean;
   profileType: string;
+  specialty: string | null;
+  licenseNumber: string | null;
+  charityNumber: string | null;
+  storeName: string | null;
+  website: string | null;
 }
 
 export interface PetResponse {
@@ -73,6 +78,7 @@ export interface PetResponse {
   lastKnownLocation: string | null;
   lost: boolean;
   lostDate: string | null;
+  availableForAdoption: boolean;
 }
 
 @Injectable({
@@ -108,5 +114,9 @@ export class ProfileService {
 
   getPetById(petId: string): Observable<PetResponse> {
     return this.http.get<PetResponse>(`${this.apiUrl}/pets/${petId}`);
+  }
+
+  toggleAdoptionStatus(petId: string, availableForAdoption: boolean): Observable<PetResponse> {
+    return this.http.patch<PetResponse>(`${this.apiUrl}/pets/${petId}/adoption-status?availableForAdoption=${availableForAdoption}`, {});
   }
 }

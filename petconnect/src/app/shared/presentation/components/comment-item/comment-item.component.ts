@@ -9,7 +9,7 @@ import { CommentResponse } from '../../../../social/infrastructure/services/soci
   standalone: true,
   imports: [CommonModule, RouterModule, ButtonModule],
   template: `
-    <div class="comment-item">
+    <div class="comment-item" [class.is-reply]="isReply()">
       <div class="comment-avatar">
         <img [src]="comment().authorAvatarUrl" [alt]="comment().authorFirstName" class="avatar-img" />
       </div>
@@ -22,11 +22,28 @@ import { CommentResponse } from '../../../../social/infrastructure/services/soci
         </div>
         <div class="comment-actions">
           <span class="comment-time">{{ formatDate(comment().createdAt) }}</span>
-          @if (isAuthor()) {
-            <button class="comment-action-btn" (click)="onEdit()">Editar</button>
+          @if (!isReply()) {
+            <button class="comment-action-btn" (click)="onReply()">Responder</button>
+          }
+          @if (canDelete()) {
             <button class="comment-action-btn delete" (click)="onDelete()">Eliminar</button>
           }
         </div>
+        <!-- Replies -->
+        @if (comment().replies && comment().replies!.length > 0) {
+          <div class="comment-replies">
+            @for (reply of comment().replies; track reply.id) {
+              <app-comment-item
+                [comment]="reply"
+                [currentUserId]="currentUserId()"
+                [postAuthorId]="postAuthorId()"
+                [isReply]="true"
+                (replyRequested)="onReply()"
+                (deleteRequested)="deleteRequested.emit($event)"
+              />
+            }
+          </div>
+        }
       </div>
     </div>
   `,
@@ -35,6 +52,12 @@ import { CommentResponse } from '../../../../social/infrastructure/services/soci
       display: flex;
       gap: 0.75rem;
       padding: 0.75rem 1rem;
+    }
+
+    .comment-item.is-reply {
+      padding-left: 0;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
     }
 
     .comment-avatar {
@@ -107,19 +130,31 @@ import { CommentResponse } from '../../../../social/infrastructure/services/soci
     .comment-action-btn.delete:hover {
       color: #ef4444;
     }
+
+    .comment-replies {
+      margin-top: 0.5rem;
+      border-left: 2px solid var(--surface-border);
+      margin-left: -0.5rem;
+      padding-left: 0.5rem;
+    }
   `]
 })
 export class CommentItemComponent {
   // Inputs
   comment = input.required<CommentResponse>();
   currentUserId = input<string>('');
+  postAuthorId = input<string>('');
+  isReply = input(false);
 
   // Outputs
-  editRequested = output<string>();
+  replyRequested = output<string>();
   deleteRequested = output<string>();
 
-  isAuthor(): boolean {
-    return this.currentUserId() === this.comment().userId;
+  canDelete(): boolean {
+    const uid = this.currentUserId();
+    if (!uid) return false;
+    // Comment author or post owner can delete
+    return uid === this.comment().userId || uid === this.postAuthorId();
   }
 
   formatDate(dateString: string): string {
@@ -137,8 +172,8 @@ export class CommentItemComponent {
     return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
   }
 
-  onEdit(): void {
-    this.editRequested.emit(this.comment().id);
+  onReply(): void {
+    this.replyRequested.emit(this.comment().id);
   }
 
   onDelete(): void {

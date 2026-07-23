@@ -1,32 +1,33 @@
-import { Component, input, output, signal, inject } from '@angular/core';
+import { Component, input, output, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { SocialService, CreateCommentRequest, UpdateCommentRequest, CommentResponse } from '../../../../social/infrastructure/services/social.service';
 
 @Component({
   selector: 'app-comment-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonModule],
+  imports: [CommonModule, ButtonModule],
   template: `
-    <form (ngSubmit)="onSubmit()" class="comment-form">
+    <div class="comment-form">
       <input
         type="text"
-        [(ngModel)]="content"
+        [value]="content()"
+        (input)="onInput($event)"
+        (keydown.enter)="onSubmit()"
         [placeholder]="placeholder()"
         class="comment-input"
         [disabled]="loading()"
         maxlength="500"
-        required
       />
       <button
-        type="submit"
+        type="button"
         class="comment-submit-btn"
         [disabled]="loading() || !content().trim()"
+        (click)="onSubmit()"
       >
         {{ loading() ? '...' : (buttonText() || 'Publicar') }}
       </button>
-    </form>
+    </div>
   `,
   styles: [`
     .comment-form {
@@ -81,13 +82,14 @@ import { SocialService, CreateCommentRequest, UpdateCommentRequest, CommentRespo
     }
   `]
 })
-export class CommentFormComponent {
+export class CommentFormComponent implements OnInit {
   private readonly socialService = inject(SocialService);
 
   // Inputs
   targetId = input.required<string>();
   targetType = input.required<string>();
   userId = input.required<string>();
+  parentId = input<string | null>(null);
   placeholder = input<string>('Añade un comentario...');
   buttonText = input<string>('Publicar');
   editingCommentId = input<string | null>(null);
@@ -102,10 +104,15 @@ export class CommentFormComponent {
   content = signal('');
   loading = signal(false);
 
-  constructor() {
+  ngOnInit(): void {
     if (this.editingCommentId()) {
       this.content.set(this.initialContent());
     }
+  }
+
+  onInput(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.content.set(value);
   }
 
   onSubmit(): void {
@@ -140,7 +147,8 @@ export class CommentFormComponent {
         userId: this.userId(),
         targetId: this.targetId(),
         targetType: this.targetType(),
-        content: contentValue
+        content: contentValue,
+        parentId: this.parentId() || null
       };
 
       this.socialService.createComment(request).subscribe({

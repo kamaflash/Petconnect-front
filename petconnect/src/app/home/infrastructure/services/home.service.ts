@@ -110,6 +110,13 @@ export interface UserLevelResponse {
   totalXp: number;
 }
 
+export interface TrendingTopicResponse {
+  id: string;
+  name: string;
+  postsCount: number;
+  active: boolean;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -178,6 +185,11 @@ export class HomeService {
      return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts/following/${userId}`);
    }
 
+   // Public feed - all posts (for social page)
+   getPublicFeed(): Observable<PostResponse[]> {
+     return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts/feed`);
+   }
+
    // Following - get users that the current user follows
    getFollowing(userId: string): Observable<FollowResponse[]> {
      return this.http.get<FollowResponse[]>(`${this.apiUrl}/social/follows/following/${userId}`);
@@ -188,8 +200,13 @@ export class HomeService {
      return this.http.post<SuggestionResponse>(`${this.apiUrl}/social/follows`, { followerId, followingId });
    }
 
-   // Unfollow a user
-   unfollowUser(followerId: string, followingId: string): Observable<void> {
-     return this.http.delete<void>(`${this.apiUrl}/social/follows/${followerId}/${followingId}`);
-   }
- }
+    // Unfollow a user
+    unfollowUser(followerId: string, followingId: string): Observable<void> {
+      return this.http.delete<void>(`${this.apiUrl}/social/follows/${followerId}/${followingId}`);
+    }
+
+    // Trending topics
+    getTrendingTopics(): Observable<TrendingTopicResponse[]> {
+      return this.http.get<TrendingTopicResponse[]>(`${this.apiUrl}/social/trending`);
+    }
+  }

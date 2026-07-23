@@ -17,6 +17,8 @@ import { InfoItemComponent } from '../../../shared/presentation/components/info-
 import { StatCardComponent } from '../../../shared/presentation/components/stat-card/stat-card.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { ProfileService, PetResponse } from '../../infrastructure/services/profile.service';
+import { AdoptionService } from '../../../adoptions/infrastructure/services/adoption.service';
+import { CreateAdoptionRequest } from '../../../adoptions/infrastructure/services/adoption.service';
 import { MessageService } from 'primeng/api';
 import {
   getSpeciesLabel,
@@ -89,8 +91,16 @@ interface PetComment {
           <div class="pet-info-section">
             <div class="pet-title-section">
               <h1 class="pet-name">{{ pet()?.name }}</h1>
-              <p-tag [value]="pet()?.active ? 'Activo' : 'Inactivo'"
-                     [severity]="pet()?.active ? 'success' : 'secondary'" />
+              <p-tag [value]="pet()?.availableForAdoption ? 'En adopción' : 'No en adopción'"
+                     [severity]="pet()?.availableForAdoption ? 'success' : 'secondary'" />
+              <button
+                *ngIf="canRequestAdoption()"
+                class="adopt-from-profile-btn"
+                (click)="requestAdoptionFromProfile()"
+              >
+                <i class="pi pi-heart"></i>
+                Solicitar Adopción
+              </button>
               <div class="pet-admin-actions-inline" *ngIf="isOwner()">
                 <p-button
                   type="button"
@@ -133,6 +143,7 @@ interface PetComment {
                 </div>
               </div>
             </div>
+
           </div>
         </div>
 
@@ -1343,6 +1354,35 @@ interface PetComment {
       }
     }
 
+    /* Adoption button - follow-btn style */
+    .adopt-from-profile-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      background: transparent;
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-full);
+      color: var(--text-secondary);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .adopt-from-profile-btn:hover {
+      background: var(--surface-hover);
+      color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+
+    .adopt-from-profile-btn i {
+      font-size: 0.8125rem;
+      color: var(--primary-color);
+    }
+
     @media (max-width: 480px) {
       .posts-grid {
         grid-template-columns: 1fr;
@@ -1356,6 +1396,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly profileService = inject(ProfileService);
   private readonly messageService = inject(MessageService);
+  private readonly adoptionService = inject(AdoptionService);
   private readonly cdr = inject(ChangeDetectorRef);
   private paramSubscription?: Subscription;
 
@@ -1427,8 +1468,8 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         icon: 'pi pi-cog',
         items: [
           {
-            label: pet?.active ? 'Poner en Adopción' : 'Activar Mascota',
-            icon: pet?.active ? 'pi pi-home' : 'pi pi-check-circle',
+            label: pet?.availableForAdoption ? 'Quitar de adopción' : 'Poner en adopción',
+            icon: pet?.availableForAdoption ? 'pi pi-heart' : 'pi pi-home',
             command: () => this.toggleAdoptionStatus()
           },
           {
@@ -1814,6 +1855,12 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     return pet && user && pet.ownerId === user.id;
   });
 
+  canRequestAdoption = computed(() => {
+    const pet = this.pet();
+    const user = this.authService.user();
+    return pet && user && pet.availableForAdoption && pet.ownerId !== user.id;
+  });
+
     // Tabs configuration
   petTabs = computed((): Tab[] => {
     return [
@@ -2080,16 +2127,59 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Adoption status
-  toggleAdoptionStatus(): void {
+  requestAdoptionFromProfile(): void {
     const pet = this.pet();
     if (!pet) return;
 
-    // Toggle adoption status logic
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Éxito',
-      detail: pet.active ? 'Mascota puesta en adopción' : 'Mascota activada'
+    this.adoptionService.requestAdoption({ petId: pet.id }).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Solicitud enviada',
+          detail: `Tu solicitud de adopción para ${pet.name} ha sido enviada al refugio`
+        });
+      },
+      error: (err) => {
+        console.error('Error requesting adoption:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo enviar la solicitud de adopción'
+        });
+      }
+    });
+  }
+
+  // Adoption status
+  toggleAdoptionStatus(): void {
+    const pet = this.pet();
+    if (!pet) {
+      console.warn('No pet data available for adoption status toggle');
+      return;
+    }
+
+    const newStatus = !pet.availableForAdoption;
+    console.log('Toggling adoption status for pet:', pet.id, 'current active:', pet.active, 'new status:', newStatus);
+
+    this.profileService.toggleAdoptionStatus(pet.id, newStatus).subscribe({
+      next: (response) => {
+        console.log('Adoption status toggled successfully:', response);
+        this.messageService.add({
+          severity: 'success',
+          summary: newStatus ? 'En adopción' : 'Adopción cancelada',
+          detail: newStatus ? 'La mascota ya está disponible para adopción' : 'La mascota ya no está en adopción'
+        });
+        // Reload pet data to reflect the change
+        this.loadPetData(pet.id);
+      },
+      error: (err) => {
+        console.error('Error toggling adoption status:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar el estado de adopción'
+        });
+      }
     });
   }
 

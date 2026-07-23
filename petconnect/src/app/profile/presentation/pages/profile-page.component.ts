@@ -122,6 +122,7 @@ interface Pet {
   name: string;
   breed: string;
   avatar: string;
+  adoptionStatus?: 'available' | 'not-available';
 }
 
 @Component({
@@ -285,6 +286,15 @@ interface Pet {
                 <a [routerLink]="'/profile/pet/' + item.id" class="p-button p-button-sm p-button-outlined">
                   <i class="pi pi-eye"></i> Ver perfil
                 </a>
+                <button
+                  *ngIf="isOwnProfile()"
+                  class="p-button p-button-sm"
+                  [ngClass]="item.adoptionStatus === 'available' ? 'p-button-warning' : 'p-button-success'"
+                  (click)="$event.stopPropagation(); toggleAdoptionStatus(item.id, item.adoptionStatus)"
+                >
+                  <i [class]="item.adoptionStatus === 'available' ? 'pi pi-heart' : 'pi pi-heart-fill'"></i>
+                  {{ item.adoptionStatus === 'available' ? 'En adopción' : 'Poner en adopción' }}
+                </button>
               </ng-template>
             </app-table-card>
           </div>
@@ -308,23 +318,53 @@ interface Pet {
             </div>
           </div>
 
-          <!-- Conóceme (información del perfil para otros usuarios) -->
+          <!-- Conóceme (información del perfil para otros usuarios) - MUESTRA TODOS LOS DATOS -->
           <div class="knowme-content-instagram" *ngIf="activeTab() === 'knowme' && !isOwnProfile() && !loading()">
             <div class="knowme-card-instagram">
               <h3>Conóceme</h3>
               <p class="knowme-bio-instagram">{{ userProfile()?.bio || 'Sin descripción disponible' }}</p>
               <div class="knowme-info-instagram">
-                <div class="knowme-item-instagram" *ngIf="userProfile()?.location">
+                <div class="knowme-item-instagram">
                   <i class="pi pi-map-marker"></i>
-                  <span>{{ userProfile()?.location }}</span>
+                  <span>{{ userProfile()?.location || '—' }}</span>
                 </div>
-                <div class="knowme-item-instagram" *ngIf="userPhone() !== '—'">
+                <div class="knowme-item-instagram">
                   <i class="pi pi-phone"></i>
                   <span>{{ userPhone() }}</span>
                 </div>
-                <div class="knowme-item-instagram" *ngIf="userProfile()?.joinDate">
+                <div class="knowme-item-instagram">
                   <i class="pi pi-clock"></i>
-                  <span>Se unió en {{ userProfile()?.joinDate | date:'MMMM yyyy' }}</span>
+                  <span>Se unió en {{ userProfile()?.joinDate  }}</span>
+                </div>
+                <div class="knowme-item-instagram">
+                  <i class="pi pi-envelope"></i>
+                  <span>{{ userEmail() }}</span>
+                </div>
+                <!-- Campos específicos según tipo de perfil en vista de otros usuarios -->
+                <div class="knowme-item-instagram" *ngIf="userProfile()?.type === 'vet' || userProfile()?.type === 'trainer'">
+                  <i class="pi pi-briefcase"></i>
+                  <span>{{ userProfile()?.type === 'vet' ? 'Especialidad: ' : 'Especialización: ' }}{{ getProfileSpecialty() }}</span>
+                </div>
+                <div class="knowme-item-instagram" *ngIf="userProfile()?.type === 'vet'">
+                  <i class="pi pi-id-card"></i>
+                  <span>Nº colegiado: {{ getProfileLicenseNumber() }}</span>
+                </div>
+                <div class="knowme-item-instagram" *ngIf="userProfile()?.type === 'seller'">
+                  <i class="pi pi-shop"></i>
+                  <span>Tienda: {{ getProfileStoreName() }}</span>
+                </div>
+                <div class="knowme-item-instagram" *ngIf="userProfile()?.type === 'shelter'">
+                  <i class="pi pi-heart"></i>
+                  <span>Registro: {{ getProfileCharityNumber() }}</span>
+                </div>
+                <div class="knowme-item-instagram">
+                  <i class="pi pi-globe"></i>
+                  <span *ngIf="userProfile()?.website; else noWebsite">
+                    <a [href]="'https://' + userProfile()?.website" target="_blank" class="knowme-link">{{ userProfile()?.website }}</a>
+                  </span>
+                  <ng-template #noWebsite>
+                    <span>—</span>
+                  </ng-template>
                 </div>
               </div>
             </div>
@@ -713,6 +753,15 @@ interface Pet {
 
     .knowme-item-instagram i {
       color: var(--primary-color);
+    }
+
+    .knowme-link {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+
+    .knowme-link:hover {
+      text-decoration: underline;
     }
 
     .skeleton-card {
@@ -1181,6 +1230,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           name: p.name,
           breed: p.breed || '',
           avatar: p.avatarUrl || '',
+          adoptionStatus: p.availableForAdoption ? 'available' : 'not-available',
         })));
         this.cdr.detectChanges();
       },
@@ -1258,7 +1308,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   });
 
   userPhone = computed(() => {
-    return this.authService.user()?.phone || '—';
+    const profile = this.userProfile();
+    if (this.isOwnProfile()) {
+      return this.authService.user()?.phone || '—';
+    }
+    // Para otros perfiles, obtener teléfono del perfil cargado
+    return profile?.phone || '—';
   });
 
   userEmail = computed(() => {
@@ -1266,7 +1321,11 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   });
 
   userCountry = computed(() => {
-    return this.authService.user()?.country || '—';
+    const profile = this.userProfile();
+    if (this.isOwnProfile()) {
+      return this.authService.user()?.country || '—';
+    }
+    return profile?.location?.split(', ')[1] || '—';
   });
 
   userProfileType = computed(() => {
@@ -1295,76 +1354,143 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
   // Configuración del formulario de perfil
   profileFormConfig = computed(() => {
+    const profileType = this.userProfile()?.type || 'user';
+    const isOwn = this.isOwnProfile();
+
+    const baseFields = [
+      {
+        key: 'firstName',
+        label: 'Nombre',
+        type: 'input' as const,
+        placeholder: 'Nombre',
+        validation: { required: true, maxLength: 50 }
+      },
+      {
+        key: 'lastName',
+        label: 'Apellidos',
+        type: 'input' as const,
+        placeholder: 'Apellidos',
+        validation: { required: true, maxLength: 50 }
+      },
+      {
+        key: 'phone',
+        label: 'Teléfono',
+        type: 'input' as const,
+        placeholder: '+34 600 000 000',
+        validation: { maxLength: 20 }
+      },
+      {
+        key: 'bio',
+        label: 'Biografía',
+        type: 'textarea' as const,
+        placeholder: 'Cuéntanos sobre ti...',
+        rows: 4,
+        validation: { maxLength: 500 }
+      },
+      {
+        key: 'city',
+        label: 'Ciudad',
+        type: 'input' as const,
+        placeholder: 'Madrid',
+        validation: { maxLength: 100 }
+      },
+      {
+        key: 'country',
+        label: 'País',
+        type: 'input' as const,
+        placeholder: 'España',
+        validation: { maxLength: 100 }
+      },
+      {
+        key: 'website',
+        label: 'Sitio web',
+        type: 'input' as const,
+        placeholder: 'https://mi-sitio.com',
+        validation: { maxLength: 255 }
+      },
+    ];
+
+    // Campos específicos según el tipo de perfil
+    const typeSpecificFields: any[] = [];
+
+    if (profileType === 'vet' || profileType === 'trainer') {
+      typeSpecificFields.push({
+        key: 'specialty',
+        label: profileType === 'vet' ? 'Especialidad' : 'Especialización',
+        type: 'input' as const,
+        placeholder: profileType === 'vet' ? 'Veterinaria General' : 'Adiestramiento canino',
+        validation: { maxLength: 100 }
+      });
+    }
+
+    if (profileType === 'vet') {
+      typeSpecificFields.push({
+        key: 'licenseNumber',
+        label: 'Número de colegiado',
+        type: 'input' as const,
+        placeholder: 'Nº colegiado',
+        validation: { maxLength: 50 }
+      });
+    }
+
+    if (profileType === 'shelter') {
+      typeSpecificFields.push({
+        key: 'charityNumber',
+        label: 'Número de registro',
+        type: 'input' as const,
+        placeholder: 'Nº registro protectora',
+        validation: { maxLength: 100 }
+      });
+    }
+
+    if (profileType === 'seller') {
+      typeSpecificFields.push({
+        key: 'storeName',
+        label: 'Nombre de tienda',
+        type: 'input' as const,
+        placeholder: 'Nombre de tu tienda',
+        validation: { maxLength: 100 }
+      });
+    }
+
     return {
       title: 'Editar información personal',
       submitLabel: 'Guardar cambios',
-      fields: [
-        {
-          key: 'firstName',
-          label: 'Nombre',
-          type: 'input' as const,
-          placeholder: 'Nombre',
-          validation: { required: true, maxLength: 50 }
-        },
-        {
-          key: 'lastName',
-          label: 'Apellidos',
-          type: 'input' as const,
-          placeholder: 'Apellidos',
-          validation: { required: true, maxLength: 50 }
-        },
-        {
-          key: 'phone',
-          label: 'Teléfono',
-          type: 'input' as const,
-          placeholder: '+34 600 000 000',
-          validation: { maxLength: 20 }
-        },
-        {
-          key: 'bio',
-          label: 'Biografía',
-          type: 'textarea' as const,
-          placeholder: 'Cuéntanos sobre ti...',
-          rows: 4,
-          validation: { maxLength: 500 }
-        },
-        {
-          key: 'city',
-          label: 'Ciudad',
-          type: 'input' as const,
-          placeholder: 'Madrid',
-          validation: { maxLength: 100 }
-        },
-        {
-          key: 'country',
-          label: 'País',
-          type: 'input' as const,
-          placeholder: 'España',
-          validation: { maxLength: 100 }
-        },
-        {
-          key: 'website',
-          label: 'Sitio web',
-          type: 'input' as const,
-          placeholder: 'https://mi-sitio.com',
-          validation: { maxLength: 255 }
-        },
-      ]
+      fields: [...baseFields, ...typeSpecificFields]
     } as DynamicFormConfig;
   });
 
   // Datos del formulario de perfil
   profileFormData = computed(() => {
     const user = this.authService.user();
-    return {
+    const profile = this.userProfile();
+    const profileType = profile?.type || 'user';
+
+    const baseData: any = {
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
       phone: user?.phone || '',
       bio: user?.bio || '',
       city: user?.city || '',
       country: user?.country || '',
-      website: ''
+      website: profile?.type !== 'user' ? (profile as any).website || '' : ''
     };
+
+    // Datos específicos según el tipo de perfil
+    if (profileType === 'vet' || profileType === 'trainer') {
+      baseData.specialty = (profile as any).specialty || '';
+    }
+    if (profileType === 'vet') {
+      baseData.licenseNumber = (profile as any).licenseNumber || '';
+    }
+    if (profileType === 'shelter') {
+      baseData.charityNumber = (profile as any).charityNumber || '';
+    }
+    if (profileType === 'seller') {
+      baseData.storeName = (profile as any).storeName || '';
+    }
+
+    return baseData;
   });
 
   // Estadísticas según tipo de perfil
@@ -1423,8 +1549,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
     const formData = new FormData();
 
-    // Agregar datos del formulario
-    formData.append('data', new Blob([JSON.stringify({
+    // Agregar datos del formulario con campos específicos por tipo
+    const profileType = this.userProfile()?.type || 'user';
+    const payload: any = {
       firstName: data.firstName,
       lastName: data.lastName,
       phone: data.phone,
@@ -1432,7 +1559,23 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       city: data.city,
       country: data.country,
       website: data.website
-    })], { type: 'application/json' }));
+    };
+
+    // Añadir campos específicos según el tipo de perfil
+    if (profileType === 'vet' || profileType === 'trainer') {
+      payload.specialty = data.specialty || '';
+    }
+    if (profileType === 'vet') {
+      payload.licenseNumber = data.licenseNumber || '';
+    }
+    if (profileType === 'shelter') {
+      payload.charityNumber = data.charityNumber || '';
+    }
+    if (profileType === 'seller') {
+      payload.storeName = data.storeName || '';
+    }
+
+    formData.append('data', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
 
     // Agregar imágenes si están seleccionadas
     const files = data.files || {};
@@ -1811,5 +1954,57 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     // Normalizar a minúsculas para manejar tanto 'VET' como 'vet'
     const normalizedType = type?.toLowerCase() || '';
     return labels[normalizedType] || 'Usuario';
+  }
+
+  // Método para obtener la especialidad según el tipo de perfil (vista de otros usuarios)
+  getProfileSpecialty(): string {
+    const profile = this.userProfile();
+    if (profile?.type === 'vet') {
+      return (profile as VetProfile).specialty || 'No especificada';
+    }
+    if (profile?.type === 'trainer') {
+      return (profile as TrainerProfile).specialty || 'No especificada';
+    }
+    return 'No especificada';
+  }
+
+  // Método para obtener el número de colegiado (vista de otros usuarios - vet)
+  getProfileLicenseNumber(): string {
+    return (this.userProfile() as any)?.licenseNumber || '—';
+  }
+
+  // Método para obtener el nombre de tienda (vista de otros usuarios - seller)
+  getProfileStoreName(): string {
+    return (this.userProfile() as any)?.storeName || '—';
+  }
+
+  // Método para obtener el número de registro (vista de otros usuarios - shelter)
+  getProfileCharityNumber(): string {
+    return (this.userProfile() as any)?.charityNumber || '—';
+  }
+
+  // Toggle adoption status for a pet
+  toggleAdoptionStatus(petId: string, adoptionStatus: string | undefined): void {
+    const newStatus = adoptionStatus !== 'available';
+
+    this.profileService.toggleAdoptionStatus(petId, newStatus).subscribe({
+      next: (response) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: newStatus ? 'En adopción' : 'Adopción cancelada',
+          detail: newStatus ? 'La mascota ya está disponible para adopción' : 'La mascota ya no está en adopción'
+        });
+        // Reload pets to reflect the change
+        this.loadPetsForProfile(this.isOwnProfile() ? this.authService.user()?.id || '' : this.profileId() || '');
+      },
+      error: (err) => {
+        console.error('Error toggling adoption status:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar el estado de adopción'
+        });
+      }
+    });
   }
 }

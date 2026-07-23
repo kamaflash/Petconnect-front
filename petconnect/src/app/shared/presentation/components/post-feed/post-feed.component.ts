@@ -91,7 +91,7 @@ export type PostViewMode = 'feed' | 'grid';
         </div>
       } @else {
         <!-- Real Posts -->
-        <div class="post-card" *ngFor="let post of posts()">
+        <div class="post-card" *ngFor="let post of posts(); trackBy: trackByPostId">
           <!-- Header -->
           <div class="post-header">
             <div class="post-user">
@@ -124,7 +124,7 @@ export type PostViewMode = 'feed' | 'grid';
                 <i class="pi" [class.pi-heart-fill]="post.liked" [class.pi-heart]="!post.liked"
                    [style.color]="post.liked ? 'var(--primary-color)' : ''"></i>
               </button>
-              <button class="post-action-btn">
+              <button class="post-action-btn" (click)="toggleComments(post.id, true)">
                 <i class="pi pi-comment"></i>
               </button>
               <button class="post-action-btn">
@@ -152,18 +152,26 @@ export type PostViewMode = 'feed' | 'grid';
 
           <!-- Comments -->
           <div class="post-comments">
-            <span class="comments-link">Ver los {{ post.comments }} comentarios</span>
+            <span class="comments-link" (click)="toggleComments(post.id, false)">Ver los {{ post.comments }} comentarios</span>
             <span class="comment-time">{{ post.timestamp | date:'d MMM' }}</span>
           </div>
 
-          <!-- Comment Section -->
-          @if (currentUserId()) {
-            <app-comment-section
-              [targetId]="post.id"
-              [targetType]="'POST'"
-              [currentUserId]="currentUserId()"
-              (commentsChanged)="onCommentsChanged(post, $event)"
-            />
+          <!-- Comment Section (Accordion) -->
+          @if (isCommentsExpanded(post.id)) {
+            @if (currentUserId()) {
+              <app-comment-section
+                [targetId]="post.id"
+                [targetType]="'POST'"
+                [currentUserId]="currentUserId()"
+                [postAuthorId]="post.user.userId"
+                [showForm]="shouldShowCommentForm(post.id)"
+                (commentsChanged)="onCommentsChanged(post, $event)"
+              />
+            } @else {
+              <div class="comments-login-prompt">
+                <p>Inicia sesión para comentar</p>
+              </div>
+            }
           }
         </div>
       }
@@ -411,6 +419,19 @@ export type PostViewMode = 'feed' | 'grid';
       opacity: 1;
       background: var(--primary-color-light);
     }
+
+    .comments-login-prompt {
+      padding: 1.5rem 1rem;
+      text-align: center;
+      background: var(--surface-hover);
+      border-top: 1px solid var(--surface-border);
+    }
+
+    .comments-login-prompt p {
+      margin: 0;
+      color: var(--text-secondary);
+      font-size: 0.8125rem;
+    }
   `]
 })
 export class PostFeedComponent {
@@ -422,6 +443,11 @@ export class PostFeedComponent {
   likeToggled = output<PostItem>();
   saveToggled = output<PostItem>();
   commentsChanged = output<{ postId: string; count: number }>();
+
+  // Track which post has comments section open
+  expandedComments = signal<Set<string>>(new Set());
+  // Track which posts should show the comment form
+  showCommentForm = signal<Set<string>>(new Set());
 
   private readonly likeService = inject(LikeService);
 
@@ -483,5 +509,45 @@ export class PostFeedComponent {
   onCommentsChanged(post: PostItem, count: number): void {
     post.comments = count;
     this.commentsChanged.emit({ postId: post.id, count });
+  }
+
+  toggleComments(postId: string, showForm: boolean = false): void {
+    this.expandedComments.update(expanded => {
+      const newSet = new Set(expanded);
+      if (newSet.has(postId)) {
+        // Close the accordion
+        newSet.delete(postId);
+        this.showCommentForm.update(formSet => {
+          const newFormSet = new Set(formSet);
+          newFormSet.delete(postId);
+          return newFormSet;
+        });
+      } else {
+        // Open the accordion
+        newSet.add(postId);
+        if (showForm) {
+          this.showCommentForm.update(formSet => new Set(formSet).add(postId));
+        } else {
+          this.showCommentForm.update(formSet => {
+            const newFormSet = new Set(formSet);
+            newFormSet.delete(postId);
+            return newFormSet;
+          });
+        }
+      }
+      return newSet;
+    });
+  }
+
+  trackByPostId(index: number, post: PostItem): string {
+    return post.id;
+  }
+
+  isCommentsExpanded(postId: string): boolean {
+    return this.expandedComments().has(postId);
+  }
+
+  shouldShowCommentForm(postId: string): boolean {
+    return this.showCommentForm().has(postId);
   }
 }
