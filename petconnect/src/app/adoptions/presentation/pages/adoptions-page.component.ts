@@ -58,30 +58,30 @@ interface Pet {
   providers: [MessageService],
   template: `
     <div class="adoptions-page">
-      <!-- Header -->
-      <div class="adoptions-header">
-        <div class="header-content">
-          <div class="header-left">
-            <h3>Adopta una Mascota</h3>
-            <p>Encuentra a tu nuevo mejor amigo</p>
-          </div>
-          <div class="header-stats">
-            <div class="stat-item">
-              <span class="stat-value">{{ availablePets().length }}</span>
-              <span class="stat-label">Disponibles</span>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item">
-              <span class="stat-value">{{ totalPets() }}</span>
-              <span class="stat-label">Total</span>
-            </div>
-          </div>
+      <!-- Mobile Filters Toggle -->
+      <div class="mobile-filters-header">
+        <button class="filters-toggle-btn" (click)="toggleFilters()">
+          <i class="pi pi-sliders-h"></i>
+          <span>Filtros</span>
+          @if (hasActiveFilters()) {
+            <span class="filter-badge">{{ getActiveFilterCount() }}</span>
+          }
+        </button>
+        <div class="results-count-mobile">
+          {{ filteredPets().length }} resultado{{ filteredPets().length !== 1 ? 's' : '' }}
         </div>
       </div>
 
       <div class="adoptions-container">
         <!-- Filters Sidebar -->
-        <aside class="filters-sidebar">
+        <aside class="filters-sidebar" [class.collapsed]="filtersCollapsed()">
+          <div class="filter-header">
+            <h3>Filtros</h3>
+            <button class="close-filters-btn" (click)="toggleFilters()">
+              <i class="pi pi-times"></i>
+            </button>
+          </div>
+
           <div class="filter-section">
             <h3>Búsqueda</h3>
             <div class="search-filter">
@@ -102,12 +102,12 @@ interface Pet {
               @for (species of speciesOptions; track species) {
                 <div class="filter-option">
                   <p-checkbox
-                    [inputId]="species"
+                    [inputId]="'species-' + species"
                     [value]="species"
                     [(ngModel)]="selectedSpecies"
                     (onChange)="applyFilters()"
                   />
-                  <label [for]="species">{{ species }}</label>
+                  <label [for]="'species-' + species">{{ species }}</label>
                 </div>
               }
             </div>
@@ -332,17 +332,106 @@ interface Pet {
   `,
   styles: [`
     .adoptions-page { min-height: 100vh; background: var(--surface-bg); }
-    .adoptions-header { padding: 2rem 0; margin-bottom: 2rem; }
-    .header-content { max-width: 1400px; margin: 0 auto; padding: 0 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
-    .header-left h1 { margin: 0; font-size: 2rem; font-weight: 700; color: white; }
-    .header-left p { margin: 0.25rem 0 0; color: rgba(255,255,255,0.9); font-size: 1rem; }
-    .header-stats { display: flex; align-items: center; gap: 2rem; background: rgba(255,255,255,0.15); padding: 1rem 2rem; border-radius: var(--radius-md); backdrop-filter: blur(10px); }
-    .stat-item { text-align: center; }
-    .stat-value { display: block; font-size: 1.5rem; font-weight: 400; color: white; }
-    .stat-label { font-size: 0.875rem; color: rgba(255,255,255,0.9); }
-    .stat-divider { width: 1px; height: 3rem; background: rgba(255,255,255,0.3); }
+
+    /* Mobile Filters Header */
+    .mobile-filters-header {
+      display: none;
+      padding: 1rem;
+      background: var(--surface-card);
+      border-bottom: 1px solid var(--surface-border);
+      position: sticky;
+      top: 50px;
+      z-index: 100;
+      gap: 1rem;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .filters-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      position: relative;
+    }
+
+    .filters-toggle-btn:hover {
+      background: var(--primary-color-dark);
+      transform: translateY(-1px);
+    }
+
+    .filter-badge {
+      background: white;
+      color: var(--primary-color);
+      border-radius: var(--radius-full);
+      padding: 0.125rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      min-width: 1.25rem;
+      text-align: center;
+    }
+
+    .results-count-mobile {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    /* Container */
     .adoptions-container { max-width: 1400px; margin: 0 auto; padding: 0 2rem 2rem; display: grid; grid-template-columns: 280px 1fr; gap: 2rem; }
-    .filters-sidebar { background: var(--surface-card); border-radius: var(--radius-md); padding: 1.5rem; height: fit-content; position: sticky; top: 1rem; }
+
+    /* Filters Sidebar */
+    .filters-sidebar {
+      background: var(--surface-card);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      height: fit-content;
+      position: sticky;
+      top: 1rem;
+      max-height: calc(100vh - 2rem);
+      overflow-y: auto;
+    }
+
+    .filter-header {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--surface-border);
+    }
+
+    .filter-header h3 {
+      margin: 0;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .close-filters-btn {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+    }
+
+    .close-filters-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text-primary);
+    }
+
     .filter-section { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--surface-border); }
     .filter-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
     .filter-section h3 { margin: 0 0 1rem; font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
@@ -354,9 +443,13 @@ interface Pet {
     .filter-option label { font-size: 0.875rem; color: var(--text-secondary); cursor: pointer; }
     .clear-filters-btn { width: 100%; padding: 0.75rem; background: none; border: 1px solid var(--surface-border); border-radius: var(--radius-sm); color: var(--text-secondary); cursor: pointer; transition: all var(--transition-fast); display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
     .clear-filters-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
+
+    /* Main Content */
     .pets-main { min-height: 600px; }
     .results-header { margin-bottom: 1.5rem; }
     .results-count { font-size: 0.875rem; color: var(--text-secondary); }
+
+    /* Pets Grid */
     .pets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
     .pet-card { background: var(--surface-card); border-radius: var(--radius-md); overflow: hidden; transition: all var(--transition-fast); cursor: pointer; }
     .pet-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
@@ -380,6 +473,8 @@ interface Pet {
     .no-pets { text-align: center; padding: 4rem 2rem; background: var(--surface-card); border-radius: var(--radius-md); }
     .no-pets i { font-size: 3rem; color: var(--text-tertiary); margin-bottom: 1rem; }
     .no-pets p { font-size: 1.125rem; color: var(--text-secondary); margin: 0 0 1rem; }
+
+    /* Pet Detail Modal */
     .pet-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
     .pet-detail-image { border-radius: var(--radius-md); overflow: hidden; height: 100%; min-height: 400px; }
     .pet-detail-image img { width: 100%; height: 100%; object-fit: cover; }
@@ -405,8 +500,44 @@ interface Pet {
     .adopt-btn:hover { background: var(--primary-color-dark); transform: translateY(-2px); }
     .pending-btn { background: #fbbf24; color: white; cursor: not-allowed; opacity: 0.7; }
     .adopted-btn { background: #10b981; color: white; cursor: not-allowed; opacity: 0.7; }
-    @media (max-width: 1024px) { .adoptions-container { grid-template-columns: 1fr; } .filters-sidebar { display: none; } }
-    @media (max-width: 768px) { .header-content { flex-direction: column; align-items: stretch; } .header-stats { width: 100%; justify-content: center; } .pets-grid { grid-template-columns: 1fr; } .pet-detail { grid-template-columns: 1fr; } .pet-detail-image { min-height: 250px; } }
+
+    /* Tablet */
+    @media (max-width: 1024px) {
+      .adoptions-container { grid-template-columns: 1fr; }
+      .filters-sidebar {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1000;
+        border-radius: 0;
+        max-height: 100vh;
+        transform: translateX(-100%);
+        transition: transform var(--transition-normal);
+      }
+
+      .filters-sidebar:not(.collapsed) {
+        transform: translateX(0);
+      }
+
+      .filter-header {
+        display: flex;
+      }
+
+      .mobile-filters-header {
+        display: flex;
+      }
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .adoptions-container { padding: 0 1rem 2rem; }
+      .pets-grid { grid-template-columns: 1fr; }
+      .pet-detail { grid-template-columns: 1fr; }
+      .pet-detail-image { min-height: 250px; }
+    }
   `]
 })
 export class AdoptionsPageComponent implements OnInit {
@@ -469,8 +600,35 @@ export class AdoptionsPageComponent implements OnInit {
     return result;
   });
 
+  // Filters state
+  filtersCollapsed = signal(true);
+
   ngOnInit(): void {
     this.loadAvailablePets();
+  }
+
+  toggleFilters(): void {
+    this.filtersCollapsed.update(value => !value);
+  }
+
+  hasActiveFilters(): boolean {
+    return !!this.searchQuery ||
+           this.selectedSpecies.length > 0 ||
+           this.selectedGenders.length > 0 ||
+           this.filters.vaccinated ||
+           this.filters.sterilized ||
+           this.filters.microchipped;
+  }
+
+  getActiveFilterCount(): number {
+    let count = 0;
+    if (this.searchQuery) count++;
+    count += this.selectedSpecies.length;
+    count += this.selectedGenders.length;
+    if (this.filters.vaccinated) count++;
+    if (this.filters.sterilized) count++;
+    if (this.filters.microchipped) count++;
+    return count;
   }
 
   // Load available pets from the backend

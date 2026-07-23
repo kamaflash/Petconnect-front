@@ -35,6 +35,7 @@ interface PetComment {
   content: string;
   date: Date;
   likes: number;
+  liked?: boolean;
 }
 
 @Component({
@@ -58,175 +59,208 @@ interface PetComment {
   ],
   providers: [MessageService],
   template: `
-    <div class="pet-profile-page">
+    <div class="pet-profile-page" [class.dark]="isDarkMode()">
+      <!-- Loading Overlay -->
+      <div class="loading-overlay" *ngIf="loading()">
+        <p-progressBar mode="indeterminate" [style]="{'height': '3px'}"></p-progressBar>
+      </div>
+
       <div class="pet-profile-container">
-        <!-- Loading indicator -->
-        <div class="loading-overlay" *ngIf="loading()">
-          <p-progressBar mode="indeterminate" [style]="{'height': '4px'}"></p-progressBar>
-        </div>
-
-        <!-- Back button -->
+        <!-- Back Button -->
         <div class="back-button-container">
-          <p-button
-            label="Volver"
-            icon="pi pi-arrow-left"
-            styleClass="p-button-text p-button-sm"
-            (onClick)="goBack()"
-          />
+          <button class="back-btn" (click)="goBack()">
+            <i class="pi pi-arrow-left"></i>
+            <span>Volver</span>
+          </button>
         </div>
 
-<!-- Pet Header -->
-        <div class="pet-header" *ngIf="!loading() && pet()">
-          <!-- Pet Avatar -->
-          <div class="pet-avatar-section">
-            <div class="pet-avatar-container" (click)="openLightboxAt(0)">
-              <img [src]="pet()?.avatarUrl || 'https://placehold.co/400x400?text=No+Image'" [alt]="pet()?.name" class="pet-avatar" />
-              <div class="avatar-overlay">
-                <i class="pi pi-search-plus"></i>
-              </div>
-            </div>
+        <!-- Profile Header -->
+        <div class="profile-header" *ngIf="!loading() && pet()">
+          <!-- Cover Image -->
+          <div class="cover-image-container">
+            <img [src]="pet()?.avatarUrl || 'https://picsum.photos/1200/300?random=1'" alt="Cover" class="cover-image" />
+            <div class="cover-overlay"></div>
           </div>
 
-          <!-- Pet Info -->
-          <div class="pet-info-section">
-            <div class="pet-title-section">
-              <h1 class="pet-name">{{ pet()?.name }}</h1>
-              <p-tag [value]="pet()?.availableForAdoption ? 'En adopción' : 'No en adopción'"
-                     [severity]="pet()?.availableForAdoption ? 'success' : 'secondary'" />
+          <!-- Profile Info Section -->
+          <div class="profile-info-section">
+            <!-- Avatar -->
+            <div class="avatar-wrapper">
+              <div class="avatar-container" (click)="openLightboxAt(0)">
+                <img [src]="pet()?.avatarUrl || 'https://placehold.co/200x200?text=🐾'" [alt]="pet()?.name" class="profile-avatar" />
+                <div class="avatar-overlay">
+                  <i class="pi pi-camera"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- User Info -->
+            <div class="user-info">
+              <div class="user-name-section">
+                <h1 class="user-name">{{ pet()?.name }}</h1>
+                <div class="user-badges">
+                  <span class="badge" [class.badge-success]="pet()?.availableForAdoption" [class.badge-secondary]="!pet()?.availableForAdoption">
+                    {{ pet()?.availableForAdoption ? '🐾 En adopción' : '🏠 Adoptado' }}
+                  </span>
+                  <span class="badge badge-info" *ngIf="isOwner()">Dueño</span>
+                </div>
+              </div>
+
+              <div class="user-bio" *ngIf="pet()?.bio">
+                <p>{{ pet()?.bio }}</p>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
               <button
                 *ngIf="canRequestAdoption()"
-                class="adopt-from-profile-btn"
+                class="btn-primary btn-adopt"
                 (click)="requestAdoptionFromProfile()"
               >
-                <i class="pi pi-heart"></i>
+                <i class="pi pi-heart-fill"></i>
                 Solicitar Adopción
               </button>
-              <div class="pet-admin-actions-inline" *ngIf="isOwner()">
-                <p-button
-                  type="button"
-                  icon="pi pi-cog"
-                  styleClass="p-button-outlined p-button-sm"
-                  (onClick)="menu.toggle($event)"
-                />
-                <p-menu #menu [model]="actionMenuItems" [popup]="true" />
-              </div>
-            </div>
 
-            <!-- Pet Stats -->
-            <div class="pet-stats-section">
-              <div class="pet-stat-item">
-                <i class="pi pi-heart"></i>
-                <div class="stat-content">
-                  <span class="stat-value">{{ petStats().likes }}</span>
-                  <span class="stat-label">Likes</span>
-                </div>
-              </div>
-              <div class="pet-stat-item">
-                <i class="pi pi-comment"></i>
-                <div class="stat-content">
-                  <span class="stat-value">{{ petStats().posts }}</span>
-                  <span class="stat-label">Publicaciones</span>
-                </div>
-              </div>
-              <div class="pet-stat-item">
-                <i class="pi pi-calendar"></i>
-                <div class="stat-content">
-                  <span class="stat-value">{{ pet()?.dateOfBirth ? (pet()!.dateOfBirth | date:'yyyy') : '—' }}</span>
-                  <span class="stat-label">Año nacimiento</span>
-                </div>
-              </div>
-              <div class="pet-stat-item">
-                <i class="pi pi-weight"></i>
-                <div class="stat-content">
-                  <span class="stat-value">{{ pet()?.weight || '—' }}</span>
-                  <span class="stat-label">Peso (kg)</span>
-                </div>
-              </div>
-            </div>
+              <button
+                *ngIf="isOwner()"
+                class="btn-secondary"
+                (click)="openEditDialog('basic')"
+              >
+                <i class="pi pi-pencil"></i>
+                Editar Perfil
+              </button>
 
+              <button
+                *ngIf="isOwner()"
+                class="btn-icon"
+                (click)="toggleActionMenu($event)"
+              >
+                <i class="pi pi-ellipsis-h"></i>
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Loading Skeletons -->
-        <div class="pet-skeletons" *ngIf="loading()">
-          <p-skeleton height="400px" class="photos-skeleton"></p-skeleton>
-          <div class="pet-info-skeleton">
-            <p-skeleton width="15rem" height="2rem" class="mb-2"></p-skeleton>
-            <p-skeleton width="10rem" height="1rem" class="mb-3"></p-skeleton>
-            <div class="stats-skeleton-grid">
-              <p-skeleton width="5rem" height="3rem"></p-skeleton>
-              <p-skeleton width="5rem" height="3rem"></p-skeleton>
-              <p-skeleton width="5rem" height="3rem"></p-skeleton>
-              <p-skeleton width="5rem" height="3rem"></p-skeleton>
+        <div class="profile-skeletons" *ngIf="loading()">
+          <p-skeleton height="200px" class="cover-skeleton"></p-skeleton>
+          <div class="profile-info-skeleton">
+            <div class="avatar-skeleton-wrapper">
+              <p-skeleton shape="circle" size="120px" class="avatar-skeleton"></p-skeleton>
+            </div>
+            <div class="user-info-skeleton">
+              <p-skeleton width="200px" height="32px"></p-skeleton>
+              <p-skeleton width="300px" height="16px"></p-skeleton>
+              <div class="action-skeleton">
+                <p-skeleton width="150px" height="40px" borderRadius="20px"></p-skeleton>
+                <p-skeleton width="40px" height="40px" borderRadius="50%"></p-skeleton>
+              </div>
             </div>
           </div>
         </div>
 
+        <!-- Stats Bar -->
+        <div class="stats-bar" *ngIf="!loading() && pet()">
+          <div class="stat-item" (click)="activeTab.set('posts')">
+            <span class="stat-number">{{ petStats().posts }}</span>
+            <span class="stat-label">Publicaciones</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item" (click)="activeTab.set('info')">
+            <span class="stat-number">{{ formatAge(pet()?.dateOfBirth) }}</span>
+            <span class="stat-label">Edad</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-number">{{ petStats().likes }}</span>
+            <span class="stat-label">Me gusta</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item" (click)="activeTab.set('comments')">
+            <span class="stat-number">{{ petComments().length }}</span>
+            <span class="stat-label">Comentarios</span>
+          </div>
+        </div>
+
         <!-- Tabs -->
-        <app-tabs
-          *ngIf="!loading() && pet()"
-          [tabs]="petTabs()"
-          [activeTab]="activeTab()"
-          (tabChange)="onTabChange($event)"
-        />
+        <div class="tabs-container" *ngIf="!loading() && pet()">
+          <app-tabs
+            [tabs]="petTabs()"
+            [activeTab]="activeTab()"
+            (tabChange)="onTabChange($event)"
+          />
+        </div>
 
         <!-- Tab Content -->
-        <div class="pet-tab-content" *ngIf="!loading() && pet()">
-            <!-- Info Tab (consolidated) -->
-            <div class="tab-section" *ngIf="activeTab() === 'info'">
-              <div class="about-card">
-                <h3>Información Básica</h3>
+        <div class="tab-content" *ngIf="!loading() && pet()">
+          <!-- Info Tab - TODOS LOS DATOS -->
+          <div class="tab-panel" *ngIf="activeTab() === 'info'">
+            <div class="info-sections">
+              <!-- Información Básica -->
+              <div class="info-section">
+                <h3 class="section-title">
+                  <i class="pi pi-info-circle"></i>
+                  Información Básica
+                </h3>
                 <div class="info-grid">
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-tag"></i></span>
                     <span class="info-label">Especie</span>
-                  <span class="info-value">{{ getSpeciesLabelWrapper(pet()?.species) }}</span>
+                    <span class="info-value">{{ getSpeciesLabelWrapper(pet()?.species) }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-user"></i></span>
                     <span class="info-label">Raza</span>
                     <span class="info-value">{{ pet()?.breed || '—' }}</span>
                   </div>
-                  <div class="info-item" *ngIf="pet()?.dateOfBirth; else noBirthDate">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-calendar"></i></span>
                     <span class="info-label">Fecha de Nacimiento</span>
-                    <span class="info-value">{{ pet()!.dateOfBirth | date:'dd/MM/yyyy' }}</span>
+                    <span class="info-value">{{ pet()?.dateOfBirth ? (pet()!.dateOfBirth | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
-                  <ng-template #noBirthDate>
-                    <div class="info-item">
-                      <span class="info-label">Fecha de Nacimiento</span>
-                      <span class="info-value">—</span>
-                    </div>
-                  </ng-template>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-venus-mars"></i></span>
                     <span class="info-label">Género</span>
                     <span class="info-value">{{ getGenderLabelWrapper(pet()?.gender) }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-palette"></i></span>
                     <span class="info-label">Color</span>
                     <span class="info-value">{{ pet()?.color || '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-qrcode"></i></span>
                     <span class="info-label">Microchip</span>
                     <span class="info-value">{{ pet()?.microchipId || '—' }}</span>
                   </div>
-                </div>
-
-                <div class="pet-bio-section" *ngIf="pet()?.bio">
-                  <h4>Biografía</h4>
-                  <p>{{ pet()?.bio }}</p>
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-weight"></i></span>
+                    <span class="info-label">Peso</span>
+                    <span class="info-value">{{ pet()?.weight ? pet()!.weight + ' ' + (pet()?.weightUnit || 'kg') : '—' }}</span>
+                  </div>
                 </div>
               </div>
 
-              <div class="medical-card">
-                <h3>Información Médica y de Salud</h3>
+              <!-- Información Médica y de Salud -->
+              <div class="info-section">
+                <h3 class="section-title">
+                  <i class="pi pi-heart"></i>
+                  Información Médica y de Salud
+                </h3>
                 <div class="info-grid">
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-droplet"></i></span>
                     <span class="info-label">Tipo de Sangre</span>
                     <span class="info-value">{{ pet()?.bloodType || '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-exclamation-triangle"></i></span>
                     <span class="info-label">Alergias</span>
                     <span class="info-value">{{ pet()?.allergies || '—' }}</span>
                   </div>
-                  <div class="info-item full-width">
+                  <div class="info-row full-width">
+                    <span class="info-icon"><i class="pi pi-ambulance"></i></span>
                     <span class="info-label">Condiciones Médicas</span>
                     <span class="info-value">{{ pet()?.medicalConditions || '—' }}</span>
                   </div>
@@ -234,15 +268,18 @@ interface PetComment {
 
                 <h4 class="subsection-title">Veterinario</h4>
                 <div class="info-grid">
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-user-md"></i></span>
                     <span class="info-label">Nombre</span>
                     <span class="info-value">{{ pet()?.vetName || '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-phone"></i></span>
                     <span class="info-label">Teléfono</span>
                     <span class="info-value">{{ pet()?.vetPhone || '—' }}</span>
                   </div>
-                  <div class="info-item full-width">
+                  <div class="info-row full-width">
+                    <span class="info-icon"><i class="pi pi-map-marker"></i></span>
                     <span class="info-label">Dirección</span>
                     <span class="info-value">{{ pet()?.vetAddress || '—' }}</span>
                   </div>
@@ -250,15 +287,18 @@ interface PetComment {
 
                 <h4 class="subsection-title">Vacunación</h4>
                 <div class="info-grid">
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-syringe"></i></span>
                     <span class="info-label">Última Vacunación</span>
                     <span class="info-value">{{ pet()?.lastVaccinationDate ? (pet()!.lastVaccinationDate | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-calendar-plus"></i></span>
                     <span class="info-label">Próxima Vacunación</span>
                     <span class="info-value">{{ pet()?.nextVaccinationDate ? (pet()!.nextVaccinationDate | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-calendar-check"></i></span>
                     <span class="info-label">Última Visita</span>
                     <span class="info-value">{{ pet()?.lastVetVisit ? (pet()!.lastVetVisit | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
@@ -266,230 +306,292 @@ interface PetComment {
 
                 <h4 class="subsection-title">Seguro Médico</h4>
                 <div class="info-grid">
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-building"></i></span>
                     <span class="info-label">Aseguradora</span>
                     <span class="info-value">{{ pet()?.insuranceProvider || '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-file"></i></span>
                     <span class="info-label">Póliza</span>
                     <span class="info-value">{{ pet()?.insurancePolicyNumber || '—' }}</span>
                   </div>
                 </div>
               </div>
 
-              <div class="additional-card">
-                <h3>Información Adicional</h3>
+              <!-- Información Adicional -->
+              <div class="info-section">
+                <h3 class="section-title">
+                  <i class="pi pi-info"></i>
+                  Información Adicional
+                </h3>
                 <div class="info-grid">
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-phone"></i></span>
                     <span class="info-label">Contacto de Emergencia</span>
                     <span class="info-value">{{ pet()?.emergencyContact || '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-mobile"></i></span>
                     <span class="info-label">Teléfono de Emergencia</span>
                     <span class="info-value">{{ pet()?.emergencyPhone || '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-building"></i></span>
                     <span class="info-label">Centro de Adopción</span>
                     <span class="info-value">{{ pet()?.adoptionCenter || '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-calendar-check"></i></span>
                     <span class="info-label">Fecha de Adopción</span>
                     <span class="info-value">{{ pet()?.adoptionDate ? (pet()!.adoptionDate | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-hashtag"></i></span>
                     <span class="info-label">Número de Registro</span>
                     <span class="info-value">{{ pet()?.registrationNumber || '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-id-card"></i></span>
                     <span class="info-label">Número de Licencia</span>
                     <span class="info-value">{{ pet()?.licenseNumber || '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-calendar-times"></i></span>
                     <span class="info-label">Vencimiento de Licencia</span>
                     <span class="info-value">{{ pet()?.licenseExpiryDate ? (pet()!.licenseExpiryDate | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-check-circle"></i></span>
                     <span class="info-label">Esterilizado/Castrado</span>
                     <span class="info-value">{{ pet()?.spayedNeutered ? 'Sí' : 'No' }}</span>
                   </div>
-                  <div class="info-item" *ngIf="pet()?.spayedNeuteredDate">
+                  <div class="info-row" *ngIf="pet()?.spayedNeuteredDate">
+                    <span class="info-icon"><i class="pi pi-calendar"></i></span>
                     <span class="info-label">Fecha de Esterilización</span>
                     <span class="info-value">{{ pet()!.spayedNeuteredDate | date:'dd/MM/yyyy' }}</span>
                   </div>
                 </div>
               </div>
 
-              <div class="behavior-card">
-                <h3>Comportamiento y Características</h3>
+              <!-- Comportamiento y Características -->
+              <div class="info-section">
+                <h3 class="section-title">
+                  <i class="pi pi-smile"></i>
+                  Comportamiento y Características
+                </h3>
                 <div class="info-grid">
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-heart"></i></span>
                     <span class="info-label">Temperamento</span>
                     <span class="info-value">{{ getTemperamentLabelWrapper(pet()?.temperament) }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-bolt"></i></span>
                     <span class="info-label">Nivel de Energía</span>
                     <span class="info-value">{{ getEnergyLevelLabelWrapper(pet()?.energyLevel) }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-graduation-cap"></i></span>
                     <span class="info-label">Nivel de Entrenamiento</span>
                     <span class="info-value">{{ getTrainingLevelLabelWrapper(pet()?.trainingLevel) }}</span>
                   </div>
-                  <div class="info-item full-width">
+                  <div class="info-row full-width">
+                    <span class="info-icon"><i class="pi pi-gamepad"></i></span>
                     <span class="info-label">Actividades Favoritas</span>
                     <span class="info-value">{{ pet()?.favoriteActivities || '—' }}</span>
                   </div>
-                  <div class="info-item">
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-apple"></i></span>
                     <span class="info-label">Comida Favorita</span>
                     <span class="info-value">{{ pet()?.favoriteFood || '—' }}</span>
                   </div>
-                  <div class="info-item full-width">
+                  <div class="info-row full-width">
+                    <span class="info-icon"><i class="pi pi-heart"></i></span>
                     <span class="info-label">Necesidades Especiales</span>
                     <span class="info-value">{{ pet()?.specialNeeds || '—' }}</span>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Photos Tab (grid style like posts) -->
-            <div class="tab-section" *ngIf="activeTab() === 'photos'">
-              <div class="posts-grid">
-                <div class="post-card" *ngFor="let post of petPosts(); let i = index" (click)="openPostModal(i)">
-                  <img [src]="post.image" [alt]="post.caption" />
-                  <div class="post-overlay">
-                    <span><i class="pi pi-heart"></i> {{ post.likesCount }}</span>
-                    <span><i class="pi pi-comment"></i> {{ post.commentsCount }}</span>
-                  </div>
-                </div>
-                <div class="empty-state" *ngIf="petPosts().length === 0">
-                  <i class="pi pi-image"></i>
-                  <p>No hay fotos disponibles</p>
+          <!-- Photos Tab -->
+          <div class="tab-panel" *ngIf="activeTab() === 'photos'">
+            <div class="gallery-grid">
+              <div
+                class="gallery-item"
+                *ngFor="let image of petImages(); let i = index"
+                (click)="openLightboxAt(i)"
+              >
+                <img [src]="image" [alt]="'Foto ' + (i+1)" />
+                <div class="gallery-overlay">
+                  <i class="pi pi-search-plus"></i>
                 </div>
               </div>
-            </div>
-
-            <!-- Posts Tab -->
-            <div class="tab-section" *ngIf="activeTab() === 'posts'">
-              <div class="posts-grid">
-                <div class="post-card" *ngFor="let post of petPosts(); let i = index" (click)="openPostModal(i)">
-                  <img [src]="post.image" [alt]="post.caption" />
-                  <div class="post-overlay">
-                    <span><i class="pi pi-heart"></i> {{ post.likesCount }}</span>
-                    <span><i class="pi pi-comment"></i> {{ post.commentsCount }}</span>
-                  </div>
-                </div>
-                <div class="empty-state" *ngIf="petPosts().length === 0">
-                  <i class="pi pi-image"></i>
-                  <p>No hay publicaciones aún</p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Comments Tab -->
-            <div class="tab-section" *ngIf="activeTab() === 'comments'">
-              <div class="comments-list">
-                <div class="comment-card" *ngFor="let comment of petComments()">
-                  <img [src]="comment.authorAvatar" [alt]="comment.authorName" class="comment-avatar" />
-                  <div class="comment-content">
-                    <div class="comment-header">
-                      <span class="comment-author">{{ comment.authorName }}</span>
-                      <span class="comment-date">{{ comment.date | date:'dd/MM/yyyy' }}</span>
-                    </div>
-                    <p class="comment-text">{{ comment.content }}</p>
-                    <div class="comment-actions">
-                      <button class="comment-action-btn">
-                        <i class="pi pi-heart"></i> {{ comment.likes }}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div class="empty-state" *ngIf="petComments().length === 0">
-                  <i class="pi pi-comment"></i>
-                  <p>No hay comentarios aún</p>
-                </div>
+              <div class="gallery-item empty" *ngIf="petImages().length === 0">
+                <i class="pi pi-image"></i>
+                <p>No hay fotos disponibles</p>
               </div>
             </div>
           </div>
+
+          <!-- Posts Tab -->
+          <div class="tab-panel" *ngIf="activeTab() === 'posts'">
+            <div class="posts-grid">
+              <div
+                class="post-card"
+                *ngFor="let post of petPosts(); let i = index"
+                (click)="openPostModal(i)"
+              >
+                <img [src]="post.image" [alt]="post.caption" />
+                <div class="post-overlay">
+                  <div class="post-stats">
+                    <span><i class="pi pi-heart-fill"></i> {{ post.likesCount }}</span>
+                    <span><i class="pi pi-comment"></i> {{ post.commentsCount }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="post-card empty" *ngIf="petPosts().length === 0">
+                <i class="pi pi-camera"></i>
+                <p>No hay publicaciones aún</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comments Tab -->
+          <div class="tab-panel" *ngIf="activeTab() === 'comments'">
+            <div class="comments-feed">
+              <div class="comment-item" *ngFor="let comment of petComments()">
+                <img [src]="comment.authorAvatar" [alt]="comment.authorName" class="comment-avatar" />
+                <div class="comment-body">
+                  <div class="comment-header">
+                    <span class="comment-author">{{ comment.authorName }}</span>
+                    <span class="comment-date">{{ comment.date | date:'dd/MM/yyyy' }}</span>
+                  </div>
+                  <p class="comment-text">{{ comment.content }}</p>
+                  <div class="comment-actions">
+                    <button class="comment-like-btn" (click)="toggleCommentLike(comment)">
+                      <i class="pi" [class.pi-heart-fill]="comment.liked" [class.pi-heart]="!comment.liked"></i>
+                      <span>{{ comment.likes }}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="empty-state" *ngIf="petComments().length === 0">
+                <i class="pi pi-comment"></i>
+                <p>No hay comentarios aún</p>
+                <span class="empty-subtitle">Sé el primero en comentar</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Post Modal (image + comments) -->
+      <!-- Lightbox Modal -->
+      <p-dialog
+        [visible]="lightboxVisible"
+        [modal]="true"
+        [style]="{ width: '90vw', maxWidth: '900px' }"
+        [closable]="true"
+        (onHide)="closeLightbox()"
+        [dismissableMask]="true"
+        styleClass="lightbox-dialog"
+        [showHeader]="false"
+      >
+        <div class="lightbox-content">
+          <button class="lightbox-close" (click)="closeLightbox()">
+            <i class="pi pi-times"></i>
+          </button>
+          <button
+            class="lightbox-nav lightbox-prev"
+            *ngIf="petImages().length > 1"
+            (click)="prevImage($event)"
+          >
+            <i class="pi pi-chevron-left"></i>
+          </button>
+          <img [src]="currentImage()" alt="Imagen" class="lightbox-image" />
+          <button
+            class="lightbox-nav lightbox-next"
+            *ngIf="petImages().length > 1"
+            (click)="nextImage($event)"
+          >
+            <i class="pi pi-chevron-right"></i>
+          </button>
+          <div class="lightbox-dots" *ngIf="petImages().length > 1">
+            <span
+              class="dot"
+              *ngFor="let img of petImages(); let i = index"
+              [class.active]="i === currentImageIndex()"
+              (click)="selectImage(i)"
+            ></span>
+          </div>
+        </div>
+      </p-dialog>
+
+      <!-- Post Modal -->
       <p-dialog
         [visible]="postModalVisible"
         [modal]="true"
-        [style]="{ width: '90vw', maxWidth: '1000px' }"
+        [style]="{ width: '95vw', maxWidth: '1200px' }"
         [closable]="true"
         (onHide)="closePostModal()"
         [dismissableMask]="true"
         styleClass="post-modal-dialog"
+        [showHeader]="false"
       >
         <div class="post-modal" *ngIf="currentPost()">
-          <!-- Image side -->
-          <div class="post-modal-image-side">
-            <button class="post-modal-arrow post-modal-arrow-left" *ngIf="petPosts().length > 1" (click)="prevPost($event)">
+          <div class="post-modal-image">
+            <button
+              class="modal-arrow modal-arrow-left"
+              *ngIf="petPosts().length > 1"
+              (click)="prevPost($event)"
+            >
               <i class="pi pi-chevron-left"></i>
             </button>
-            <img [src]="currentPost().image" [alt]="currentPost().caption" class="post-modal-img" />
-            <button class="post-modal-arrow post-modal-arrow-right" *ngIf="petPosts().length > 1" (click)="nextPost($event)">
+            <img [src]="currentPost().image" [alt]="currentPost().caption" />
+            <button
+              class="modal-arrow modal-arrow-right"
+              *ngIf="petPosts().length > 1"
+              (click)="nextPost($event)"
+            >
               <i class="pi pi-chevron-right"></i>
             </button>
-            <div class="post-modal-dots" *ngIf="petPosts().length > 1">
-              <span
-                class="post-modal-dot"
-                *ngFor="let p of petPosts(); let di = index"
-                [class.active]="di === currentPostIndex()"
-                (click)="openPostModal(di)"
-              ></span>
-            </div>
           </div>
-
-          <!-- Details side -->
-          <div class="post-modal-details-side">
-            <!-- Header -->
-            <div class="post-modal-details-header">
-              <div class="post-modal-details-user">
-                <span class="post-modal-details-avatar" *ngIf="!pet()?.avatarUrl">{{ pet()?.name?.charAt(0) || 'P' }}</span>
-                <p-avatar *ngIf="pet()?.avatarUrl" [image]="pet()?.avatarUrl!" shape="circle" size="normal"></p-avatar>
-                <p-avatar *ngIf="!pet()?.avatarUrl" image="https://placehold.co/40x40?text=P" shape="circle" size="normal"></p-avatar>
-                <span class="post-modal-details-username">{{ pet()?.name }}</span>
+          <div class="post-modal-details">
+            <div class="post-modal-header">
+              <div class="post-modal-user">
+                <img [src]="pet()?.avatarUrl || 'https://placehold.co/40x40'" class="post-modal-avatar" />
+                <span class="post-modal-username">{{ pet()?.name }}</span>
               </div>
+              <button *ngIf="isOwner()" class="post-modal-more" (click)="toggleActionMenu($event)">
+                <i class="pi pi-ellipsis-h"></i>
+              </button>
             </div>
 
-            <!-- Caption -->
-            <div class="post-modal-details-caption" *ngIf="currentPost().caption">
-              <span class="post-modal-details-avatar-sm" *ngIf="!pet()?.avatarUrl">{{ pet()?.name?.charAt(0) || 'P' }}</span>
-              <p-avatar *ngIf="pet()?.avatarUrl" [image]="pet()?.avatarUrl!" shape="circle" size="normal"></p-avatar>
-              <p-avatar *ngIf="!pet()?.avatarUrl" image="https://placehold.co/40x40?text=P" shape="circle" size="normal"></p-avatar>
-              <div class="post-modal-details-caption-text">
-                <span class="caption-username">{{ pet()?.name }}</span>
-                <span class="caption-text">{{ currentPost().caption }}</span>
-              </div>
+            <div class="post-modal-caption" *ngIf="currentPost().caption">
+              <span class="caption-username">{{ pet()?.name }}</span>
+              <span class="caption-text">{{ currentPost().caption }}</span>
             </div>
 
-            <!-- Comments -->
-            <div class="post-modal-details-comments">
-              <div class="post-modal-details-comment" *ngFor="let comment of petComments()">
-                <img [src]="comment.authorAvatar" [alt]="comment.authorName" class="comment-avatar-sm" />
-                <div class="post-modal-details-comment-body">
-                  <div class="post-modal-details-comment-header">
-                    <span class="comment-author-sm">{{ comment.authorName }}</span>
-                    <span class="comment-date-sm">{{ comment.date | date:'dd/MM/yyyy' }}</span>
-                  </div>
-                  <p class="comment-text-sm">{{ comment.content }}</p>
-                  <button class="comment-like-sm">
-                    <i class="pi pi-heart"></i> {{ comment.likes }}
-                  </button>
+            <div class="post-modal-comments">
+              <div class="comment-item" *ngFor="let comment of petComments()">
+                <img [src]="comment.authorAvatar" class="comment-avatar-small" />
+                <div class="comment-body-small">
+                  <span class="comment-author-small">{{ comment.authorName }}</span>
+                  <span class="comment-text-small">{{ comment.content }}</span>
                 </div>
               </div>
-              <div class="post-modal-empty-comments" *ngIf="petComments().length === 0">
+              <div class="empty-comments" *ngIf="petComments().length === 0">
                 <i class="pi pi-comment"></i>
-                <p>No hay comentarios aún</p>
+                <p>No hay comentarios</p>
               </div>
             </div>
 
-            <!-- Actions bar -->
-            <div class="post-modal-details-actions">
-              <div class="post-modal-details-stats">
-                <span class="post-modal-details-likes"><i class="pi pi-heart-fill"></i> {{ currentPost().likesCount }} likes</span>
-                <span class="post-modal-details-time">{{ currentPost().date || 'Recientemente' }}</span>
+            <div class="post-modal-actions">
+              <div class="post-modal-stats">
+                <span><i class="pi pi-heart-fill"></i> {{ currentPost().likesCount }} likes</span>
+                <span>{{ currentPost().date || 'Recientemente' }}</span>
               </div>
             </div>
           </div>
@@ -500,59 +602,70 @@ interface PetComment {
       <p-dialog
         [visible]="showEditDialog"
         [modal]="true"
-        [style]="{ width: '90vw', maxWidth: '1000px' }"
+        [style]="{ width: '90vw', maxWidth: '800px' }"
         [closable]="true"
         (onHide)="showEditDialog = false"
         [dismissableMask]="true"
-        styleClass="post-modal-dialog"
-        header="Editar Mascota"
+        styleClass="edit-dialog"
+        [header]="getCurrentFormConfig().title || 'Editar Mascota'"
       >
-      <app-dynamic-form
-        [config]="getCurrentFormConfig()"
-        [formData]="editPetFormData"
-        (onSubmitClick)="onEditPetSubmit($event)"
-        (onCancel)="showEditDialog = false"
-      />
+        <app-dynamic-form
+          [config]="getCurrentFormConfig()"
+          [formData]="editPetFormData"
+          (onSubmitClick)="onEditPetSubmit($event)"
+          (onCancel)="showEditDialog = false"
+        />
       </p-dialog>
 
-      <!-- Delete Confirmation Dialog -->
+      <!-- Delete Confirmation -->
       <p-dialog
         [visible]="showDeleteDialog"
         [modal]="true"
-        [style]="{ width: '400px' }"
+        [style]="{ width: '420px' }"
         [closable]="true"
         (onHide)="showDeleteDialog = false"
         header="Confirmar Eliminación"
       >
         <div class="delete-confirmation">
-          <i class="pi pi-exclamation-triangle"></i>
-          <p>¿Estás seguro de que quieres eliminar a {{ pet()?.name }}? Esta acción no se puede deshacer.</p>
+          <div class="delete-icon">
+            <i class="pi pi-exclamation-triangle"></i>
+          </div>
+          <h3>¿Eliminar a {{ pet()?.name }}?</h3>
+          <p>Esta acción no se puede deshacer. Todos los datos de la mascota serán eliminados permanentemente.</p>
         </div>
         <ng-template pTemplate="footer">
-          <p-button label="Cancelar" styleClass="p-button-secondary" (onClick)="showDeleteDialog = false" />
-          <p-button label="Eliminar" styleClass="p-button-danger" (onClick)="deletePet()" />
+          <button class="btn-secondary" (click)="showDeleteDialog = false">Cancelar</button>
+          <button class="btn-danger" (click)="deletePet()">Eliminar</button>
         </ng-template>
       </p-dialog>
+
+      <!-- Menu -->
+      <p-menu #actionMenu [model]="actionMenuItems" [popup]="true" />
     </div>
   `,
   styles: [`
+    /* ============================================
+       BASE & CONTAINER
+    ============================================ */
     .pet-profile-page {
       min-height: 100vh;
-      background-color: var(--bitbucket-header-bg);
-      transition: background-color 0.3s ease;
+      background: var(--surface-ground);
+      transition: background 0.3s ease;
     }
 
-  .dark .pet-profile-page {
-    background-color: var(--surface-bg);
-  }
+    .pet-profile-page.dark {
+      background: var(--surface-ground-dark);
+    }
 
     .pet-profile-container {
-      max-width: 1000px;
+      max-width: 935px;
       margin: 0 auto;
-      padding: 1rem;
+      padding: 0 20px 40px;
     }
 
-    /* Loading Overlay */
+    /* ============================================
+       LOADING
+    ============================================ */
     .loading-overlay {
       position: fixed;
       top: 0;
@@ -562,49 +675,103 @@ interface PetComment {
     }
 
     :host ::ng-deep .loading-overlay .p-progressbar {
-      height: 4px;
+      height: 3px;
     }
 
     :host ::ng-deep .loading-overlay .p-progressbar-value {
       background: var(--primary-color);
     }
 
-    /* Back Button */
+    /* ============================================
+       BACK BUTTON
+    ============================================ */
     .back-button-container {
-      margin-bottom: 1rem;
+      padding: 16px 0 8px;
     }
 
-    /* Pet Header */
-    .pet-header {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      margin-bottom: 2rem;
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
     }
 
-    /* Pet Avatar */
-    .pet-avatar-section {
-      display: flex;
-      justify-content: center;
+    .back-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text-primary);
     }
 
-    .pet-avatar-container {
+    .back-btn i {
+      font-size: 16px;
+    }
+
+    /* ============================================
+       PROFILE HEADER
+    ============================================ */
+    .profile-header {
       position: relative;
-      width: 200px;
+      background: var(--surface-card);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    .cover-image-container {
+      position: relative;
       height: 200px;
+      overflow: hidden;
+    }
+
+    .cover-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cover-overlay {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60%;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.15));
+    }
+
+    .profile-info-section {
+      position: relative;
+      padding: 0 24px 24px;
+      margin-top: -40px;
+      display: flex;
+      align-items: flex-end;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .avatar-wrapper {
+      flex-shrink: 0;
+    }
+
+    .avatar-container {
+      position: relative;
+      width: 120px;
+      height: 120px;
       border-radius: 50%;
+      border: 4px solid var(--surface-card);
       overflow: hidden;
       cursor: pointer;
-      border: 4px solid var(--primary-color);
-      transition: all 0.3s ease;
+      background: var(--surface-card);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
-    .pet-avatar-container:hover {
-      transform: scale(1.05);
-      box-shadow: 0 4px 20px rgba(148, 199, 72, 0.4);
-    }
-
-    .pet-avatar {
+    .profile-avatar {
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -613,205 +780,389 @@ interface PetComment {
     .avatar-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.4);
       display: flex;
       align-items: center;
       justify-content: center;
       opacity: 0;
       transition: opacity 0.3s ease;
+      border-radius: 50%;
     }
 
-    .pet-avatar-container:hover .avatar-overlay {
+    .avatar-container:hover .avatar-overlay {
       opacity: 1;
     }
 
     .avatar-overlay i {
-      font-size: 2rem;
+      font-size: 24px;
       color: white;
     }
 
-    /* Pet Info */
-    .pet-info-section {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
+    .user-info {
+      flex: 1;
+      min-width: 200px;
+      padding-top: 40px;
     }
 
-    .pet-title-section {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-    }
-
-    .pet-title-left {
+    .user-name-section {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
     }
 
-    .pet-admin-actions-inline {
-      flex-shrink: 0;
-    }
-
-    .pet-name {
-      font-size: 2rem;
+    .user-name {
+      font-size: 28px;
       font-weight: 700;
-      color: var(--bitbucket-text-primary);
+      color: var(--text-primary);
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .user-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--surface-hover);
+      color: var(--text-secondary);
+    }
+
+    .badge-success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+
+    .badge-secondary {
+      background: var(--surface-hover);
+      color: var(--text-secondary);
+    }
+
+    .badge-info {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+
+    .dark .badge-success {
+      background: #1b5e20;
+      color: #a5d6a7;
+    }
+
+    .dark .badge-info {
+      background: #0d47a1;
+      color: #90caf9;
+    }
+
+    .user-bio {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 4px 0 8px;
+    }
+
+    .user-bio p {
       margin: 0;
     }
 
-    .pet-stats-section {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      padding-top: 40px;
+      flex-shrink: 0;
+      align-items: center;
     }
 
-    .pet-stat-item {
-      padding: 1rem;
-      border-radius: 0.5rem;
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 24px;
+      border: none;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--primary-color);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(148, 199, 72, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-adopt {
+      background: linear-gradient(135deg, #f43f5e, #e11d48);
+    }
+
+    .btn-adopt:hover {
+      box-shadow: 0 4px 12px rgba(228, 29, 72, 0.4);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      border: 1px solid var(--surface-border);
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: transparent;
+      color: var(--text-primary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-hover);
+      border-color: var(--text-secondary);
+    }
+
+    .btn-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--surface-border);
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    .btn-icon:hover {
+      background: var(--surface-hover);
+      border-color: var(--text-secondary);
+    }
+
+    .btn-danger {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #dc2626;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    /* ============================================
+       STATS BAR
+    ============================================ */
+    .stats-bar {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      justify-content: space-around;
+      background: var(--surface-card);
+      border-radius: 12px;
+      padding: 16px 24px;
+      margin-bottom: 24px;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      padding: 4px 12px;
+      border-radius: 8px;
       transition: all 0.2s;
     }
 
-    .pet-stat-item:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    .stat-item:hover {
+      background: var(--surface-hover);
     }
 
-    .pet-stat-item i {
-      font-size: 2rem;
-      color: var(--primary-color);
-    }
-
-    .stat-content {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .stat-value {
-      font-size: 1.25rem;
+    .stat-number {
+      font-size: 18px;
       font-weight: 700;
-      color: var(--bitbucket-text-primary);
+      color: var(--text-primary);
     }
 
     .stat-label {
-      font-size: 0.875rem;
-      color: var(--bitbucket-text-secondary);
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .pet-admin-actions {
-      display: flex;
-      gap: 1rem;
-      margin-top: 1rem;
+    .stat-divider {
+      width: 1px;
+      height: 30px;
+      background: var(--surface-border);
     }
 
-    /* Tabs */
-    .pet-tab-content {
-      margin-top: 1.5rem;
+    /* ============================================
+       TABS
+    ============================================ */
+    .tabs-container {
+      margin-bottom: 24px;
     }
 
-    .tab-section {
-      background-color: var(--bitbucket-header-bg);
-      border-radius: 0.75rem;
-      padding: 1.5rem;
+    :host ::ng-deep .tabs-container app-tabs .tabs {
+      border-bottom: 1px solid var(--surface-border);
     }
 
-    .tab-section h3 {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--bitbucket-text-primary);
-      margin: 0 0 1.5rem 0;
+    :host ::ng-deep .tabs-container app-tabs .tab {
+      padding: 12px 20px;
+      font-weight: 500;
     }
 
-    /* Info Grid */
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem;
+    /* ============================================
+       TAB CONTENT
+    ============================================ */
+    .tab-content {
+      animation: fadeIn 0.3s ease;
     }
 
-    .info-item {
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .tab-panel {
+      background: var(--surface-card);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    /* ============================================
+       INFO SECTIONS
+    ============================================ */
+    .info-sections {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 24px;
     }
 
-    .info-label {
-      font-size: 0.875rem;
-      color: var(--bitbucket-text-secondary);
+    .info-section {
+      background: var(--surface-ground);
+      border-radius: 12px;
+      padding: 20px;
     }
 
-    .info-value {
-      font-size: 1rem;
+    .dark .info-section {
+      background: var(--surface-ground-dark);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
       font-weight: 600;
-      color: var(--bitbucket-text-primary);
+      color: var(--text-primary);
+      margin: 0 0 16px 0;
     }
 
-    .info-item.full-width {
-      grid-column: 1 / -1;
+    .section-title i {
+      color: var(--primary-color);
+      font-size: 18px;
     }
 
     .subsection-title {
-      font-size: 1rem;
+      font-size: 14px;
       font-weight: 600;
-      color: var(--bitbucket-text-primary);
-      margin: 1.5rem 0 1rem 0;
-      padding-top: 1rem;
-      border-top: 1px solid var(--bitbucket-border);
+      color: var(--text-primary);
+      margin: 16px 0 12px 0;
+      padding-top: 12px;
+      border-top: 1px solid var(--surface-border);
     }
 
-    .pet-bio-section {
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid var(--bitbucket-border);
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 24px;
     }
 
-    .pet-bio-section h4 {
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--bitbucket-text-primary);
-      margin: 0 0 0.75rem 0;
+    .info-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--surface-border);
     }
 
-    .pet-bio-section p {
-      color: var(--bitbucket-text-primary);
-      line-height: 1.6;
-      margin: 0;
+    .info-row:last-child {
+      border-bottom: none;
     }
 
-    .about-card,
-    .medical-card,
-    .additional-card,
-    .behavior-card {
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
+    .info-row.full-width {
+      grid-column: 1 / -1;
     }
 
-    .about-card:last-child,
-    .medical-card:last-child,
-    .additional-card:last-child,
-    .behavior-card:last-child {
-      margin-bottom: 0;
+    .info-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      color: var(--text-secondary);
+      font-size: 14px;
     }
 
-    /* Posts Grid */
+    .info-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      min-width: 120px;
+      flex-shrink: 0;
+    }
+
+    .info-value {
+      font-size: 14px;
+      color: var(--text-primary);
+      font-weight: 500;
+      word-break: break-word;
+    }
+
+    /* ============================================
+       GALLERY / POSTS GRID
+    ============================================ */
+    .gallery-grid,
     .posts-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 0.5rem;
+      gap: 4px;
     }
 
+    .gallery-item,
     .post-card {
       position: relative;
       aspect-ratio: 1;
       overflow: hidden;
-      border-radius: 0.5rem;
       cursor: pointer;
+      border-radius: 4px;
     }
 
+    .gallery-item img,
     .post-card img {
       width: 100%;
       height: 100%;
@@ -819,47 +1170,95 @@ interface PetComment {
       transition: transform 0.3s ease;
     }
 
+    .gallery-item:hover img,
     .post-card:hover img {
-      transform: scale(1.05);
+      transform: scale(1.03);
     }
 
+    .gallery-overlay,
     .post-overlay {
       position: absolute;
       inset: 0;
       background: rgba(0, 0, 0, 0.3);
       display: flex;
-      justify-content: center;
       align-items: center;
-      gap: 1rem;
+      justify-content: center;
       opacity: 0;
       transition: opacity 0.3s ease;
-      color: white;
     }
 
+    .gallery-item:hover .gallery-overlay,
     .post-card:hover .post-overlay {
       opacity: 1;
     }
 
-    .post-overlay span {
+    .gallery-overlay i {
+      font-size: 32px;
+      color: white;
+    }
+
+    .post-stats {
+      display: flex;
+      gap: 20px;
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .post-stats span {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      font-weight: 600;
+      gap: 6px;
     }
 
-    /* Comments */
-    .comments-list {
+    .post-stats i {
+      font-size: 16px;
+    }
+
+    .gallery-item.empty,
+    .post-card.empty {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-hover);
+      color: var(--text-secondary);
+      aspect-ratio: 1;
+      border-radius: 4px;
+      cursor: default;
     }
 
-    .comment-card {
+    .gallery-item.empty i,
+    .post-card.empty i {
+      font-size: 40px;
+      margin-bottom: 8px;
+      opacity: 0.5;
+    }
+
+    .gallery-item.empty p,
+    .post-card.empty p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    /* ============================================
+       COMMENTS FEED
+    ============================================ */
+    .comments-feed {
       display: flex;
-      gap: 1rem;
-      padding: 1rem;
-      background-color: var(--bitbucket-bg-secondary, #f5f5f5);
-      border-radius: 0.5rem;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .comment-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--surface-border);
+    }
+
+    .comment-item:last-child {
+      border-bottom: none;
     }
 
     .comment-avatar {
@@ -870,87 +1269,155 @@ interface PetComment {
       flex-shrink: 0;
     }
 
-    .comment-content {
+    .comment-body {
       flex: 1;
+      min-width: 0;
     }
 
     .comment-header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.5rem;
+      gap: 12px;
+      margin-bottom: 4px;
     }
 
     .comment-author {
       font-weight: 600;
-      color: var(--bitbucket-text-primary);
-      font-size: 0.875rem;
+      font-size: 14px;
+      color: var(--text-primary);
     }
 
     .comment-date {
-      font-size: 0.75rem;
-      color: var(--bitbucket-text-secondary);
+      font-size: 12px;
+      color: var(--text-secondary);
     }
 
     .comment-text {
-      color: var(--bitbucket-text-primary);
-      font-size: 0.875rem;
+      font-size: 14px;
+      color: var(--text-primary);
       line-height: 1.5;
-      margin: 0 0 0.5rem 0;
+      margin: 0 0 8px 0;
     }
 
     .comment-actions {
       display: flex;
-      gap: 1rem;
+      gap: 16px;
     }
 
-    .comment-action-btn {
-      background: none;
-      border: none;
-      color: var(--bitbucket-text-secondary);
-      cursor: pointer;
-      font-size: 0.875rem;
+    .comment-like-btn {
       display: flex;
       align-items: center;
-      gap: 0.25rem;
-      transition: color 0.2s;
+      gap: 4px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: all 0.2s;
     }
 
-    .comment-action-btn:hover {
-      color: var(--primary-color);
+    .comment-like-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text-primary);
     }
 
-    /* Empty State */
+    .comment-like-btn .pi-heart-fill {
+      color: #dc2626;
+    }
+
+    .comment-avatar-small {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .comment-body-small {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .comment-author-small {
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-primary);
+      margin-right: 8px;
+    }
+
+    .comment-text-small {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
     .empty-state {
       text-align: center;
-      padding: 3rem;
-      color: var(--bitbucket-text-secondary);
+      padding: 40px 20px;
+      color: var(--text-secondary);
     }
 
     .empty-state i {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      opacity: 0.5;
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.4;
     }
 
     .empty-state p {
       margin: 0;
-      font-size: 1rem;
+      font-size: 16px;
+      font-weight: 500;
     }
 
-    /* Lightbox */
+    .empty-state .empty-subtitle {
+      font-size: 14px;
+      opacity: 0.7;
+    }
+
+    .empty-comments {
+      text-align: center;
+      padding: 30px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-comments i {
+      font-size: 32px;
+      opacity: 0.4;
+      margin-bottom: 8px;
+    }
+
+    .empty-comments p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    /* ============================================
+       LIGHTBOX
+    ============================================ */
+    :host ::ng-deep .lightbox-dialog .p-dialog-content {
+      padding: 0;
+      background: rgba(0, 0, 0, 0.9);
+    }
+
+    :host ::ng-deep .lightbox-dialog .p-dialog {
+      background: transparent;
+    }
+
     .lightbox-content {
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
+      min-height: 80vh;
+      padding: 20px;
     }
 
     .lightbox-close {
       position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: rgba(0, 0, 0, 0.5);
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.6);
       border: none;
       color: white;
       width: 40px;
@@ -961,29 +1428,35 @@ interface PetComment {
       justify-content: center;
       cursor: pointer;
       z-index: 10;
-      transition: background 0.2s;
+      transition: all 0.2s;
     }
 
     .lightbox-close:hover {
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.8);
+      transform: scale(1.1);
+    }
+
+    .lightbox-close i {
+      font-size: 20px;
     }
 
     .lightbox-image {
       max-width: 100%;
       max-height: 85vh;
       object-fit: contain;
-      border-radius: 0.5rem;
+      border-radius: 4px;
     }
 
     .lightbox-nav {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
       border: none;
-      color: #333;
-      width: 50px;
-      height: 50px;
+      color: white;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -994,53 +1467,91 @@ interface PetComment {
     }
 
     .lightbox-nav:hover {
-      background: white;
-      transform: translateY(-50%) scale(1.1);
+      background: rgba(255, 255, 255, 0.3);
+      transform: translateY(-50%) scale(1.05);
     }
 
     .lightbox-prev {
-      left: 1rem;
+      left: 16px;
     }
 
     .lightbox-next {
-      right: 1rem;
+      right: 16px;
     }
 
-    /* Post Modal (Instagram-style) */
+    .lightbox-dots {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .lightbox-dots .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.4);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lightbox-dots .dot.active {
+      background: white;
+      width: 24px;
+      border-radius: 4px;
+    }
+
+    .lightbox-dots .dot:hover {
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    /* ============================================
+       POST MODAL
+    ============================================ */
+    :host ::ng-deep .post-modal-dialog .p-dialog-content {
+      padding: 0;
+    }
+
+    :host ::ng-deep .post-modal-dialog .p-dialog {
+      max-height: 95vh;
+    }
+
     .post-modal {
       display: flex;
-      height: 85vh;
-      max-height: 650px;
-      background-color: var(--bitbucket-header-bg);
+      height: 80vh;
+      max-height: 700px;
+      background: var(--surface-card);
     }
 
-    /* Image side */
-    .post-modal-image-side {
+    .post-modal-image {
       flex: 1;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      background-color: #111;
+      background: #000;
       min-width: 0;
     }
 
-    .post-modal-img {
+    .post-modal-image img {
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
-      user-select: none;
     }
 
-    .post-modal-arrow {
+    .modal-arrow {
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      background: rgba(0, 0, 0, 0.45);
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
       border: none;
       color: white;
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -1048,346 +1559,445 @@ interface PetComment {
       cursor: pointer;
       z-index: 10;
       transition: all 0.2s;
-      opacity: 0.7;
     }
 
-    .post-modal-arrow:hover {
-      opacity: 1;
-      background: rgba(0, 0, 0, 0.65);
-      transform: translateY(-50%) scale(1.08);
+    .modal-arrow:hover {
+      background: rgba(255, 255, 255, 0.3);
     }
 
-    .post-modal-arrow-left { left: 0.75rem; }
-    .post-modal-arrow-right { right: 0.75rem; }
-
-    .post-modal-dots {
-      position: absolute;
-      bottom: 0.75rem;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 0.375rem;
+    .modal-arrow-left {
+      left: 12px;
     }
 
-    .post-modal-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.4);
-      cursor: pointer;
-      transition: all 0.2s;
+    .modal-arrow-right {
+      right: 12px;
     }
 
-    .post-modal-dot.active {
-      background: white;
-      width: 18px;
-      border-radius: 3px;
-    }
-
-    /* Details side */
-    .post-modal-details-side {
+    .post-modal-details {
       width: 380px;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      background-color: var(--bitbucket-header-bg);
+      background: var(--surface-card);
+      border-left: 1px solid var(--surface-border);
     }
 
-    .post-modal-details-header {
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--bitbucket-border);
-    }
-
-    .post-modal-details-user {
+    .post-modal-header {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--surface-border);
     }
 
-    .post-modal-details-avatar {
+    .post-modal-user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .post-modal-avatar {
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: var(--primary-color);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 0.875rem;
-      flex-shrink: 0;
-    }
-
-    .post-modal-details-avatar-sm {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: var(--primary-color);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 0.75rem;
-      flex-shrink: 0;
-    }
-
-    .post-modal-details-username {
-      font-weight: 600;
-      font-size: 0.875rem;
-      color: var(--bitbucket-text-primary);
-    }
-
-    .post-modal-details-caption {
-      display: flex;
-      gap: 0.75rem;
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--bitbucket-border);
-    }
-
-    .post-modal-details-caption-text {
-      display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
-      min-width: 0;
-    }
-
-    .post-modal-details-caption-text .caption-username {
-      font-weight: 600;
-      font-size: 0.8125rem;
-      color: var(--bitbucket-text-primary);
-    }
-
-    .post-modal-details-caption-text .caption-text {
-      font-size: 0.8125rem;
-      color: var(--bitbucket-text-primary);
-      line-height: 1.45;
-      white-space: pre-line;
-    }
-
-    .post-modal-details-comments {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0.5rem 1.25rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      scrollbar-width: thin;
-    }
-
-    .post-modal-details-comment {
-      display: flex;
-      gap: 0.75rem;
-      padding: 0.5rem 0;
-    }
-
-    .comment-avatar-sm {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
       object-fit: cover;
-      flex-shrink: 0;
     }
 
-    .post-modal-details-comment-body {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .post-modal-details-comment-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.125rem;
-    }
-
-    .comment-author-sm {
+    .post-modal-username {
       font-weight: 600;
-      font-size: 0.8125rem;
-      color: var(--bitbucket-text-primary);
+      font-size: 14px;
+      color: var(--text-primary);
     }
 
-    .comment-date-sm {
-      font-size: 0.6875rem;
-      color: var(--bitbucket-text-secondary);
-      white-space: nowrap;
-    }
-
-    .comment-text-sm {
-      font-size: 0.8125rem;
-      color: var(--bitbucket-text-secondary);
-      line-height: 1.4;
-      margin: 0 0 0.25rem 0;
-    }
-
-    .comment-like-sm {
+    .post-modal-more {
       background: none;
       border: none;
-      color: var(--bitbucket-text-secondary);
+      color: var(--text-secondary);
       cursor: pointer;
-      font-size: 0.6875rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .post-modal-more:hover {
+      background: var(--surface-hover);
+    }
+
+    .post-modal-caption {
       display: flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0;
-      transition: color 0.2s;
+      gap: 8px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--surface-border);
     }
 
-    .comment-like-sm:hover {
-      color: var(--primary-color);
+    .caption-username {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-primary);
+      flex-shrink: 0;
     }
 
-    .post-modal-empty-comments {
-      text-align: center;
-      padding: 2rem;
-      color: var(--bitbucket-text-secondary);
+    .caption-text {
+      font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.4;
+      word-break: break-word;
     }
 
-    .post-modal-empty-comments i {
-      font-size: 2rem;
-      margin-bottom: 0.75rem;
-      opacity: 0.4;
+    .post-modal-comments {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 20px;
     }
 
-    .post-modal-empty-comments p {
-      margin: 0;
-      font-size: 0.875rem;
+    .post-modal-comments .comment-item {
+      padding: 8px 0;
+      border-bottom: none;
+      gap: 10px;
     }
 
-    .post-modal-details-actions {
-      padding: 1rem 1.25rem;
-      border-top: 1px solid var(--bitbucket-border);
+    .post-modal-comments .comment-item:last-child {
+      border-bottom: none;
     }
 
-    .post-modal-details-stats {
+    .post-modal-actions {
+      padding: 12px 20px;
+      border-top: 1px solid var(--surface-border);
+    }
+
+    .post-modal-stats {
       display: flex;
       flex-direction: column;
-      gap: 0.125rem;
+      gap: 4px;
     }
 
-    .post-modal-details-likes {
+    .post-modal-stats span {
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    .post-modal-stats span:first-child {
       font-weight: 600;
-      font-size: 0.875rem;
-      color: var(--bitbucket-text-primary);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
     }
 
-    .post-modal-details-likes i {
-      color: #e74c3c;
+    .post-modal-stats span:first-child i {
+      color: #dc2626;
+      margin-right: 6px;
     }
 
-    .post-modal-details-time {
-      font-size: 0.6875rem;
-      color: var(--bitbucket-text-secondary);
+    .post-modal-stats span:last-child {
+      font-size: 12px;
+      color: var(--text-secondary);
       text-transform: uppercase;
-      letter-spacing: 0.03em;
     }
 
-    /* Delete Confirmation */
+    /* ============================================
+       EDIT DIALOG
+    ============================================ */
+    :host ::ng-deep .edit-dialog .p-dialog-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--surface-border);
+    }
+
+    :host ::ng-deep .edit-dialog .p-dialog-content {
+      padding: 24px;
+    }
+
+    /* ============================================
+       DELETE CONFIRMATION
+    ============================================ */
     .delete-confirmation {
       text-align: center;
-      padding: 1rem;
+      padding: 20px;
     }
 
-    .delete-confirmation i {
-      font-size: 3rem;
+    .delete-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      background: #fef3c7;
+      border-radius: 50%;
+    }
+
+    .delete-icon i {
+      font-size: 32px;
       color: #f59e0b;
-      margin-bottom: 1rem;
+    }
+
+    .dark .delete-icon {
+      background: #78350f;
+    }
+
+    .delete-confirmation h3 {
+      color: var(--text-primary);
+      margin: 0 0 8px 0;
     }
 
     .delete-confirmation p {
-      color: var(--bitbucket-text-primary);
-      font-size: 1rem;
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.5;
       margin: 0;
     }
 
-    /* Skeletons */
-    .pet-skeletons {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
+    :host ::ng-deep .p-dialog .p-dialog-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--surface-border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
     }
 
-    .photos-skeleton {
-      border-radius: 0.75rem;
+    /* ============================================
+       SKELETONS
+    ============================================ */
+    .profile-skeletons {
+      background: var(--surface-card);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 24px;
     }
 
-    .pet-info-skeleton {
+    .cover-skeleton {
+      display: block;
+      width: 100%;
+    }
+
+    .profile-info-skeleton {
+      padding: 0 24px 24px;
+      margin-top: -40px;
+      display: flex;
+      align-items: flex-end;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .avatar-skeleton-wrapper {
+      flex-shrink: 0;
+    }
+
+    .avatar-skeleton {
+      border: 4px solid var(--surface-card);
+    }
+
+    .user-info-skeleton {
+      flex: 1;
+      min-width: 200px;
+      padding-top: 40px;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 8px;
     }
 
-    .stats-skeleton-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
+    .action-skeleton {
+      display: flex;
+      gap: 12px;
+      margin-top: 8px;
     }
 
-    /* Responsive */
+    /* ============================================
+       RESPONSIVE
+    ============================================ */
+    @media (max-width: 992px) {
+      .post-modal {
+        flex-direction: column;
+        height: 90vh;
+        max-height: none;
+      }
+
+      .post-modal-image {
+        height: 50vh;
+        max-height: 400px;
+      }
+
+      .post-modal-details {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid var(--surface-border);
+        height: 40vh;
+      }
+    }
+
     @media (max-width: 768px) {
-      .pet-header {
-        grid-template-columns: 1fr;
-        gap: 1.5rem;
+      .pet-profile-container {
+        padding: 0 12px 24px;
       }
 
-      .pet-name {
-        font-size: 1.5rem;
+      .profile-info-section {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 0 16px 16px;
+        margin-top: -50px;
       }
 
-      .pet-stats-section {
-        grid-template-columns: 1fr;
+      .avatar-container {
+        width: 100px;
+        height: 100px;
+      }
+
+      .user-info {
+        padding-top: 8px;
+        text-align: center;
+      }
+
+      .user-name-section {
+        justify-content: center;
+      }
+
+      .user-name {
+        font-size: 22px;
+      }
+
+      .action-buttons {
+        padding-top: 8px;
+        justify-content: center;
+        width: 100%;
+        flex-wrap: wrap;
+      }
+
+      .cover-image-container {
+        height: 140px;
+      }
+
+      .stats-bar {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px 16px;
+      }
+
+      .stat-divider {
+        display: none;
+      }
+
+      .stat-item {
+        flex: 1;
+        min-width: 60px;
+        padding: 4px 8px;
+      }
+
+      .stat-number {
+        font-size: 16px;
       }
 
       .info-grid {
         grid-template-columns: 1fr;
       }
 
+      .info-row {
+        padding: 6px 0;
+      }
+
+      .info-label {
+        min-width: 90px;
+        font-size: 12px;
+      }
+
+      .gallery-grid,
       .posts-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2px;
       }
 
-      .pet-skeletons {
-        grid-template-columns: 1fr;
+      .tab-panel {
+        padding: 16px;
       }
-    }
 
-    /* Adoption button - follow-btn style */
-    .adopt-from-profile-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.375rem;
-      padding: 0.375rem 0.75rem;
-      background: transparent;
-      border: 1px solid var(--surface-border);
-      border-radius: var(--radius-full);
-      color: var(--text-secondary);
-      font-size: 0.8125rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
+      .post-modal {
+        height: 95vh;
+      }
 
-    .adopt-from-profile-btn:hover {
-      background: var(--surface-hover);
-      color: var(--primary-color);
-      border-color: var(--primary-color);
-    }
+      .post-modal-image {
+        height: 40vh;
+        max-height: 300px;
+      }
 
-    .adopt-from-profile-btn i {
-      font-size: 0.8125rem;
-      color: var(--primary-color);
+      .post-modal-details {
+        height: 55vh;
+      }
     }
 
     @media (max-width: 480px) {
+      .cover-image-container {
+        height: 100px;
+      }
+
+      .avatar-container {
+        width: 80px;
+        height: 80px;
+      }
+
+      .user-name {
+        font-size: 18px;
+      }
+
+      .gallery-grid,
       .posts-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .btn-primary,
+      .btn-secondary {
+        padding: 6px 16px;
+        font-size: 12px;
+      }
+
+      .btn-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+      }
+
+      .action-buttons {
+        gap: 6px;
+      }
+
+      .lightbox-nav {
+        width: 36px;
+        height: 36px;
+      }
+
+      .lightbox-nav i {
+        font-size: 14px;
       }
     }
+
+    /* ============================================
+       DARK MODE OVERRIDES
+    ============================================ */
+    .dark .profile-header,
+    .dark .stats-bar,
+    .dark .tab-panel {
+      border-color: var(--surface-border-dark);
+    }
+
+    .dark .info-section {
+      background: var(--surface-ground-dark);
+    }
+
+    .dark .post-modal {
+      background: var(--surface-card-dark);
+    }
+
+    .dark .post-modal-details {
+      background: var(--surface-card-dark);
+      border-left-color: var(--surface-border-dark);
+    }
+
+    .dark .post-modal-header,
+    .dark .post-modal-caption,
+    .dark .post-modal-actions {
+      border-color: var(--surface-border-dark);
+    }
+
+    /* ============================================
+       UTILITY
+    ============================================ */
+    .mb-2 { margin-bottom: 8px; }
+    .mb-3 { margin-bottom: 12px; }
   `]
 })
 export class PetProfilePageComponent implements OnInit, OnDestroy {
@@ -1413,7 +2023,6 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   lightboxVisible = false;
   showEditDialog = false;
   showDeleteDialog = false;
-  showAdoptionDialog = false;
   postModalVisible = false;
   currentPostIndex = signal(0);
 
@@ -1431,60 +2040,232 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   // Menu reference
   @ViewChild('actionMenu') actionMenu: any;
 
-  // Action menu items for dropdown
+  // Dark mode detection
+  isDarkMode = signal(false);
+
+  // Action menu items
   actionMenuItems: any[] = [];
+
+  // Computed
+  petImages = computed(() => {
+    const pet = this.pet();
+    if (!pet) return ['https://placehold.co/600x600?text=🐾'];
+
+    const images: string[] = [];
+    if (pet.avatarUrl) images.push(pet.avatarUrl);
+    if (pet.imageUrls?.length) images.push(...pet.imageUrls);
+    return images.length > 0 ? images : ['https://placehold.co/600x600?text=🐾'];
+  });
+
+  currentImage = computed(() => {
+    const images = this.petImages();
+    const index = this.currentImageIndex();
+    return images[Math.min(index, images.length - 1)];
+  });
+
+  currentPost = computed(() => {
+    const posts = this.petPosts();
+    const index = this.currentPostIndex();
+    return posts.length > 0 ? posts[Math.min(index, posts.length - 1)] : null;
+  });
+
+  isOwner = computed(() => {
+    const pet = this.pet();
+    const user = this.authService.user();
+    return pet && user && pet.ownerId === user.id;
+  });
+
+  canRequestAdoption = computed(() => {
+    const pet = this.pet();
+    const user = this.authService.user();
+    return pet && user && pet.availableForAdoption && pet.ownerId !== user.id;
+  });
+
+  petTabs = computed((): Tab[] => {
+    return [
+      { id: 'info', label: 'Información', icon: 'info' },
+      { id: 'photos', label: 'Fotos', icon: 'photo_library' },
+      { id: 'posts', label: 'Publicaciones', icon: 'photo_library' },
+      { id: 'comments', label: 'Comentarios', icon: 'comment' },
+    ];
+  });
+
+  ngOnInit(): void {
+    this.detectDarkMode();
+    this.paramSubscription = this.route.paramMap.subscribe(params => {
+      const id = params.get('id');
+      this.petId.set(id);
+      if (id) this.loadPetData(id);
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.paramSubscription?.unsubscribe();
+  }
+
+  private detectDarkMode(): void {
+    const darkMode = document.documentElement.classList.contains('dark');
+    this.isDarkMode.set(darkMode);
+
+    const observer = new MutationObserver(() => {
+      this.isDarkMode.set(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  private loadPetData(petId: string): void {
+    this.loading.set(true);
+
+    this.profileService.getPetById(petId).subscribe({
+      next: (pet) => {
+        this.pet.set(pet);
+        this.loadPetStats(petId);
+        this.loadPetPosts(petId);
+        this.loadPetComments(petId);
+        this.buildActionMenuItems();
+        this.initEditFormData(pet);
+
+        setTimeout(() => {
+          this.loading.set(false);
+          this.cdr.detectChanges();
+        }, 300);
+      },
+      error: (err) => {
+        console.error('Error loading pet:', err);
+        this.loading.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo cargar la información de la mascota'
+        });
+      }
+    });
+  }
+
+  private initEditFormData(pet: PetResponse): void {
+    this.editPetFormData.set({
+      name: pet.name,
+      species: pet.species,
+      breed: pet.breed || '',
+      dateOfBirth: pet.dateOfBirth || '',
+      gender: pet.gender || '',
+      weight: pet.weight || '',
+      weightUnit: pet.weightUnit || 'kg',
+      color: pet.color || '',
+      microchipId: pet.microchipId || '',
+      bio: pet.bio || '',
+      bloodType: pet.bloodType || '',
+      allergies: pet.allergies || '',
+      medicalConditions: pet.medicalConditions || '',
+      vetName: pet.vetName || '',
+      vetPhone: pet.vetPhone || '',
+      vetAddress: pet.vetAddress || '',
+      lastVaccinationDate: pet.lastVaccinationDate || '',
+      nextVaccinationDate: pet.nextVaccinationDate || '',
+      lastVetVisit: pet.lastVetVisit || '',
+      insuranceProvider: pet.insuranceProvider || '',
+      insurancePolicyNumber: pet.insurancePolicyNumber || '',
+      emergencyContact: pet.emergencyContact || '',
+      emergencyPhone: pet.emergencyPhone || '',
+      adoptionDate: pet.adoptionDate || '',
+      adoptionCenter: pet.adoptionCenter || '',
+      registrationNumber: pet.registrationNumber || '',
+      licenseNumber: pet.licenseNumber || '',
+      licenseExpiryDate: pet.licenseExpiryDate || '',
+      spayedNeutered: pet.spayedNeutered || false,
+      spayedNeuteredDate: pet.spayedNeuteredDate || '',
+      temperament: pet.temperament || '',
+      energyLevel: pet.energyLevel || '',
+      trainingLevel: pet.trainingLevel || '',
+      favoriteActivities: pet.favoriteActivities || '',
+      favoriteFood: pet.favoriteFood || '',
+      specialNeeds: pet.specialNeeds || ''
+    });
+  }
+
+  private loadPetStats(petId: string): void {
+    this.petStats.set({
+      likes: Math.floor(Math.random() * 100),
+      posts: Math.floor(Math.random() * 20),
+    });
+  }
+
+  private loadPetPosts(petId: string): void {
+    this.petPosts.set([
+      {
+        id: '1',
+        image: 'https://picsum.photos/400/400?random=10',
+        likesCount: 24,
+        commentsCount: 5,
+        caption: '¡Día de parque! 🐾',
+        date: 'Hace 2 días'
+      },
+      {
+        id: '2',
+        image: 'https://picsum.photos/400/400?random=11',
+        likesCount: 18,
+        commentsCount: 3,
+        caption: 'Baño relajante 🛁',
+        date: 'Hace 5 días'
+      },
+      {
+        id: '3',
+        image: 'https://picsum.photos/400/400?random=12',
+        likesCount: 32,
+        commentsCount: 8,
+        caption: 'Nuevo juguete favorito 🧸',
+        date: 'Hace 1 semana'
+      },
+    ]);
+  }
+
+  private loadPetComments(petId: string): void {
+    this.petComments.set([
+      {
+        id: '1',
+        authorName: 'María García',
+        authorAvatar: 'https://i.pravatar.cc/150?img=1',
+        content: '¡Qué adorable! Me encanta cómo ha crecido 🐕',
+        date: new Date('2024-01-15'),
+        likes: 5,
+        liked: false
+      },
+      {
+        id: '2',
+        authorName: 'Juan Pérez',
+        authorAvatar: 'https://i.pravatar.cc/150?img=2',
+        content: 'Muy bonito, saludos a toda la familia 🐾',
+        date: new Date('2024-01-14'),
+        likes: 3,
+        liked: false
+      },
+    ]);
+  }
 
   private buildActionMenuItems(): void {
     const pet = this.pet();
     this.actionMenuItems = [
       {
-        label: 'Editar Información',
+        label: 'Editar Perfil',
         icon: 'pi pi-pencil',
-        items: [
-          {
-            label: 'Información Básica',
-            icon: 'pi pi-tag',
-            command: () => this.openEditDialog('basic')
-          },
-          {
-            label: 'Información Médica',
-            icon: 'pi pi-heart',
-            command: () => this.openEditDialog('medical')
-          },
-          {
-            label: 'Información Adicional',
-            icon: 'pi pi-info-circle',
-            command: () => this.openEditDialog('additional')
-          },
-          {
-            label: 'Comportamiento',
-            icon: 'pi pi-smile',
-            command: () => this.openEditDialog('behavior')
-          }
-        ]
+        command: () => this.openEditDialog('basic')
       },
       {
-        label: 'Acciones',
-        icon: 'pi pi-cog',
-        items: [
-          {
-            label: pet?.availableForAdoption ? 'Quitar de adopción' : 'Poner en adopción',
-            icon: pet?.availableForAdoption ? 'pi pi-heart' : 'pi pi-home',
-            command: () => this.toggleAdoptionStatus()
-          },
-          {
-            label: 'Eliminar Mascota',
-            icon: 'pi pi-trash',
-            command: () => this.confirmDelete()
-          }
-        ]
+        label: pet?.availableForAdoption ? 'Quitar de adopción' : 'Poner en adopción',
+        icon: pet?.availableForAdoption ? 'pi pi-heart' : 'pi pi-home',
+        command: () => this.toggleAdoptionStatus()
+      },
+      {
+        label: 'Eliminar Mascota',
+        icon: 'pi pi-trash',
+        command: () => this.confirmDelete()
       }
     ];
   }
 
-  // Edit form configurations for each category
+  // Form configurations
   editPetFormConfig: DynamicFormConfig = {
-    title: 'Editar Información Básica',
+    title: 'Editar Información',
     submitLabel: 'Guardar Cambios',
     showCancel: true,
     fields: [
@@ -1578,7 +2359,6 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     ]
   };
 
-  // Medical form configuration
   medicalFormConfig: DynamicFormConfig = {
     title: 'Editar Información Médica',
     submitLabel: 'Guardar Cambios',
@@ -1669,7 +2449,6 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     ]
   };
 
-  // Additional form configuration
   additionalFormConfig: DynamicFormConfig = {
     title: 'Editar Información Adicional',
     submitLabel: 'Guardar Cambios',
@@ -1742,7 +2521,6 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     ]
   };
 
-  // Behavior form configuration
   behaviorFormConfig: DynamicFormConfig = {
     title: 'Editar Comportamiento',
     submitLabel: 'Guardar Cambios',
@@ -1812,224 +2590,120 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     ]
   };
 
-  // Current edit category
   currentEditCategory: 'basic' | 'medical' | 'additional' | 'behavior' = 'basic';
 
-  // Computed
-  petImages = computed(() => {
-    const pet = this.pet();
-    if (!pet) return [];
-
-    // Build images array: avatarUrl first, then all imageUrls
-    const images: string[] = [];
-
-    // Add avatarUrl as the first image if it exists
-    if (pet.avatarUrl) {
-      images.push(pet.avatarUrl);
+  getCurrentFormConfig(): DynamicFormConfig {
+    switch (this.currentEditCategory) {
+      case 'basic': return this.editPetFormConfig;
+      case 'medical': return this.medicalFormConfig;
+      case 'additional': return this.additionalFormConfig;
+      case 'behavior': return this.behaviorFormConfig;
+      default: return this.editPetFormConfig;
     }
+  }
 
-    // Add all imageUrls (additional images)
-    if (pet.imageUrls && pet.imageUrls.length > 0) {
-      images.push(...pet.imageUrls);
+  // ============================================
+  //  ACTIONS
+  // ============================================
+
+  goBack(): void {
+    window.history.back();
+  }
+
+  onTabChange(tabId: string): void {
+    this.activeTab.set(tabId);
+  }
+
+  toggleActionMenu(event: Event): void {
+    event.stopPropagation();
+    if (this.actionMenu) {
+      this.actionMenu.toggle(event);
     }
+  }
 
-    // If no images, return placeholder
-    if (images.length === 0) {
-      return ['https://placehold.co/600x600?text=No+Image'];
-    }
+  openEditDialog(category: 'basic' | 'medical' | 'additional' | 'behavior'): void {
+    this.currentEditCategory = category;
+    this.showEditDialog = true;
+  }
 
-    return images;
-  });
-
-  // Removed: petPhotoItems no longer used (TableCardComponent was removed)
-
-  currentImage = computed(() => {
-    const images = this.petImages();
-    const index = this.currentImageIndex();
-    return images[Math.min(index, images.length - 1)];
-  });
-
-  isOwner = computed(() => {
-    const pet = this.pet();
-    const user = this.authService.user();
-    return pet && user && pet.ownerId === user.id;
-  });
-
-  canRequestAdoption = computed(() => {
-    const pet = this.pet();
-    const user = this.authService.user();
-    return pet && user && pet.availableForAdoption && pet.ownerId !== user.id;
-  });
-
-    // Tabs configuration
-  petTabs = computed((): Tab[] => {
-    return [
-      { id: 'info', label: 'Información', icon: 'info' },
-      { id: 'photos', label: 'Fotos', icon: 'photo_library' },
-      { id: 'posts', label: 'Publicaciones', icon: 'photo_library' },
-      { id: 'comments', label: 'Comentarios', icon: 'comment' },
-    ];
-  });
-
-  ngOnInit(): void {
-    this.paramSubscription = this.route.paramMap.subscribe(params => {
-      const id = params.get('id');
-      this.petId.set(id);
-
-      if (id) {
-        this.loadPetData(id);
-      }
+  onEditPetSubmit(data: any): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: 'Mascota actualizada correctamente'
     });
+    this.showEditDialog = false;
   }
 
-  ngOnDestroy(): void {
-    this.paramSubscription?.unsubscribe();
+  confirmDelete(): void {
+    this.showDeleteDialog = true;
   }
 
-  private loadPetData(petId: string): void {
-    this.loading.set(true);
+  deletePet(): void {
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: 'Mascota eliminada correctamente'
+    });
+    this.showDeleteDialog = false;
+    this.router.navigate(['/profile']);
+  }
 
-    // Load pet data
-    this.profileService.getPetById(petId).subscribe({
-      next: (pet) => {
-        this.pet.set(pet);
-        this.loadPetStats(petId);
-        this.loadPetPosts(petId);
-        this.loadPetComments(petId);
-        this.buildActionMenuItems();
+  toggleAdoptionStatus(): void {
+    const pet = this.pet();
+    if (!pet) return;
 
-        // Initialize edit form
-        this.editPetFormData.set({
-          name: pet.name,
-          species: pet.species,
-          breed: pet.breed || '',
-          dateOfBirth: pet.dateOfBirth || '',
-          gender: pet.gender || '',
-          weight: pet.weight || '',
-          weightUnit: pet.weightUnit || 'kg',
-          color: pet.color || '',
-          microchipId: pet.microchipId || '',
-          bio: pet.bio || '',
-          // Información médica
-          bloodType: pet.bloodType || '',
-          allergies: pet.allergies || '',
-          medicalConditions: pet.medicalConditions || '',
-          vetName: pet.vetName || '',
-          vetPhone: pet.vetPhone || '',
-          vetAddress: pet.vetAddress || '',
-          lastVaccinationDate: pet.lastVaccinationDate || '',
-          nextVaccinationDate: pet.nextVaccinationDate || '',
-          lastVetVisit: pet.lastVetVisit || '',
-          insuranceProvider: pet.insuranceProvider || '',
-          insurancePolicyNumber: pet.insurancePolicyNumber || '',
-          // Información adicional
-          emergencyContact: pet.emergencyContact || '',
-          emergencyPhone: pet.emergencyPhone || '',
-          adoptionDate: pet.adoptionDate || '',
-          adoptionCenter: pet.adoptionCenter || '',
-          registrationNumber: pet.registrationNumber || '',
-          licenseNumber: pet.licenseNumber || '',
-          licenseExpiryDate: pet.licenseExpiryDate || '',
-          spayedNeutered: pet.spayedNeutered || false,
-          spayedNeuteredDate: pet.spayedNeuteredDate || '',
-          // Comportamiento
-          temperament: pet.temperament || '',
-          energyLevel: pet.energyLevel || '',
-          trainingLevel: pet.trainingLevel || '',
-          favoriteActivities: pet.favoriteActivities || '',
-          favoriteFood: pet.favoriteFood || '',
-          specialNeeds: pet.specialNeeds || ''
+    const newStatus = !pet.availableForAdoption;
+    this.profileService.toggleAdoptionStatus(pet.id, newStatus).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: newStatus ? 'En adopción' : 'Adopción cancelada',
+          detail: newStatus ? 'La mascota está disponible para adopción' : 'La mascota ya no está en adopción'
         });
-
-        setTimeout(() => {
-          this.loading.set(false);
-          this.cdr.detectChanges();
-        }, 500);
+        this.loadPetData(pet.id);
       },
-      error: (err) => {
-        console.error('Error loading pet:', err);
-        this.loading.set(false);
+      error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo cargar la información de la mascota'
+          detail: 'No se pudo actualizar el estado de adopción'
         });
       }
     });
   }
 
-  private loadPetStats(petId: string): void {
-    // Mock data - replace with actual API call
-    this.petStats.set({
-      likes: Math.floor(Math.random() * 100),
-      posts: Math.floor(Math.random() * 20),
+  requestAdoptionFromProfile(): void {
+    const pet = this.pet();
+    if (!pet) return;
+
+    this.adoptionService.requestAdoption({ petId: pet.id }).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Solicitud enviada',
+          detail: `Tu solicitud de adopción para ${pet.name} ha sido enviada`
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo enviar la solicitud de adopción'
+        });
+      }
     });
   }
 
-  private loadPetPosts(petId: string): void {
-    // Mock data - replace with actual API call
-    this.petPosts.set([
-      { id: '1', image: 'https://picsum.photos/300/300?random=10', likesCount: 24, commentsCount: 5, caption: '¡Día de parque!' },
-      { id: '2', image: 'https://picsum.photos/300/300?random=11', likesCount: 18, commentsCount: 3, caption: 'Baño relajante' },
-      { id: '3', image: 'https://picsum.photos/300/300?random=12', likesCount: 32, commentsCount: 8, caption: 'Nuevo juguete' },
-    ]);
+  toggleCommentLike(comment: PetComment): void {
+    comment.liked = !comment.liked;
+    comment.likes += comment.liked ? 1 : -1;
+    this.cdr.detectChanges();
   }
 
-  private loadPetComments(petId: string): void {
-    // Mock data - replace with actual API call
-    this.petComments.set([
-      {
-        id: '1',
-        authorName: 'María García',
-        authorAvatar: 'https://i.pravatar.cc/150?img=1',
-        content: '¡Qué adorable! Me encanta cómo ha crecido 🐕',
-        date: new Date('2024-01-15'),
-        likes: 5
-      },
-      {
-        id: '2',
-        authorName: 'Juan Pérez',
-        authorAvatar: 'https://i.pravatar.cc/150?img=2',
-        content: 'Muy bonito, saludos a toda la familia',
-        date: new Date('2024-01-14'),
-        likes: 3
-      },
-    ]);
-  }
-
-  // Carousel methods
-  nextImage(event: Event): void {
-    event.stopPropagation();
-    const total = this.petImages().length;
-    const current = this.currentImageIndex();
-    if (current < total - 1) {
-      this.currentImageIndex.set(current + 1);
-    }
-  }
-
-  prevImage(event: Event): void {
-    event.stopPropagation();
-    const current = this.currentImageIndex();
-    if (current > 0) {
-      this.currentImageIndex.set(current - 1);
-    }
-  }
-
-  selectImage(index: number): void {
-    this.currentImageIndex.set(index);
-  }
-
-  // Computed current post
-  currentPost = computed(() => {
-    const posts = this.petPosts();
-    const index = this.currentPostIndex();
-    return posts.length > 0 ? posts[Math.min(index, posts.length - 1)] : null;
-  });
-
-  // Lightbox methods
-  openLightbox(): void {
-    this.lightboxVisible = true;
-  }
+  // ============================================
+  //  LIGHTBOX & POST MODAL
+  // ============================================
 
   openLightboxAt(index: number): void {
     this.currentImageIndex.set(index);
@@ -2040,7 +2714,23 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     this.lightboxVisible = false;
   }
 
-  // Post Modal methods
+  nextImage(event: Event): void {
+    event.stopPropagation();
+    const total = this.petImages().length;
+    const current = this.currentImageIndex();
+    if (current < total - 1) this.currentImageIndex.set(current + 1);
+  }
+
+  prevImage(event: Event): void {
+    event.stopPropagation();
+    const current = this.currentImageIndex();
+    if (current > 0) this.currentImageIndex.set(current - 1);
+  }
+
+  selectImage(index: number): void {
+    this.currentImageIndex.set(index);
+  }
+
   openPostModal(index: number): void {
     this.currentPostIndex.set(index);
     this.postModalVisible = true;
@@ -2054,166 +2744,30 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     const total = this.petPosts().length;
     const current = this.currentPostIndex();
-    if (current < total - 1) {
-      this.currentPostIndex.set(current + 1);
-    }
+    if (current < total - 1) this.currentPostIndex.set(current + 1);
   }
 
   prevPost(event: Event): void {
     event.stopPropagation();
     const current = this.currentPostIndex();
-    if (current > 0) {
-      this.currentPostIndex.set(current - 1);
-    }
+    if (current > 0) this.currentPostIndex.set(current - 1);
   }
 
-  // Tab methods
-  onTabChange(tabId: string): void {
-    this.activeTab.set(tabId);
+  // ============================================
+  //  HELPERS
+  // ============================================
+
+  formatAge(dateOfBirth: string | null | undefined): string {
+    if (!dateOfBirth) return '—';
+    const birth = new Date(dateOfBirth);
+    const age = new Date().getFullYear() - birth.getFullYear();
+    return age > 0 ? age + ' años' : '< 1 año';
   }
 
-  // Navigation
-  goBack(): void {
-    window.history.back();
-  }
-
-  // Wrapper methods for template to use imported functions
-  getSpeciesLabelWrapper(species: string | null | undefined): string {
-    return getSpeciesLabel(species);
-  }
-
-  getGenderLabelWrapper(gender: string | null | undefined): string {
-    return getGenderLabel(gender);
-  }
-
-  getTemperamentLabelWrapper(temperament: string | null | undefined): string {
-    return getTemperamentLabel(temperament);
-  }
-
-  getEnergyLevelLabelWrapper(level: string | null | undefined): string {
-    return getEnergyLevelLabel(level);
-  }
-
-  getTrainingLevelLabelWrapper(level: string | null | undefined): string {
-    return getTrainingLevelLabel(level);
-  }
-
-  // Menu methods
-  toggleActionMenu(event: Event): void {
-    if (this.actionMenu) {
-      this.actionMenu.toggle(event);
-    }
-  }
-
-  // Edit dialog methods
-  openEditDialog(category: 'basic' | 'medical' | 'additional' | 'behavior'): void {
-    this.currentEditCategory = category;
-    this.showEditDialog = true;
-  }
-
-  // Get the current form config based on category
-  getCurrentFormConfig(): DynamicFormConfig {
-    switch (this.currentEditCategory) {
-      case 'basic':
-        return this.editPetFormConfig;
-      case 'medical':
-        return this.medicalFormConfig;
-      case 'additional':
-        return this.additionalFormConfig;
-      case 'behavior':
-        return this.behaviorFormConfig;
-      default:
-        return this.editPetFormConfig;
-    }
-  }
-
-  requestAdoptionFromProfile(): void {
-    const pet = this.pet();
-    if (!pet) return;
-
-    this.adoptionService.requestAdoption({ petId: pet.id }).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Solicitud enviada',
-          detail: `Tu solicitud de adopción para ${pet.name} ha sido enviada al refugio`
-        });
-      },
-      error: (err) => {
-        console.error('Error requesting adoption:', err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo enviar la solicitud de adopción'
-        });
-      }
-    });
-  }
-
-  // Adoption status
-  toggleAdoptionStatus(): void {
-    const pet = this.pet();
-    if (!pet) {
-      console.warn('No pet data available for adoption status toggle');
-      return;
-    }
-
-    const newStatus = !pet.availableForAdoption;
-    console.log('Toggling adoption status for pet:', pet.id, 'current active:', pet.active, 'new status:', newStatus);
-
-    this.profileService.toggleAdoptionStatus(pet.id, newStatus).subscribe({
-      next: (response) => {
-        console.log('Adoption status toggled successfully:', response);
-        this.messageService.add({
-          severity: 'success',
-          summary: newStatus ? 'En adopción' : 'Adopción cancelada',
-          detail: newStatus ? 'La mascota ya está disponible para adopción' : 'La mascota ya no está en adopción'
-        });
-        // Reload pet data to reflect the change
-        this.loadPetData(pet.id);
-      },
-      error: (err) => {
-        console.error('Error toggling adoption status:', err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo actualizar el estado de adopción'
-        });
-      }
-    });
-  }
-
-  // Admin actions
-  onEditPetSubmit(data: any): void {
-    const pet = this.pet();
-    if (!pet) return;
-
-    // Update pet logic here
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Éxito',
-      detail: 'Mascota actualizada correctamente'
-    });
-
-    this.showEditDialog = false;
-  }
-
-  confirmDelete(): void {
-    this.showDeleteDialog = true;
-  }
-
-  deletePet(): void {
-    const pet = this.pet();
-    if (!pet) return;
-
-    // Delete pet logic here
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Éxito',
-      detail: 'Mascota eliminada correctamente'
-    });
-
-    this.showDeleteDialog = false;
-    this.router.navigate(['/profile']);
-  }
+  // Wrappers para labels
+  getSpeciesLabelWrapper = getSpeciesLabel;
+  getGenderLabelWrapper = getGenderLabel;
+  getTemperamentLabelWrapper = getTemperamentLabel;
+  getEnergyLevelLabelWrapper = getEnergyLevelLabel;
+  getTrainingLevelLabelWrapper = getTrainingLevelLabel;
 }

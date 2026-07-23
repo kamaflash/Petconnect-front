@@ -151,98 +151,114 @@ interface Pet {
   ],
   providers: [MessageService],
   template: `
-    <div class="profile-page">
+    <div class="profile-page" [class.dark]="isDarkMode()">
       <div class="profile-container">
+        <!-- Loading Progress Bar -->
+        <div class="loading-overlay" *ngIf="loading()">
+          <p-progressBar mode="indeterminate" [style]="{'height': '3px'}"></p-progressBar>
+        </div>
+
         <!-- Header del perfil estilo Instagram -->
         <div class="profile-header-instagram">
+          <!-- Cover Image -->
           <div class="profile-cover-instagram">
-            @if (loading()) {
+            <ng-container *ngIf="loading(); else coverLoaded">
               <p-skeleton height="280px" class="cover-skeleton"></p-skeleton>
-            } @else {
+            </ng-container>
+            <ng-template #coverLoaded>
               <img [src]="userCoverAvatar()" alt="Cover" class="cover-image-instagram" />
-              @if (isOwnProfile()) {
-                <button class="cover-change-btn" (click)="triggerCoverUpload()">
-                  <i class="pi pi-camera"></i>
-                </button>
-              }
-            }
+              <button *ngIf="isOwnProfile()" class="cover-change-btn" (click)="triggerCoverUpload()">
+                <i class="pi pi-camera"></i>
+              </button>
+            </ng-template>
           </div>
+
+          <!-- Profile Info -->
           <div class="profile-info-instagram">
+            <!-- Avatar -->
             <div class="profile-avatar-section-instagram">
-              @if (loading()) {
-                <p-skeleton shape="circle" size="12rem" class="avatar-skeleton-instagram"></p-skeleton>
-              } @else {
+              <ng-container *ngIf="loading(); else avatarLoaded">
+                <p-skeleton shape="circle" size="120px" class="avatar-skeleton-instagram"></p-skeleton>
+              </ng-container>
+              <ng-template #avatarLoaded>
                 <div class="avatar-ring">
                   <div class="avatar-wrapper">
-                    <p-avatar [image]="userAvatar()" shape="circle" size="xlarge" class="profile-avatar-instagram avatar-large"></p-avatar>
-                    @if (isOwnProfile()) {
-                      <button class="avatar-change-btn" (click)="triggerAvatarUpload()">
-                        <i class="pi pi-camera"></i>
-                      </button>
-                    }
+                    <img [src]="userAvatar()" alt="Avatar" class="profile-avatar-instagram" />
+                    <button *ngIf="isOwnProfile()" class="avatar-change-btn" (click)="triggerAvatarUpload()">
+                      <i class="pi pi-camera"></i>
+                    </button>
                   </div>
                 </div>
-              }
+              </ng-template>
             </div>
+
+            <!-- User Details -->
             <div class="profile-details-instagram">
-              @if (loading()) {
+              <ng-container *ngIf="loading(); else detailsLoaded">
                 <p-skeleton width="10rem" height="1.5rem" class="mb-2"></p-skeleton>
-              } @else {
-                <h2 class="profile-username">{{ userUsername() }}</h2>
-              }
-              <div class="profile-stats-instagram">
-                @if (loading()) {
+                <div class="profile-stats-instagram">
                   <div class="stat-item-instagram" *ngFor="let i of [1, 2, 3, 4]">
                     <p-skeleton width="2.5rem" height="1rem" class="mb-1"></p-skeleton>
                     <p-skeleton width="4rem" height="0.75rem"></p-skeleton>
                   </div>
-                } @else {
+                </div>
+              </ng-container>
+              <ng-template #detailsLoaded>
+                <h2 class="profile-username">{{ userUsername() }}</h2>
+
+                <div class="profile-stats-instagram">
                   <div class="stat-item-instagram" *ngFor="let stat of profileStats()">
                     <span class="stat-value-instagram">{{ stat.value }}</span>
                     <span class="stat-label-instagram">{{ stat.label }}</span>
                   </div>
-                }
-              </div>
-              @if (!loading()) {
+                </div>
+
                 <h1 class="profile-name-instagram">{{ userProfile()?.name }}</h1>
+
                 <div class="profile-type-badge">
                   <span class="type-badge" [ngClass]="'type-' + userProfile()?.type">
                     {{ getProfileTypeLabel(userProfile()?.type) }}
                   </span>
                 </div>
-                <p class="profile-bio-instagram">{{ userProfile()?.bio }}</p>
-              } @else {
-                <p-skeleton width="8rem" height="1.125rem" class="mb-2 mt-2"></p-skeleton>
-                <p-skeleton width="100%" height="0.75rem" class="mb-1"></p-skeleton>
-                <p-skeleton width="100%" height="0.75rem" class="mb-1"></p-skeleton>
-                <p-skeleton width="60%" height="0.75rem"></p-skeleton>
-              }
+
+                <p class="profile-bio-instagram">{{ userProfile()?.bio || 'Sin descripción' }}</p>
+
+                <!-- Información de ubicación y contacto -->
+                <div class="profile-contact-info">
+                  <span *ngIf="userProfile()?.location" class="contact-item">
+                    <i class="pi pi-map-marker"></i> {{ userProfile()?.location }}
+                  </span>
+                  <span *ngIf="userPhone() !== '—'" class="contact-item">
+                    <i class="pi pi-phone"></i> {{ userPhone() }}
+                  </span>
+                  <span *ngIf="userProfile()?.website" class="contact-item">
+                    <i class="pi pi-globe"></i>
+                    <a [href]="'https://' + userProfile()?.website" target="_blank">{{ userProfile()?.website }}</a>
+                  </span>
+                </div>
+              </ng-template>
             </div>
+
+            <!-- Action Buttons -->
             <div class="profile-actions-instagram">
-              @if (isOwnProfile() && !loading()) {
-                <p-menu #profileMenu [model]="profileMenuItems" [popup]="true" appendTo="body"></p-menu>
-                <button pButton type="button" icon="pi pi-ellipsis-v" class="p-button-outlined p-button-sm" (click)="profileMenu.toggle($event)"></button>
-              }
-              @if (!isOwnProfile() && !loading()) {
-                <button
-                  class="follow-btn"
-                  [class.following]="userProfile()?.isFollowing"
-                  (click)="toggleFollow()"
-                >
-                  <i [class]="userProfile()?.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"></i>
-                  {{ userProfile()?.isFollowing ? 'Siguiendo' : 'Seguir' }}
+              <ng-container *ngIf="!loading()">
+                <button *ngIf="isOwnProfile()" class="btn-action btn-edit" (click)="setActiveTab('knowme')">
+                  <i class="pi pi-pencil"></i>
+                  <span>Editar</span>
                 </button>
-              }
+
+                <button *ngIf="!isOwnProfile()" class="btn-action" [class.btn-following]="userProfile()?.isFollowing" (click)="toggleFollow()">
+                  <i [class]="userProfile()?.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"></i>
+                  <span>{{ userProfile()?.isFollowing ? 'Siguiendo' : 'Seguir' }}</span>
+                </button>
+
+                <button *ngIf="isOwnProfile()" class="btn-action btn-more" (click)="profileMenu.toggle($event)">
+                  <i class="pi pi-ellipsis-h"></i>
+                </button>
+              </ng-container>
             </div>
           </div>
         </div>
-
-        <!-- Loading Progress Bar -->
-        @if (loading()) {
-          <div class="loading-overlay">
-            <p-progressBar mode="indeterminate" [style]="{'height': '4px'}" />
-          </div>
-        }
 
         <!-- Tabs estilo Instagram -->
         <app-tabs
@@ -254,24 +270,30 @@ interface Pet {
         <!-- Contenido de tabs -->
         <div class="profile-content">
           <!-- Publicaciones - Grid 3 columnas estilo Instagram -->
-          <div class="posts-grid-instagram" *ngIf="activeTab() === 'posts' && !loading()">
-            <div class="post-card-instagram" *ngFor="let post of userPosts()">
-              <img [src]="post.image" alt="Post" class="post-image-instagram" />
-              <div class="post-overlay-instagram">
-                <span><i class="pi pi-heart"></i> {{ post.likes }}</span>
-                <span><i class="pi pi-comment"></i> {{ post.comments }}</span>
+          <div class="tab-panel" *ngIf="activeTab() === 'posts'">
+            <div class="posts-grid-instagram" *ngIf="!loading()">
+              <div class="post-card-instagram" *ngFor="let post of userPosts()">
+                <img [src]="post.image" alt="Post" class="post-image-instagram" />
+                <div class="post-overlay-instagram">
+                  <span><i class="pi pi-heart-fill"></i> {{ post.likes }}</span>
+                  <span><i class="pi pi-comment"></i> {{ post.comments }}</span>
+                </div>
+              </div>
+              <div class="post-card-instagram empty" *ngIf="userPosts().length === 0">
+                <i class="pi pi-camera"></i>
+                <p>No hay publicaciones</p>
+                <span class="empty-subtitle">Comparte tus momentos</span>
               </div>
             </div>
-          </div>
-          <div class="posts-grid-instagram" *ngIf="activeTab() === 'posts' && loading()">
-            <!-- Posts Loading Skeletons -->
-            <div class="post-card-instagram skeleton-post-instagram" *ngFor="let i of [1, 2, 3, 4, 5, 6]">
-              <p-skeleton height="150px" borderRadius="0"></p-skeleton>
+            <div class="posts-grid-instagram" *ngIf="loading()">
+              <div class="post-card-instagram skeleton-post" *ngFor="let i of [1, 2, 3, 4, 5, 6]">
+                <p-skeleton height="100%" borderRadius="0"></p-skeleton>
+              </div>
             </div>
           </div>
 
           <!-- Mascotas -->
-          <div class="pets-section-instagram" *ngIf="activeTab() === 'pets' && (isUser() || isShelter())">
+          <div class="tab-panel" *ngIf="activeTab() === 'pets' && (isUser() || isShelter())">
             <app-table-card
               [type]="'pet'"
               [items]="userPets()"
@@ -299,78 +321,258 @@ interface Pet {
             </app-table-card>
           </div>
 
-          <!-- Conóceme (formulario de edición para el propio perfil) -->
-          <div class="knowme-content-instagram" *ngIf="activeTab() === 'knowme' && isOwnProfile() && !loading()">
+          <!-- Conóceme - Edición (propio perfil) -->
+          <div class="tab-panel" *ngIf="activeTab() === 'knowme' && isOwnProfile() && !loading()">
             <app-dynamic-form
               [config]="profileFormConfig()"
               [formData]="profileFormData()"
               (onSubmitClick)="onProfileSubmit($event)"
             />
           </div>
-          <div class="knowme-content-instagram" *ngIf="activeTab() === 'knowme' && isOwnProfile() && loading()">
-            <div class="knowme-card-instagram skeleton-card">
-              <p-skeleton width="12rem" height="1.25rem" class="mb-3"></p-skeleton>
-              <p-skeleton width="100%" height="2.5rem" class="mb-2"></p-skeleton>
-              <p-skeleton width="100%" height="2.5rem" class="mb-2"></p-skeleton>
-              <p-skeleton width="100%" height="4rem" class="mb-2"></p-skeleton>
-              <p-skeleton width="100%" height="2.5rem" class="mb-2"></p-skeleton>
-              <p-skeleton width="100%" height="2.5rem" class="mb-2"></p-skeleton>
-            </div>
-          </div>
 
-          <!-- Conóceme (información del perfil para otros usuarios) - MUESTRA TODOS LOS DATOS -->
-          <div class="knowme-content-instagram" *ngIf="activeTab() === 'knowme' && !isOwnProfile() && !loading()">
-            <div class="knowme-card-instagram">
-              <h3>Conóceme</h3>
-              <p class="knowme-bio-instagram">{{ userProfile()?.bio || 'Sin descripción disponible' }}</p>
-              <div class="knowme-info-instagram">
-                <div class="knowme-item-instagram">
-                  <i class="pi pi-map-marker"></i>
-                  <span>{{ userProfile()?.location || '—' }}</span>
+          <!-- Conóceme - Información (otros perfiles) - TODOS LOS DATOS -->
+          <div class="tab-panel knowme-view" *ngIf="activeTab() === 'knowme' && !isOwnProfile() && !loading()">
+            <div class="knowme-card">
+              <div class="knowme-bio" *ngIf="userProfile()?.bio">
+                <p>{{ userProfile()?.bio }}</p>
+              </div>
+
+              <div class="knowme-grid">
+                <!-- Información básica -->
+                <div class="knowme-section">
+                  <h4 class="knowme-section-title">
+                    <i class="pi pi-info-circle"></i>
+                    Información Personal
+                  </h4>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-user"></i></span>
+                    <span class="knowme-label">Nombre</span>
+                    <span class="knowme-value">{{ userProfile()?.name }}</span>
+                  </div>
+                  <div class="knowme-item" *ngIf="userProfile()?.type === 'user'">
+                    <span class="knowme-icon"><i class="pi pi-at"></i></span>
+                    <span class="knowme-label">Usuario</span>
+                    <span class="knowme-value">{{ userUsername() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-calendar"></i></span>
+                    <span class="knowme-label">Se unió</span>
+                    <span class="knowme-value">{{ userProfile()?.joinDate | date:'MMMM yyyy' }}</span>
+                  </div>
+                  <div class="knowme-item" *ngIf="userProfile()?.location">
+                    <span class="knowme-icon"><i class="pi pi-map-marker"></i></span>
+                    <span class="knowme-label">Ubicación</span>
+                    <span class="knowme-value">{{ userProfile()?.location }}</span>
+                  </div>
+                  <div class="knowme-item" *ngIf="userPhone() !== '—'">
+                    <span class="knowme-icon"><i class="pi pi-phone"></i></span>
+                    <span class="knowme-label">Teléfono</span>
+                    <span class="knowme-value">{{ userPhone() }}</span>
+                  </div>
+                  <div class="knowme-item" *ngIf="userEmail() !== '—'">
+                    <span class="knowme-icon"><i class="pi pi-envelope"></i></span>
+                    <span class="knowme-label">Email</span>
+                    <span class="knowme-value">{{ userEmail() }}</span>
+                  </div>
+                  <div class="knowme-item" *ngIf="userProfile()?.website">
+                    <span class="knowme-icon"><i class="pi pi-globe"></i></span>
+                    <span class="knowme-label">Sitio web</span>
+                    <span class="knowme-value">
+                      <a [href]="'https://' + userProfile()?.website" target="_blank" class="knowme-link">
+                        {{ userProfile()?.website }}
+                      </a>
+                    </span>
+                  </div>
                 </div>
-                <div class="knowme-item-instagram">
-                  <i class="pi pi-phone"></i>
-                  <span>{{ userPhone() }}</span>
+
+                <!-- Información específica según tipo -->
+                <div class="knowme-section" *ngIf="userProfile()?.type === 'vet'">
+                  <h4 class="knowme-section-title">
+                    <i class="pi pi-heart"></i>
+                    Información Veterinaria
+                  </h4>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-briefcase"></i></span>
+                    <span class="knowme-label">Especialidad</span>
+                    <span class="knowme-value">{{ vetSpecialty() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-id-card"></i></span>
+                    <span class="knowme-label">Nº Colegiado</span>
+                    <span class="knowme-value">{{ vetLicenseNumber() }}</span>
+                  </div>
+                  <div class="knowme-item" *ngIf="vetRating() > 0">
+                    <span class="knowme-icon"><i class="pi pi-star-fill"></i></span>
+                    <span class="knowme-label">Valoración</span>
+                    <span class="knowme-value">{{ vetRating() }} ★ ({{ vetReviews() }} reseñas)</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-users"></i></span>
+                    <span class="knowme-label">Pacientes</span>
+                    <span class="knowme-value">{{ vetPatients() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-heart"></i></span>
+                    <span class="knowme-label">Seguidores</span>
+                    <span class="knowme-value">{{ vetFollowers() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-image"></i></span>
+                    <span class="knowme-label">Publicaciones</span>
+                    <span class="knowme-value">{{ vetPosts() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-heart-fill"></i></span>
+                    <span class="knowme-label">Likes</span>
+                    <span class="knowme-value">{{ vetLikes() }}</span>
+                  </div>
                 </div>
-                <div class="knowme-item-instagram">
-                  <i class="pi pi-clock"></i>
-                  <span>Se unió en {{ userProfile()?.joinDate  }}</span>
+
+                <div class="knowme-section" *ngIf="userProfile()?.type === 'trainer'">
+                  <h4 class="knowme-section-title">
+                    <i class="pi pi-graduation-cap"></i>
+                    Información de Entrenamiento
+                  </h4>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-briefcase"></i></span>
+                    <span class="knowme-label">Especialización</span>
+                    <span class="knowme-value">{{ trainerSpecialty() }}</span>
+                  </div>
+                  <div class="knowme-item" *ngIf="trainerRating() > 0">
+                    <span class="knowme-icon"><i class="pi pi-star-fill"></i></span>
+                    <span class="knowme-label">Valoración</span>
+                    <span class="knowme-value">{{ trainerRating() }} ★ ({{ trainerReviews() }} reseñas)</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-users"></i></span>
+                    <span class="knowme-label">Clientes</span>
+                    <span class="knowme-value">{{ trainerClients() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-heart"></i></span>
+                    <span class="knowme-label">Seguidores</span>
+                    <span class="knowme-value">{{ trainerFollowers() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-image"></i></span>
+                    <span class="knowme-label">Publicaciones</span>
+                    <span class="knowme-value">{{ trainerPosts() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-heart-fill"></i></span>
+                    <span class="knowme-label">Likes</span>
+                    <span class="knowme-value">{{ trainerLikes() }}</span>
+                  </div>
                 </div>
-                <div class="knowme-item-instagram">
-                  <i class="pi pi-envelope"></i>
-                  <span>{{ userEmail() }}</span>
+
+                <div class="knowme-section" *ngIf="userProfile()?.type === 'shelter'">
+                  <h4 class="knowme-section-title">
+                    <i class="pi pi-home"></i>
+                    Información de la Protectora
+                  </h4>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-heart"></i></span>
+                    <span class="knowme-label">Registro</span>
+                    <span class="knowme-value">{{ shelterCharityNumber() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-paw"></i></span>
+                    <span class="knowme-label">Mascotas en adopción</span>
+                    <span class="knowme-value">{{ shelterPets() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-check-circle"></i></span>
+                    <span class="knowme-label">Adopciones realizadas</span>
+                    <span class="knowme-value">{{ shelterAdoptions() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-star-fill"></i></span>
+                    <span class="knowme-label">Reseñas</span>
+                    <span class="knowme-value">{{ shelterReviews() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-heart"></i></span>
+                    <span class="knowme-label">Seguidores</span>
+                    <span class="knowme-value">{{ shelterFollowers() }}</span>
+                  </div>
                 </div>
-                <!-- Campos específicos según tipo de perfil en vista de otros usuarios -->
-                <div class="knowme-item-instagram" *ngIf="userProfile()?.type === 'vet' || userProfile()?.type === 'trainer'">
-                  <i class="pi pi-briefcase"></i>
-                  <span>{{ userProfile()?.type === 'vet' ? 'Especialidad: ' : 'Especialización: ' }}{{ getProfileSpecialty() }}</span>
+
+                <div class="knowme-section" *ngIf="userProfile()?.type === 'seller'">
+                  <h4 class="knowme-section-title">
+                    <i class="pi pi-shopping-bag"></i>
+                    Información de la Tienda
+                  </h4>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-shop"></i></span>
+                    <span class="knowme-label">Tienda</span>
+                    <span class="knowme-value">{{ sellerStoreName() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-box"></i></span>
+                    <span class="knowme-label">Productos</span>
+                    <span class="knowme-value">{{ sellerProducts() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-shopping-cart"></i></span>
+                    <span class="knowme-label">Ventas</span>
+                    <span class="knowme-value">{{ sellerSales() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-star-fill"></i></span>
+                    <span class="knowme-label">Reseñas</span>
+                    <span class="knowme-value">{{ sellerReviews() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-heart"></i></span>
+                    <span class="knowme-label">Seguidores</span>
+                    <span class="knowme-value">{{ sellerFollowers() }}</span>
+                  </div>
                 </div>
-                <div class="knowme-item-instagram" *ngIf="userProfile()?.type === 'vet'">
-                  <i class="pi pi-id-card"></i>
-                  <span>Nº colegiado: {{ getProfileLicenseNumber() }}</span>
+
+                <div class="knowme-section" *ngIf="userProfile()?.type === 'pet'">
+                  <h4 class="knowme-section-title">
+                    <i class="pi pi-paw"></i>
+                    Información de la Mascota
+                  </h4>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-tag"></i></span>
+                    <span class="knowme-label">Especie</span>
+                    <span class="knowme-value">{{ petSpecies() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-user"></i></span>
+                    <span class="knowme-label">Raza</span>
+                    <span class="knowme-value">{{ petBreed() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-calendar"></i></span>
+                    <span class="knowme-label">Edad</span>
+                    <span class="knowme-value">{{ petAge() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-user"></i></span>
+                    <span class="knowme-label">Dueño</span>
+                    <span class="knowme-value">{{ petOwnerName() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-heart-fill"></i></span>
+                    <span class="knowme-label">Likes</span>
+                    <span class="knowme-value">{{ petLikes() }}</span>
+                  </div>
+                  <div class="knowme-item">
+                    <span class="knowme-icon"><i class="pi pi-image"></i></span>
+                    <span class="knowme-label">Publicaciones</span>
+                    <span class="knowme-value">{{ petPostsCount() }}</span>
+                  </div>
                 </div>
-                <div class="knowme-item-instagram" *ngIf="userProfile()?.type === 'seller'">
-                  <i class="pi pi-shop"></i>
-                  <span>Tienda: {{ getProfileStoreName() }}</span>
-                </div>
-                <div class="knowme-item-instagram" *ngIf="userProfile()?.type === 'shelter'">
-                  <i class="pi pi-heart"></i>
-                  <span>Registro: {{ getProfileCharityNumber() }}</span>
-                </div>
-                <div class="knowme-item-instagram">
-                  <i class="pi pi-globe"></i>
-                  <span *ngIf="userProfile()?.website; else noWebsite">
-                    <a [href]="'https://' + userProfile()?.website" target="_blank" class="knowme-link">{{ userProfile()?.website }}</a>
-                  </span>
-                  <ng-template #noWebsite>
-                    <span>—</span>
-                  </ng-template>
-                </div>
+
               </div>
             </div>
           </div>
-          <div class="knowme-content-instagram" *ngIf="activeTab() === 'knowme' && !isOwnProfile() && loading()">
-            <div class="knowme-card-instagram skeleton-card">
+
+          <!-- Loading para Conóceme -->
+          <div class="tab-panel" *ngIf="activeTab() === 'knowme' && loading()">
+            <div class="knowme-card skeleton-card">
               <p-skeleton width="8rem" height="1.25rem" class="mb-3"></p-skeleton>
               <p-skeleton width="100%" height="0.875rem" class="mb-2"></p-skeleton>
               <p-skeleton width="100%" height="0.875rem" class="mb-2"></p-skeleton>
@@ -382,86 +584,128 @@ interface Pet {
           </div>
         </div>
       </div>
+
+      <!-- Menu -->
+      <p-menu #profileMenu [model]="profileMenuItems" [popup]="true" appendTo="body" />
     </div>
   `,
   styles: [`
+    /* ============================================
+       BASE
+    ============================================ */
     .profile-page {
       min-height: 100vh;
-      background-color: var(--bitbucket-header-bg);
-      transition: background-color 0.3s ease;
+      background: var(--surface-ground);
+      transition: background 0.3s ease;
     }
 
-    .dark .profile-page {
-      background-color: #111827;
+    .profile-page.dark {
+      background: var(--surface-ground-dark);
     }
 
     .profile-container {
-      max-width: 900px;
+      max-width: 935px;
       margin: 0 auto;
-      padding: 1rem;
+      padding: 0 20px 40px;
     }
 
-    /* Header estilo Instagram */
+    /* ============================================
+       LOADING
+    ============================================ */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+    }
+
+    :host ::ng-deep .loading-overlay .p-progressbar {
+      height: 3px;
+    }
+
+    :host ::ng-deep .loading-overlay .p-progressbar-value {
+      background: var(--primary-color);
+    }
+
+    /* ============================================
+       PROFILE HEADER - INSTAGRAM STYLE
+    ============================================ */
     .profile-header-instagram {
-      display: flex;
-      flex-direction: column;
+      background: var(--surface-card);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 24px;
     }
 
     .profile-cover-instagram {
       position: relative;
       height: 200px;
       overflow: hidden;
-      border-radius: 0.5rem 0.5rem 0 0;
-    }
-
-    .cover-skeleton, .cover-image-instagram {
-      width: 100%;
-      height: 100%;
-      display: block;
+      background: var(--surface-hover);
     }
 
     .cover-image-instagram {
+      width: 100%;
+      height: 100%;
       object-fit: cover;
     }
 
+    .cover-skeleton {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .cover-change-btn {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+
+    .cover-change-btn:hover {
+      background: rgba(0, 0, 0, 0.8);
+      transform: scale(1.05);
+    }
+
+    .cover-change-btn i {
+      font-size: 1rem;
+    }
+
+    /* Profile Info */
     .profile-info-instagram {
       display: flex;
       gap: 2rem;
-      padding: 1.5rem;
-      background-color: var(--bitbucket-header-bg);
-      border-radius: 0 0 0.5rem 0.5rem;
-      align-items: flex-start;
+      padding: 0 24px 24px;
+      position: relative;
+      z-index: 2;
+      flex-wrap: wrap;
     }
 
     .profile-avatar-section-instagram {
       flex-shrink: 0;
+      margin-top: -50px;
+
     }
 
     .avatar-ring {
-      margin-top: -60px;
       padding: 3px;
       border-radius: 50%;
-      background: var(--instagram-gradient);
-    }
-
-    .profile-avatar-instagram {
-      border: 3px solid var(--bitbucket-header-bg);
-    }
-
-    .avatar-large {
-      width: 180px !important;
-      height: 180px !important;
-      min-width: 180px;
-      min-height: 180px;
-    }
-
-    .avatar-large :host ::ng-deep .p-avatar {
-      width: 180px !important;
-      height: 180px !important;
-    }
-
-    .avatar-skeleton-instagram {
-      margin-top: -60px;
+      background: var(--primary-color);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
     }
 
     .avatar-wrapper {
@@ -469,16 +713,30 @@ interface Pet {
       display: inline-block;
     }
 
+    .profile-avatar-instagram {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--surface-card);
+      display: block;
+      background: var(--surface-card);
+    }
+
+    .avatar-skeleton-instagram {
+      display: block;
+    }
+
     .avatar-change-btn {
       position: absolute;
-      bottom: 8px;
-      right: 8px;
+      bottom: 4px;
+      right: 4px;
       width: 32px;
       height: 32px;
       border-radius: 50%;
       background: var(--primary-color);
       color: white;
-      border: 2px solid var(--bitbucket-header-bg);
+      border: 2px solid var(--surface-card);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -497,49 +755,24 @@ interface Pet {
       font-size: 0.875rem;
     }
 
-    .cover-change-btn {
-      position: absolute;
-      bottom: 16px;
-      right: 16px;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: var(--primary-color);
-      color: white;
-      border: 2px solid var(--bitbucket-header-bg);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      z-index: 10;
-    }
-
-    .cover-change-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    .cover-change-btn i {
-      font-size: 1rem;
-    }
-
+    /* Profile Details */
     .profile-details-instagram {
       flex: 1;
+      min-width: 200px;
+      padding-top: 10px;
     }
 
     .profile-username {
       font-size: 1.5rem;
       font-weight: 300;
-      color: var(--bitbucket-text-primary);
-      margin: 0;
+      color: var(--text-primary);
+      margin: 0 0 8px 0;
     }
 
     .profile-stats-instagram {
       display: flex;
       gap: 2rem;
-      margin: 0.5rem 0;
+      margin-bottom: 12px;
     }
 
     .stat-item-instagram {
@@ -549,123 +782,182 @@ interface Pet {
     .stat-value-instagram {
       display: block;
       font-weight: 600;
-      color: var(--bitbucket-text-primary);
+      color: var(--text-primary);
       font-size: 1rem;
     }
 
     .stat-label-instagram {
-      font-size: 0.875rem;
-      color: var(--bitbucket-text-secondary);
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
     }
 
     .profile-name-instagram {
       font-size: 1.125rem;
       font-weight: 600;
-      color: var(--bitbucket-text-primary);
-      margin: 0.5rem 0 0.25rem 0;
+      color: var(--text-primary);
+      margin: 0 0 4px 0;
     }
 
     .profile-bio-instagram {
-      color: var(--bitbucket-text-primary);
+      color: var(--text-secondary);
       font-size: 0.875rem;
-      margin: 0;
+      margin: 4px 0 8px 0;
       line-height: 1.5;
     }
 
     .profile-type-badge {
-      margin: 0.25rem 0;
+      margin: 4px 0 8px;
     }
 
     .type-badge {
       display: inline-block;
-      padding: 0.25rem 0.75rem;
+      padding: 2px 12px;
       border-radius: 9999px;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
+      background: var(--surface-hover);
+      color: var(--text-secondary);
     }
 
-    .type-user {
-      background: var(--primary-color);
-      color: white;
+    .type-user { background: var(--primary-color); color: white; }
+    .type-vet { background: #dc2626; color: white; }
+    .type-shelter { background: #2563eb; color: white; }
+    .type-seller { background: #7c3aed; color: white; }
+    .type-trainer { background: #ea580c; color: white; }
+    .type-pet { background: #16a34a; color: white; }
+
+    .profile-contact-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+      margin-top: 8px;
     }
 
-    .type-vet {
-      background: #dc2626;
-      color: white;
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
     }
 
-    .type-shelter {
-      background: #2563eb;
-      color: white;
+    .contact-item i {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
     }
 
-    .type-seller {
-      background: #7c3aed;
-      color: white;
+    .contact-item a {
+      color: var(--text-secondary);
+      text-decoration: none;
     }
 
-    .type-trainer {
-      background: #ea580c;
-      color: white;
+    .contact-item a:hover {
+      color: var(--primary-color);
+      text-decoration: underline;
     }
 
-    .type-pet {
-      background: #16a34a;
-      color: white;
-    }
-
+    /* Action Buttons */
     .profile-actions-instagram {
+      display: flex;
+      gap: 8px;
+      padding-top: 10px;
       flex-shrink: 0;
+      align-items: flex-start;
     }
 
-    /* Follow button - modern minimal style */
-    .follow-btn {
+    .btn-action {
       display: inline-flex;
       align-items: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1.25rem;
+      gap: 6px;
+      padding: 8px 20px;
+      border: 1px solid var(--surface-border);
       border-radius: 9999px;
-      font-size: 0.875rem;
-      font-weight: 500;
+      font-size: 0.8125rem;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.2s ease;
-      border: 1px solid var(--surface-border);
       background: transparent;
       color: var(--text-primary);
     }
 
-    .follow-btn:hover {
+    .btn-action:hover {
       background: var(--surface-hover);
       border-color: var(--text-secondary);
     }
 
-    .follow-btn.following {
+    .btn-edit {
+      background: var(--surface-card);
+    }
+
+    .btn-edit:hover {
+      background: var(--surface-hover);
+    }
+
+    .btn-following {
       background: var(--surface-card);
       border-color: var(--surface-border);
       color: var(--text-secondary);
     }
 
-    .follow-btn.following:hover {
+    .btn-following:hover {
       border-color: #ef4444;
       color: #ef4444;
     }
 
-    .follow-btn.following:hover i {
+    .btn-following:hover i {
       color: #ef4444;
     }
 
-    .follow-btn i {
-      font-size: 0.875rem;
+    .btn-more {
+      padding: 8px 12px;
     }
 
-    /* Posts Grid estilo Instagram - 3 columnas */
+    .btn-more i {
+      font-size: 1.125rem;
+    }
+
+    /* ============================================
+       TABS
+    ============================================ */
+    .tabs-container {
+      margin-bottom: 24px;
+    }
+
+    :host ::ng-deep .tabs-container app-tabs .tabs {
+      border-bottom: 1px solid var(--surface-border);
+    }
+
+    :host ::ng-deep .tabs-container app-tabs .tab {
+      padding: 12px 20px;
+      font-weight: 500;
+    }
+
+    /* ============================================
+       TAB CONTENT
+    ============================================ */
+    .tab-panel {
+      background: var(--surface-card);
+      border-radius: 12px;
+      padding: 24px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================
+       POSTS GRID - INSTAGRAM STYLE
+    ============================================ */
     .posts-grid-instagram {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 0.25rem;
-      margin-top: 1rem;
+      gap: 4px;
     }
 
     .post-card-instagram {
@@ -673,6 +965,8 @@ interface Pet {
       aspect-ratio: 1;
       overflow: hidden;
       cursor: pointer;
+      border-radius: 4px;
+      background: var(--surface-hover);
     }
 
     .post-image-instagram {
@@ -683,7 +977,7 @@ interface Pet {
     }
 
     .post-card-instagram:hover .post-image-instagram {
-      transform: scale(1.05);
+      transform: scale(1.03);
     }
 
     .post-overlay-instagram {
@@ -694,7 +988,7 @@ interface Pet {
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 1rem;
+      gap: 1.5rem;
       opacity: 0;
       transition: opacity 0.3s ease;
     }
@@ -703,56 +997,161 @@ interface Pet {
       opacity: 1;
     }
 
-    .skeleton-post-instagram {
-      aspect-ratio: 1;
-    }
-
-    /* Pets Section */
-    .pets-section-instagram {
-      margin-top: 1rem;
-    }
-
-    /* Knowme Section */
-    .knowme-content-instagram {
-      margin-top: 1rem;
-    }
-
-    .knowme-card-instagram {
-      background-color: var(--bitbucket-header-bg);
-      border-radius: 0.5rem;
-      padding: 1.5rem;
-    }
-
-    .knowme-card-instagram h3 {
-      font-size: 1.125rem;
+    .post-overlay-instagram span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       font-weight: 600;
-      color: var(--bitbucket-text-primary);
-      margin: 0 0 1rem 0;
+      font-size: 0.875rem;
     }
 
-    .knowme-bio-instagram {
-      color: var(--bitbucket-text-primary);
+    .post-overlay-instagram i {
+      font-size: 1rem;
+    }
+
+    .post-card-instagram.empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      aspect-ratio: 1;
+      cursor: default;
+      background: var(--surface-hover);
+      grid-column: 1 / -1;
+      padding: 40px;
+      border-radius: 8px;
+    }
+
+    .post-card-instagram.empty i {
+      font-size: 3rem;
+      opacity: 0.4;
+      margin-bottom: 12px;
+    }
+
+    .post-card-instagram.empty p {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+
+    .post-card-instagram.empty .empty-subtitle {
       font-size: 0.875rem;
-      margin: 0 0 1rem 0;
+      opacity: 0.6;
+    }
+
+    .skeleton-post {
+      background: var(--surface-hover);
+    }
+
+    /* ============================================
+       KNOWME - VIEW MODE (OTROS PERFILES)
+    ============================================ */
+    .knowme-card {
+      padding: 0;
+    }
+
+    .knowme-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 20px 0;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--surface-border);
+    }
+
+    .knowme-title i {
+      color: var(--primary-color);
+    }
+
+    .knowme-bio {
+      background: var(--surface-ground);
+      padding: 16px 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .dark .knowme-bio {
+      background: var(--surface-ground-dark);
+    }
+
+    .knowme-bio p {
+      margin: 0;
+      font-size: 0.9375rem;
+      color: var(--text-primary);
       line-height: 1.6;
     }
 
-    .knowme-info-instagram {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+    .knowme-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
     }
 
-    .knowme-item-instagram {
+    .knowme-section {
+      background: var(--surface-ground);
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+
+    .dark .knowme-section {
+      background: var(--surface-ground-dark);
+    }
+
+    .knowme-section-title {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      color: var(--bitbucket-text-secondary);
+      gap: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 12px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--surface-border);
+    }
+
+    .knowme-section-title i {
+      color: var(--primary-color);
+    }
+
+    .knowme-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--surface-border);
+    }
+
+    .knowme-item:last-child {
+      border-bottom: none;
+    }
+
+    .knowme-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      color: var(--text-secondary);
       font-size: 0.875rem;
     }
 
-    .knowme-item-instagram i {
-      color: var(--primary-color);
+    .knowme-label {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      min-width: 80px;
+      flex-shrink: 0;
+    }
+
+    .knowme-value {
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      font-weight: 500;
+      word-break: break-word;
     }
 
     .knowme-link {
@@ -764,59 +1163,210 @@ interface Pet {
       text-decoration: underline;
     }
 
+    /* Stats Mini Grid */
+    .stats-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .stats-mini-item {
+      text-align: center;
+      padding: 8px;
+      background: var(--surface-card);
+      border-radius: 8px;
+      border: 1px solid var(--surface-border);
+    }
+
+    .stats-mini-number {
+      display: block;
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .stats-mini-label {
+      font-size: 0.6875rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    /* Skeleton Card */
     .skeleton-card {
       pointer-events: none;
     }
 
-    /* Loading Overlay */
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
+    .skeleton-card p-skeleton {
+      display: block;
+      margin-bottom: 8px;
     }
 
-    :host ::ng-deep .loading-overlay .p-progressbar {
-      height: 4px;
+    /* ============================================
+       DARK MODE OVERRIDES
+    ============================================ */
+    .dark .profile-header-instagram,
+    .dark .tab-panel {
+      border-color: var(--surface-border-dark);
+      background: var(--surface-card-dark);
     }
 
-    :host ::ng-deep .loading-overlay .p-progressbar-value {
-      background: var(--primary-color);
+    .dark .knowme-section {
+      background: var(--surface-ground-dark);
     }
 
-    /* Utility classes */
-    .mb-1 { margin-bottom: 0.25rem; }
-    .mb-2 { margin-bottom: 0.5rem; }
-    .mb-3 { margin-bottom: 0.75rem; }
-    .mt-2 { margin-top: 0.5rem; }
+    .dark .profile-avatar-instagram {
+      border-color: var(--surface-card-dark);
+    }
 
-    /* Responsive */
+    .dark .avatar-change-btn {
+      border-color: var(--surface-card-dark);
+    }
+
+    /* ============================================
+       RESPONSIVE
+    ============================================ */
     @media (max-width: 768px) {
+      .profile-container {
+        padding: 0 12px 24px;
+      }
+
       .profile-info-instagram {
         flex-direction: column;
         align-items: center;
+        text-align: center;
+        padding: 0 16px 16px;
+        margin-top: -40px;
+      }
+
+      .profile-avatar-instagram {
+        width: 100px;
+        height: 100px;
+      }
+
+      .profile-details-instagram {
+        padding-top: 4px;
         text-align: center;
       }
 
       .profile-stats-instagram {
         justify-content: center;
+        gap: 1rem;
+      }
+
+      .profile-contact-info {
+        justify-content: center;
+      }
+
+      .profile-actions-instagram {
+        justify-content: center;
+        width: 100%;
+        padding-top: 4px;
+      }
+
+      .profile-cover-instagram {
+        height: 140px;
       }
 
       .posts-grid-instagram {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2px;
       }
 
-      .tabs-button-text {
-        display: none;
+      .knowme-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tab-panel {
+        padding: 16px;
+      }
+
+      .stats-mini-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
     }
 
     @media (max-width: 480px) {
+      .profile-cover-instagram {
+        height: 100px;
+      }
+
+      .profile-avatar-instagram {
+        width: 80px;
+        height: 80px;
+      }
+
+      .avatar-change-btn {
+        width: 28px;
+        height: 28px;
+      }
+
+      .avatar-change-btn i {
+        font-size: 0.75rem;
+      }
+
+      .cover-change-btn {
+        width: 32px;
+        height: 32px;
+      }
+
+      .cover-change-btn i {
+        font-size: 0.75rem;
+      }
+
+      .profile-username {
+        font-size: 1.125rem;
+      }
+
+      .profile-name-instagram {
+        font-size: 1rem;
+      }
+
+      .profile-stats-instagram {
+        gap: 0.75rem;
+      }
+
+      .stat-value-instagram {
+        font-size: 0.875rem;
+      }
+
+      .stat-label-instagram {
+        font-size: 0.625rem;
+      }
+
       .posts-grid-instagram {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 2px;
+      }
+
+      .btn-action {
+        padding: 6px 14px;
+        font-size: 0.75rem;
+      }
+
+      .knowme-item {
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      .knowme-label {
+        min-width: 60px;
+        font-size: 0.75rem;
+      }
+
+      .knowme-value {
+        font-size: 0.8125rem;
       }
     }
+
+    /* ============================================
+       UTILITY
+    ============================================ */
+    .mb-1 { margin-bottom: 4px; }
+    .mb-2 { margin-bottom: 8px; }
+    .mb-3 { margin-bottom: 12px; }
+    .mt-2 { margin-top: 8px; }
   `]
 })
 export class ProfilePageComponent implements OnInit, OnDestroy {
@@ -836,7 +1386,10 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   profileId = signal<string | null>(null);
   profileType = signal<ProfileType>('user');
 
-  // Perfil del usuario logueado (se obtiene del AuthService)
+  // Dark mode detection
+  isDarkMode = signal(false);
+
+  // Perfil del usuario logueado
   ownProfile: AnyProfile = {
     id: '',
     type: 'user',
@@ -895,21 +1448,26 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     { id: '6', image: 'https://picsum.photos/300/300?random=6', likes: 28, comments: 4 },
   ]);
 
-  // Inicializar perfil con datos del usuario autenticado
+  // Contadores de seguidores y seguidos
+  followersCount = signal(0);
+  followingCount = signal(0);
+
+  // Menu items for profile actions
+  profileMenuItems: MenuItem[] = [];
+
   ngOnInit(): void {
-    // Suscribirse a cambios en los parámetros de ruta
+    this.detectDarkMode();
+
     this.paramSubscription = this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       const type = params.get('type') as ProfileType | null;
 
-      // Detectar si la ruta es /pet/:id para forzar tipo 'pet'
       const urlSegments = this.router.url.split('/');
       const isPetRoute = urlSegments.includes('pet');
 
       this.profileId.set(id);
       this.profileType.set(isPetRoute ? 'pet' : (type || 'user'));
 
-      // Leer query parameter 'tab' para establecer la pestaña activa
       this.route.queryParams.subscribe(queryParams => {
         const tab = queryParams['tab'];
         if (tab && this.isOwnProfile()) {
@@ -917,11 +1475,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         }
       });
 
-      // Inicializar perfil con datos del usuario autenticado
       const user = this.authService.user();
       if (user) {
-        // Crear el perfil con el tipo correcto del usuario
-        // Normalizar a minúsculas para manejar tanto 'VET' como 'vet'
         const userType = (user.profileType?.toLowerCase() as ProfileType) || 'user';
         const baseProfile: BaseProfile = {
           id: user.id,
@@ -929,14 +1484,13 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           avatar: user.avatarUrl || '',
           coverImage: user.coverImageUrl || '',
           bio: user.bio || '',
-          location: user.city || '',
+          location: user.city ? user.city + (user.country ? ', ' + user.country : '') : '',
           website: '',
-          joinDate: user.createdAt,
+          joinDate: user.createdAt || new Date(),
           isFollowing: false,
           type: userType,
         };
 
-        // Crear el perfil según el tipo
         switch (userType) {
           case 'shelter':
             this.ownProfile = {
@@ -972,12 +1526,19 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         }
       }
 
-      // Cargar datos del perfil
       this.loadProfileData();
-
-      // Inicializar menú de perfil
       this.initializeProfileMenu();
     });
+  }
+
+  private detectDarkMode(): void {
+    const darkMode = document.documentElement.classList.contains('dark');
+    this.isDarkMode.set(darkMode);
+
+    const observer = new MutationObserver(() => {
+      this.isDarkMode.set(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   }
 
   private loadProfileData(): void {
@@ -986,34 +1547,26 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     const user = this.authService.user();
 
     if (this.isOwnProfile()) {
-      // Cargar el propio perfil usando getProfileByAuthUserId
-      // user.id is the authUserId
       if (user?.id) {
         this.loadOwnProfile(user.id);
-        // Cargar estadísticas de seguidores y seguidos
         this.loadFollowersCount(user.id);
         this.loadFollowingCount(user.id);
       }
     } else {
-      // Cargar perfil específico por ID
       const id = this.profileId();
       if (id) {
         this.loadProfileById(id);
-        // Cargar estadísticas de seguidores y seguidos
         this.loadFollowersCount(id);
         this.loadFollowingCount(id);
       }
     }
 
-    // Cargar mascotas del perfil
-    // user.id is the authUserId
     if (this.isOwnProfile() && user) {
       this.loadPetsForProfile(user.id);
     } else if (!this.isOwnProfile() && this.profileId()) {
       this.loadPetsForProfile(this.profileId()!);
     }
 
-    // Ensure loading is visible for at least 1 second
     setTimeout(() => {
       this.loading.set(false);
       this.cdr.detectChanges();
@@ -1023,26 +1576,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   private loadOwnProfile(authUserId: string): void {
     this.profileService.getProfileByAuthUserId(authUserId).subscribe({
       next: (profile) => {
-        // Normalizar profileType a minúsculas para manejar tanto 'VET' como 'vet'
         const normalizedProfileType = profile.profileType?.toLowerCase() as ProfileType || 'user';
-
-        // Check if we recently updated (within last 2 seconds) - if so, preserve cache-busted URLs
-        const currentAvatar = this.ownProfile.avatar;
-        const currentCover = this.ownProfile.coverImage;
-        const avatarTimestamp = currentAvatar.includes('?t=') ? parseInt(currentAvatar.split('?t=')[1]) : 0;
-        const coverTimestamp = currentCover.includes('?t=') ? parseInt(currentCover.split('?t=')[1]) : 0;
-        const now = Date.now();
-        const recentlyUpdated = (now - avatarTimestamp < 2000) || (now - coverTimestamp < 2000);
-
-        // Use cache-busted URLs if recently updated, otherwise use backend URLs
-        const avatarUrl = recentlyUpdated && avatarTimestamp ? currentAvatar : (profile.avatarUrl || '');
-        const coverImageUrl = recentlyUpdated && coverTimestamp ? currentCover : (profile.coverImageUrl || '');
-
         const baseProfile: BaseProfile = {
           id: profile.id,
           name: profile.firstName + ' ' + profile.lastName,
-          avatar: avatarUrl,
-          coverImage: coverImageUrl,
+          avatar: profile.avatarUrl || '',
+          coverImage: profile.coverImageUrl || '',
           bio: profile.bio || '',
           location: profile.city ? profile.city + (profile.country ? ', ' + profile.country : '') : '',
           website: '',
@@ -1097,11 +1636,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   }
 
   private loadProfileById(authUserId: string): void {
-    // Use getProfileByAuthUserId since the route param :id is the authUserId
-    // (navigation links use authUserId, e.g. [routerLink]="'/profile/' + vet.userId")
     this.profileService.getProfileByAuthUserId(authUserId).subscribe({
       next: (profile) => {
-        // Normalizar profileType a minúsculas para manejar tanto 'VET' como 'vet'
         const normalizedProfileType = profile.profileType?.toLowerCase() as ProfileType || 'user';
         const baseProfile: BaseProfile = {
           id: profile.id,
@@ -1153,12 +1689,10 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
         this.loadedProfiles.set({ [authUserId]: loadedProfile });
         this.cdr.detectChanges();
-        // Load follow status from backend
         this.loadFollowStatus(authUserId);
       },
       error: (err) => {
         console.error('Error loading profile by authUserId:', err);
-        // Fallback: try to load by profile ID instead
         this.profileService.getProfileById(authUserId).subscribe({
           next: (profile) => {
             const normalizedProfileType = profile.profileType?.toLowerCase() as ProfileType || 'user';
@@ -1267,17 +1801,37 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Determinar si es el propio perfil
+  private loadFollowStatus(authUserId: string): void {
+    const currentUserId = this.authService.user()?.id;
+    if (!currentUserId) return;
+
+    this.socialService.getFollowing(currentUserId).subscribe({
+      next: (following) => {
+        const isFollowing = following.some(f => f.followingId === authUserId);
+        const currentProfiles = this.loadedProfiles();
+        const profile = currentProfiles[authUserId];
+        if (profile) {
+          profile.isFollowing = isFollowing;
+          this.loadedProfiles.set({ ...currentProfiles });
+          this.cdr.detectChanges();
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  // ============================================
+  //  COMPUTED PROPERTIES
+  // ============================================
+
   isOwnProfile = computed(() => !this.profileId());
 
-  // Obtener el perfil del usuario
   userProfile = computed(() => {
     const id = this.profileId();
-    if (!id) {
-      return this.ownProfile;
-    }
+    if (!id) return this.ownProfile;
     return this.loadedProfiles()[id] || this.ownProfile;
   });
+
   userAvatar = computed(() => {
     const profile = this.userProfile();
     if (this.isOwnProfile()) {
@@ -1289,11 +1843,11 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   userCoverAvatar = computed(() => {
     const profile = this.userProfile();
     if (this.isOwnProfile()) {
-      return this.authService.user()?.coverImageUrl || 'https://i.pravatar.cc/150?img=1';
+      return this.authService.user()?.coverImageUrl || 'https://picsum.photos/800/300?random=1';
     }
-    return profile?.coverImage || 'https://i.pravatar.cc/150?img=1';
+    return profile?.coverImage || 'https://picsum.photos/800/300?random=1';
   });
-  // Determinar tipo de perfil
+
   isUser = computed(() => this.userProfile()?.type === 'user');
   isShelter = computed(() => this.userProfile()?.type === 'shelter');
   isSeller = computed(() => this.userProfile()?.type === 'seller');
@@ -1301,10 +1855,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   isPet = computed(() => this.userProfile()?.type === 'pet');
   isTrainer = computed(() => this.userProfile()?.type === 'trainer');
 
-  // Getters para propiedades específicas de cada tipo
   userUsername = computed(() => {
     const profile = this.userProfile();
-    return profile?.type === 'user' ? '@' + profile.username : '';
+    return profile?.type === 'user' ? '@' + (profile as UserProfile).username : '';
   });
 
   userPhone = computed(() => {
@@ -1312,7 +1865,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     if (this.isOwnProfile()) {
       return this.authService.user()?.phone || '—';
     }
-    // Para otros perfiles, obtener teléfono del perfil cargado
     return profile?.phone || '—';
   });
 
@@ -1320,42 +1872,248 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     return this.authService.user()?.email || '—';
   });
 
-  userCountry = computed(() => {
+  // ============================================
+  //  VET COMPUTED PROPERTIES
+  // ============================================
+
+  vetSpecialty = computed(() => {
     const profile = this.userProfile();
-    if (this.isOwnProfile()) {
-      return this.authService.user()?.country || '—';
-    }
-    return profile?.location?.split(', ')[1] || '—';
+    return profile?.type === 'vet' ? (profile as VetProfile).specialty : 'No especificada';
   });
 
-  userProfileType = computed(() => {
-    return this.authService.user()?.profileType || '—';
+  vetLicenseNumber = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'vet' ? (profile as any).licenseNumber || '—' : '—';
   });
 
   vetRating = computed(() => {
     const profile = this.userProfile();
-    return profile?.type === 'vet' ? profile.rating : 0;
+    return profile?.type === 'vet' ? (profile as VetProfile).rating : 0;
   });
 
   vetReviews = computed(() => {
     const profile = this.userProfile();
-    return profile?.type === 'vet' ? profile.reviews : 0;
+    return profile?.type === 'vet' ? (profile as VetProfile).reviews : 0;
   });
+
+  vetPatients = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'vet' ? (profile as VetProfile).stats.patients : 0;
+  });
+
+  vetFollowers = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'vet' ? (profile as VetProfile).stats.followers : 0;
+  });
+
+  vetPosts = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'vet' ? (profile as VetProfile).stats.posts : 0;
+  });
+
+  vetLikes = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'vet' ? (profile as VetProfile).stats.likes : 0;
+  });
+
+  // ============================================
+  //  TRAINER COMPUTED PROPERTIES
+  // ============================================
+
+  trainerSpecialty = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'trainer' ? (profile as TrainerProfile).specialty : 'No especificada';
+  });
+
+  trainerRating = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'trainer' ? (profile as TrainerProfile).rating : 0;
+  });
+
+  trainerReviews = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'trainer' ? (profile as TrainerProfile).reviews : 0;
+  });
+
+  trainerClients = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'trainer' ? (profile as TrainerProfile).stats.clients : 0;
+  });
+
+  trainerFollowers = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'trainer' ? (profile as TrainerProfile).stats.followers : 0;
+  });
+
+  trainerPosts = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'trainer' ? (profile as TrainerProfile).stats.posts : 0;
+  });
+
+  trainerLikes = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'trainer' ? (profile as TrainerProfile).stats.likes : 0;
+  });
+
+  // ============================================
+  //  SHELTER COMPUTED PROPERTIES
+  // ============================================
+
+  shelterCharityNumber = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'shelter' ? (profile as any).charityNumber || '—' : '—';
+  });
+
+  shelterPets = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'shelter' ? (profile as ShelterProfile).stats.pets : 0;
+  });
+
+  shelterAdoptions = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'shelter' ? (profile as ShelterProfile).stats.adoptions : 0;
+  });
+
+  shelterReviews = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'shelter' ? (profile as ShelterProfile).stats.reviews : 0;
+  });
+
+  shelterFollowers = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'shelter' ? (profile as ShelterProfile).stats.followers : 0;
+  });
+
+  // ============================================
+  //  SELLER COMPUTED PROPERTIES
+  // ============================================
+
+  sellerStoreName = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'seller' ? (profile as any).storeName || '—' : '—';
+  });
+
+  sellerProducts = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'seller' ? (profile as SellerProfile).stats.products : 0;
+  });
+
+  sellerSales = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'seller' ? (profile as SellerProfile).stats.sales : 0;
+  });
+
+  sellerReviews = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'seller' ? (profile as SellerProfile).stats.reviews : 0;
+  });
+
+  sellerFollowers = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'seller' ? (profile as SellerProfile).stats.followers : 0;
+  });
+
+  // ============================================
+  //  PET COMPUTED PROPERTIES
+  // ============================================
 
   petSpecies = computed(() => {
     const profile = this.userProfile();
-    return profile?.type === 'pet' ? profile.species : '';
+    return profile?.type === 'pet' ? (profile as PetProfile).species : '';
   });
 
   petBreed = computed(() => {
     const profile = this.userProfile();
-    return profile?.type === 'pet' ? profile.breed : '';
+    return profile?.type === 'pet' ? (profile as PetProfile).breed : '';
   });
 
-  // Configuración del formulario de perfil
+  petAge = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'pet' ? (profile as PetProfile).age : '—';
+  });
+
+  petOwnerName = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'pet' ? (profile as PetProfile).owner.name : '—';
+  });
+
+  petLikes = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'pet' ? (profile as PetProfile).stats.likes : 0;
+  });
+
+  petPostsCount = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'pet' ? (profile as PetProfile).stats.posts : 0;
+  });
+
+  // ============================================
+  //  USER COMPUTED PROPERTIES
+  // ============================================
+
+  userPetsCount = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'user' ? (profile as UserProfile).stats.pets : 0;
+  });
+
+  userPostsCount = computed(() => {
+    const profile = this.userProfile();
+    return profile?.type === 'user' ? (profile as UserProfile).stats.posts : 0;
+  });
+
+  // ============================================
+  //  PROFILE STATS
+  // ============================================
+
+  profileStats = computed(() => {
+    const profile = this.userProfile();
+    if (!profile) return [];
+
+    switch (profile.type) {
+      case 'user':
+        return [
+          { value: (profile as UserProfile).stats.pets, label: 'Família' },
+          { value: this.followersCount(), label: 'Seguidores' },
+          { value: this.followingCount(), label: 'Siguiendo' },
+          { value: (profile as UserProfile).stats.posts, label: 'Publicaciones' },
+        ];
+      case 'shelter':
+        return [
+          { value: (profile as ShelterProfile).stats.pets, label: 'Família' },
+          { value: this.followersCount(), label: 'Seguidores' },
+          { value: (profile as ShelterProfile).stats.adoptions, label: 'Adopciones' },
+          { value: (profile as ShelterProfile).stats.reviews, label: 'Reseñas' },
+        ];
+      case 'vet':
+        return [
+          { value: (profile as VetProfile).stats.patients, label: 'Pacientes' },
+          { value: this.followersCount(), label: 'Seguidores' },
+          { value: (profile as VetProfile).stats.posts, label: 'Publicaciones' },
+          { value: (profile as VetProfile).stats.likes, label: 'Likes' },
+        ];
+      case 'seller':
+        return [
+          { value: (profile as SellerProfile).stats.products, label: 'Productos' },
+          { value: this.followersCount(), label: 'Seguidores' },
+          { value: (profile as SellerProfile).stats.sales, label: 'Ventas' },
+          { value: (profile as SellerProfile).stats.reviews, label: 'Reseñas' },
+        ];
+      case 'pet':
+        return [
+          { value: (profile as PetProfile).stats.likes, label: 'Likes' },
+          { value: (profile as PetProfile).stats.posts, label: 'Publicaciones' },
+        ];
+      default:
+        return [];
+    }
+  });
+
+  // ============================================
+  //  FORM CONFIGURATION
+  // ============================================
+
   profileFormConfig = computed(() => {
     const profileType = this.userProfile()?.type || 'user';
-    const isOwn = this.isOwnProfile();
 
     const baseFields = [
       {
@@ -1410,7 +2168,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       },
     ];
 
-    // Campos específicos según el tipo de perfil
     const typeSpecificFields: any[] = [];
 
     if (profileType === 'vet' || profileType === 'trainer') {
@@ -1460,7 +2217,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     } as DynamicFormConfig;
   });
 
-  // Datos del formulario de perfil
   profileFormData = computed(() => {
     const user = this.authService.user();
     const profile = this.userProfile();
@@ -1473,10 +2229,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       bio: user?.bio || '',
       city: user?.city || '',
       country: user?.country || '',
-      website: profile?.type !== 'user' ? (profile as any).website || '' : ''
+      website: (profile as any)?.website || ''
     };
 
-    // Datos específicos según el tipo de perfil
     if (profileType === 'vet' || profileType === 'trainer') {
       baseData.specialty = (profile as any).specialty || '';
     }
@@ -1493,63 +2248,145 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     return baseData;
   });
 
-  // Estadísticas según tipo de perfil
-  profileStats = computed(() => {
-    const profile = this.userProfile();
-    if (!profile) return [];
+  // ============================================
+  //  PROFILE TABS
+  // ============================================
 
-    switch (profile.type) {
-      case 'user':
-        return [
-          { value: profile.stats.pets, label: 'Família' },
-          { value: this.followersCount(), label: 'Seguidores' },
-          { value: this.followingCount(), label: 'Siguiendo' },
-          { value: profile.stats.posts, label: 'Publicaciones' },
-        ];
-      case 'shelter':
-        return [
-          { value: profile.stats.pets, label: 'Família' },
-          { value: this.followersCount(), label: 'Seguidores' },
-          { value: profile.stats.adoptions, label: 'Adopciones' },
-          { value: profile.stats.reviews, label: 'Reseñas' },
-        ];
-      case 'vet':
-        return [
-          { value: profile.stats.patients, label: 'Pacientes' },
-          { value: this.followersCount(), label: 'Seguidores' },
-          { value: profile.stats.posts, label: 'Publicaciones' },
-          { value: profile.stats.likes, label: 'Likes dados' },
-        ];
-      case 'seller':
-        return [
-          { value: profile.stats.products, label: 'Productos' },
-          { value: this.followersCount(), label: 'Seguidores' },
-          { value: profile.stats.sales, label: 'Ventas' },
-          { value: profile.stats.reviews, label: 'Reseñas' },
-        ];
-      case 'pet':
-        return [
-          { value: profile.stats.likes, label: 'Likes' },
-          { value: profile.stats.posts, label: 'Publicaciones' },
-        ];
-      default:
-        return [];
+  profileTabs = computed((): Tab[] => {
+    const tabs: Tab[] = [
+      { id: 'posts', label: 'Publicaciones', icon: 'photo_library' }
+    ];
+
+    if (this.isUser() || this.isShelter()) {
+      tabs.push({ id: 'pets', label: 'Mascotas', icon: 'pets' });
     }
+
+    tabs.push({ id: 'knowme', label: 'Conóceme', icon: 'person' });
+
+    return tabs;
   });
 
-  // Contadores de seguidores y seguidos
-  followersCount = signal(0);
-  followingCount = signal(0);
+  // ============================================
+  //  ACTIONS
+  // ============================================
 
-  // Manejar envío del formulario de perfil
+  onTabChange(tabId: string) {
+    this.activeTab.set(tabId);
+  }
+
+  setActiveTab(tab: string) {
+    this.activeTab.set(tab);
+  }
+
+  initializeProfileMenu(): void {
+    this.profileMenuItems = [
+      {
+        label: 'Editar Perfil',
+        icon: 'pi pi-pencil',
+        command: () => this.setActiveTab('knowme')
+      },
+      {
+        label: 'Administrar',
+        icon: 'pi pi-cog',
+        command: () => this.router.navigate(['/admin'])
+      }
+    ];
+  }
+
+  onPetSearch(query: string) {
+    this.petSearchQuery.set(query);
+  }
+
+  showAddPetDialog() {
+    this.router.navigate(['/pets/create']);
+  }
+
+  toggleFollow(): void {
+    const currentUserId = this.authService.user()?.id;
+    const targetUserId = this.profileId();
+    if (!currentUserId || !targetUserId) return;
+
+    const currentProfiles = this.loadedProfiles();
+    const profile = currentProfiles[targetUserId];
+    if (!profile) return;
+
+    const wasFollowing = profile.isFollowing;
+    profile.isFollowing = !profile.isFollowing;
+    this.loadedProfiles.set({ ...currentProfiles });
+
+    if (profile.isFollowing) {
+      this.socialService.followUser(currentUserId, targetUserId).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Siguiendo',
+            detail: `Ahora sigues a ${profile.name}`
+          });
+        },
+        error: () => {
+          profile.isFollowing = wasFollowing;
+          this.loadedProfiles.set({ ...currentProfiles });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo seguir al usuario'
+          });
+        }
+      });
+    } else {
+      this.socialService.unfollowUser(currentUserId, targetUserId).subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'info',
+            summary: 'Dejaste de seguir',
+            detail: `Ya no sigues a ${profile.name}`
+          });
+        },
+        error: () => {
+          profile.isFollowing = wasFollowing;
+          this.loadedProfiles.set({ ...currentProfiles });
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo dejar de seguir al usuario'
+          });
+        }
+      });
+    }
+  }
+
+  toggleAdoptionStatus(petId: string, adoptionStatus: string | undefined): void {
+    const newStatus = adoptionStatus !== 'available';
+
+    this.profileService.toggleAdoptionStatus(petId, newStatus).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: newStatus ? 'En adopción' : 'Adopción cancelada',
+          detail: newStatus ? 'La mascota ya está disponible para adopción' : 'La mascota ya no está en adopción'
+        });
+        this.loadPetsForProfile(this.isOwnProfile() ? this.authService.user()?.id || '' : this.profileId() || '');
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar el estado de adopción'
+        });
+      }
+    });
+  }
+
+  // ============================================
+  //  PROFILE UPDATE
+  // ============================================
+
   async onProfileSubmit(data: any): Promise<void> {
     console.log('Profile form submitted:', data);
 
     this.loading.set(true);
 
     const formData = new FormData();
-
-    // Agregar datos del formulario con campos específicos por tipo
     const profileType = this.userProfile()?.type || 'user';
     const payload: any = {
       firstName: data.firstName,
@@ -1561,7 +2398,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       website: data.website
     };
 
-    // Añadir campos específicos según el tipo de perfil
     if (profileType === 'vet' || profileType === 'trainer') {
       payload.specialty = data.specialty || '';
     }
@@ -1577,7 +2413,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
     formData.append('data', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
 
-    // Agregar imágenes si están seleccionadas
     const files = data.files || {};
     if (files.avatar && files.avatar.length > 0) {
       const avatarFile = files.avatar[0];
@@ -1593,28 +2428,34 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       }
     }
 
-      // Llamada al backend usando ProfileService
-      this.profileService.updateProfile(formData).subscribe({
-        next: (response: any) => {
-          console.log('Profile updated successfully:', response);
-          // Reload profile from backend to get the latest data
-          this.updateOwnProfileFromResponse(response);
-        },
-        error: (error: any) => {
-          console.error('Error updating profile:', error);
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo actualizar el perfil'
-          });
-          this.loading.set(false);
-          this.cdr.detectChanges();
-        }
-      });
+    this.profileService.updateProfile(formData).subscribe({
+      next: (response: any) => {
+        console.log('Profile updated successfully:', response);
+        this.updateOwnProfileFromResponse(response);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Perfil actualizado',
+          detail: 'Tu perfil ha sido actualizado correctamente'
+        });
+        this.loading.set(false);
+        this.cdr.detectChanges();
+      },
+      error: (error: any) => {
+        console.error('Error updating profile:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar el perfil'
+        });
+        this.loading.set(false);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
-  // Método para actualizar el usuario en el AuthService
-  private updateAuthUser(response: any): void {
+  private updateOwnProfileFromResponse(response: any): void {
+    const timestamp = new Date().getTime();
+
     const currentUser = this.authService.user();
     if (currentUser) {
       const updatedUser: User = {
@@ -1623,71 +2464,36 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         lastName: response.lastName || currentUser.lastName,
         phone: response.phone || currentUser.phone,
         bio: response.bio || currentUser.bio,
-        avatarUrl: response.avatarUrl || currentUser.avatarUrl,
-        coverImageUrl: response.coverImageUrl || currentUser.coverImageUrl,
+        avatarUrl: response.avatarUrl ? `${response.avatarUrl}?t=${timestamp}` : currentUser.avatarUrl,
+        coverImageUrl: response.coverImageUrl ? `${response.coverImageUrl}?t=${timestamp}` : currentUser.coverImageUrl,
         city: response.city || currentUser.city,
         country: response.country || currentUser.country,
       };
       this.authService.updateUser(updatedUser);
     }
+
+    const currentProfile = this.ownProfile;
+    this.ownProfile = {
+      ...currentProfile,
+      name: response.firstName + ' ' + response.lastName,
+      avatar: response.avatarUrl ? `${response.avatarUrl}?t=${timestamp}` : currentProfile.avatar,
+      coverImage: response.coverImageUrl ? `${response.coverImageUrl}?t=${timestamp}` : currentProfile.coverImage,
+      bio: response.bio || currentProfile.bio,
+      location: response.city ? response.city + (response.country ? ', ' + response.country : '') : currentProfile.location,
+    } as AnyProfile;
+
+    this.cdr.detectChanges();
+
+    setTimeout(() => {
+      this.loading.set(false);
+      this.cdr.detectChanges();
+    }, 500);
   }
 
-  // Tabs configuration
-  profileTabs = computed((): Tab[] => {
-    return [
-      { id: 'posts', label: 'Publicaciones', icon: 'photo_library' },
-      { id: 'pets', label: 'Mascotas', icon: 'pet_supplies', visible: () => this.isUser() || this.isShelter() },
-      { id: 'knowme', label: 'Conóceme', icon: 'person' },
-    ];
-  });
+  // ============================================
+  //  FILE UPLOADS
+  // ============================================
 
-  // Menu items for profile actions
-  profileMenuItems: MenuItem[] = [];
-
-  onTabChange(tabId: string) {
-    this.setActiveTab(tabId);
-  }
-
-  onEditProfile() {
-    this.setActiveTab('knowme');
-  }
-
-  onAdmin() {
-    this.router.navigate(['/admin']);
-  }
-
-  initializeProfileMenu(): void {
-    this.profileMenuItems = [
-      {
-        label: 'Editar Perfil',
-        icon: 'pi pi-pencil',
-        command: () => this.onEditProfile()
-      },
-      {
-        label: 'Administrar',
-        icon: 'pi pi-cog',
-        command: () => this.onAdmin()
-      }
-    ];
-  }
-
-  ngOnDestroy(): void {
-    this.paramSubscription?.unsubscribe();
-  }
-
-  onPetSearch(query: string) {
-    this.petSearchQuery.set(query);
-  }
-
-  showAddPetDialog() {
-    this.router.navigate(['/pets/create']);
-  }
-
-  setActiveTab(tab: string) {
-    this.activeTab.set(tab);
-  }
-
-  // Hidden file inputs for avatar and cover uploads
   private avatarInput: HTMLInputElement | null = null;
   private coverInput: HTMLInputElement | null = null;
 
@@ -1721,7 +2527,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       this.loading.set(true);
       const formData = new FormData();
 
-      // Add data blob with current profile info (required by backend)
       const user = this.authService.user();
       formData.append('data', new Blob([JSON.stringify({
         firstName: user?.firstName || '',
@@ -1733,7 +2538,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         website: ''
       })], { type: 'application/json' }));
 
-      // Add avatar file
       formData.append('avatar', file);
 
       this.profileService.updateProfile(formData).subscribe({
@@ -1743,7 +2547,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
             summary: 'Foto actualizada',
             detail: 'Tu foto de perfil ha sido actualizada'
           });
-          // Update local profile and auth user
           this.updateOwnProfileFromResponse(response);
         },
         error: (error) => {
@@ -1758,7 +2561,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         }
       });
     }
-    // Reset the input so the same file can be selected again
     if (this.avatarInput) this.avatarInput.value = '';
   }
 
@@ -1768,7 +2570,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       this.loading.set(true);
       const formData = new FormData();
 
-      // Add data blob with current profile info (required by backend)
       const user = this.authService.user();
       formData.append('data', new Blob([JSON.stringify({
         firstName: user?.firstName || '',
@@ -1780,7 +2581,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         website: ''
       })], { type: 'application/json' }));
 
-      // Add cover image file
       formData.append('coverImage', file);
 
       this.profileService.updateProfile(formData).subscribe({
@@ -1790,7 +2590,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
             summary: 'Portada actualizada',
             detail: 'Tu imagen de portada ha sido actualizada'
           });
-          // Update local profile and auth user
           this.updateOwnProfileFromResponse(response);
         },
         error: (error) => {
@@ -1805,143 +2604,13 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         }
       });
     }
-    // Reset the input so the same file can be selected again
     if (this.coverInput) this.coverInput.value = '';
   }
 
-  private updateOwnProfileFromResponse(response: any): void {
-    // Generate a timestamp for cache-busting
-    const timestamp = new Date().getTime();
+  // ============================================
+  //  HELPERS
+  // ============================================
 
-    // Update auth user with cache-busted URLs
-    const currentUser = this.authService.user();
-    if (currentUser) {
-      const updatedUser: User = {
-        ...currentUser,
-        firstName: response.firstName || currentUser.firstName,
-        lastName: response.lastName || currentUser.lastName,
-        phone: response.phone || currentUser.phone,
-        bio: response.bio || currentUser.bio,
-        avatarUrl: response.avatarUrl ? `${response.avatarUrl}?t=${timestamp}` : currentUser.avatarUrl,
-        coverImageUrl: response.coverImageUrl ? `${response.coverImageUrl}?t=${timestamp}` : currentUser.coverImageUrl,
-        city: response.city || currentUser.city,
-        country: response.country || currentUser.country,
-      };
-      this.authService.updateUser(updatedUser);
-    }
-
-    // Update ownProfile with cache-busted URLs
-    const currentProfile = this.ownProfile;
-    this.ownProfile = {
-      ...currentProfile,
-      name: response.firstName + ' ' + response.lastName,
-      avatar: response.avatarUrl ? `${response.avatarUrl}?t=${timestamp}` : currentProfile.avatar,
-      coverImage: response.coverImageUrl ? `${response.coverImageUrl}?t=${timestamp}` : currentProfile.coverImage,
-      bio: response.bio || currentProfile.bio,
-      location: response.city ? response.city + (response.country ? ', ' + response.country : '') : currentProfile.location,
-    } as AnyProfile;
-
-    this.cdr.detectChanges();
-
-    // Hide loading after a short delay
-    setTimeout(() => {
-      this.loading.set(false);
-      this.cdr.detectChanges();
-    }, 500);
-  }
-
-  private reloadOwnProfile(): void {
-    const user = this.authService.user();
-    if (user?.id) {
-      this.loadOwnProfile(user.id);
-      // Ensure loading is visible for at least 1 second
-      setTimeout(() => {
-        this.loading.set(false);
-        this.cdr.detectChanges();
-      }, 1000);
-    }
-  }
-
-  // Cargar el estado de follow desde el backend
-  private loadFollowStatus(authUserId: string): void {
-    const currentUserId = this.authService.user()?.id;
-    if (!currentUserId) return;
-
-    this.socialService.getFollowing(currentUserId).subscribe({
-      next: (following) => {
-        const isFollowing = following.some(f => f.followingId === authUserId);
-        const currentProfiles = this.loadedProfiles();
-        const profile = currentProfiles[authUserId];
-        if (profile) {
-          profile.isFollowing = isFollowing;
-          this.loadedProfiles.set({ ...currentProfiles });
-          this.cdr.detectChanges();
-        }
-      },
-      error: () => {
-        // If the endpoint fails, just leave isFollowing as false
-      }
-    });
-  }
-
-  // Toggle follow/unfollow for the viewed profile
-  toggleFollow(): void {
-    const currentUserId = this.authService.user()?.id;
-    const targetUserId = this.profileId();
-    if (!currentUserId || !targetUserId) return;
-
-    const currentProfiles = this.loadedProfiles();
-    const profile = currentProfiles[targetUserId];
-    if (!profile) return;
-
-    const wasFollowing = profile.isFollowing;
-    profile.isFollowing = !profile.isFollowing;
-    this.loadedProfiles.set({ ...currentProfiles });
-
-    if (profile.isFollowing) {
-      this.socialService.followUser(currentUserId, targetUserId).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Siguiendo',
-            detail: `Ahora sigues a ${profile.name}`
-          });
-        },
-        error: () => {
-          // Revert on error
-          profile.isFollowing = wasFollowing;
-          this.loadedProfiles.set({ ...currentProfiles });
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo seguir al usuario'
-          });
-        }
-      });
-    } else {
-      this.socialService.unfollowUser(currentUserId, targetUserId).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'info',
-            summary: 'Dejaste de seguir',
-            detail: `Ya no sigues a ${profile.name}`
-          });
-        },
-        error: () => {
-          // Revert on error
-          profile.isFollowing = wasFollowing;
-          this.loadedProfiles.set({ ...currentProfiles });
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo dejar de seguir al usuario'
-          });
-        }
-      });
-    }
-  }
-
-  // Método para obtener la etiqueta del tipo de perfil
   getProfileTypeLabel(type: ProfileType | string | undefined): string {
     const labels: Record<string, string> = {
       user: 'Usuario',
@@ -1951,60 +2620,11 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       trainer: 'Adiestrador',
       pet: 'Mascota'
     };
-    // Normalizar a minúsculas para manejar tanto 'VET' como 'vet'
     const normalizedType = type?.toLowerCase() || '';
     return labels[normalizedType] || 'Usuario';
   }
 
-  // Método para obtener la especialidad según el tipo de perfil (vista de otros usuarios)
-  getProfileSpecialty(): string {
-    const profile = this.userProfile();
-    if (profile?.type === 'vet') {
-      return (profile as VetProfile).specialty || 'No especificada';
-    }
-    if (profile?.type === 'trainer') {
-      return (profile as TrainerProfile).specialty || 'No especificada';
-    }
-    return 'No especificada';
-  }
-
-  // Método para obtener el número de colegiado (vista de otros usuarios - vet)
-  getProfileLicenseNumber(): string {
-    return (this.userProfile() as any)?.licenseNumber || '—';
-  }
-
-  // Método para obtener el nombre de tienda (vista de otros usuarios - seller)
-  getProfileStoreName(): string {
-    return (this.userProfile() as any)?.storeName || '—';
-  }
-
-  // Método para obtener el número de registro (vista de otros usuarios - shelter)
-  getProfileCharityNumber(): string {
-    return (this.userProfile() as any)?.charityNumber || '—';
-  }
-
-  // Toggle adoption status for a pet
-  toggleAdoptionStatus(petId: string, adoptionStatus: string | undefined): void {
-    const newStatus = adoptionStatus !== 'available';
-
-    this.profileService.toggleAdoptionStatus(petId, newStatus).subscribe({
-      next: (response) => {
-        this.messageService.add({
-          severity: 'success',
-          summary: newStatus ? 'En adopción' : 'Adopción cancelada',
-          detail: newStatus ? 'La mascota ya está disponible para adopción' : 'La mascota ya no está en adopción'
-        });
-        // Reload pets to reflect the change
-        this.loadPetsForProfile(this.isOwnProfile() ? this.authService.user()?.id || '' : this.profileId() || '');
-      },
-      error: (err) => {
-        console.error('Error toggling adoption status:', err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo actualizar el estado de adopción'
-        });
-      }
-    });
+  ngOnDestroy(): void {
+    this.paramSubscription?.unsubscribe();
   }
 }
