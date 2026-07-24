@@ -10,11 +10,12 @@ import { SelectModule } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { AdoptionService } from '../../infrastructure/services/adoption.service';
 import { AvailablePetResponse } from '../../infrastructure/services/adoption.service';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
+import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../components/pet-feed-grid/pet-feed-grid.component';
 
 interface Pet {
   id: string;
@@ -26,16 +27,13 @@ interface Pet {
   gender: 'male' | 'female';
   location: string;
   shelter: string;
-  shelterImage: string;
   description: string;
   personality: string[];
   image: string;
-  images: string[];
   status: 'available' | 'pending' | 'adopted';
   vaccinated: boolean;
   sterilized: boolean;
   microchipped: boolean;
-  arrivalDate: Date;
 }
 
 @Component({
@@ -52,190 +50,22 @@ interface Pet {
     SelectModule,
     CheckboxModule,
     ToastModule,
-    RouterLink,
     ModalComponent,
+    PetFeedGridComponent,
   ],
   providers: [MessageService],
   template: `
     <div class="adoptions-page">
-      <!-- Mobile Filters Toggle -->
-      <div class="mobile-filters-header">
-        <button class="filters-toggle-btn" (click)="toggleFilters()">
-          <i class="pi pi-sliders-h"></i>
-          <span>Filtros</span>
-          @if (hasActiveFilters()) {
-            <span class="filter-badge">{{ getActiveFilterCount() }}</span>
-          }
-        </button>
-        <div class="results-count-mobile">
-          {{ filteredPets().length }} resultado{{ filteredPets().length !== 1 ? 's' : '' }}
-        </div>
-      </div>
-
-      <div class="adoptions-container">
-        <!-- Filters Sidebar -->
-        <aside class="filters-sidebar" [class.collapsed]="filtersCollapsed()">
-          <div class="filter-header">
-            <h3>Filtros</h3>
-            <button class="close-filters-btn" (click)="toggleFilters()">
-              <i class="pi pi-times"></i>
-            </button>
-          </div>
-
-          <div class="filter-section">
-            <h3>Búsqueda</h3>
-            <div class="search-filter">
-              <i class="pi pi-search"></i>
-              <input
-                type="text"
-                pInputText
-                placeholder="Buscar por nombre..."
-                [(ngModel)]="searchQuery"
-                (ngModelChange)="applyFilters()"
-              />
-            </div>
-          </div>
-
-          <div class="filter-section">
-            <h3>Especie</h3>
-            <div class="filter-options">
-              @for (species of speciesOptions; track species) {
-                <div class="filter-option">
-                  <p-checkbox
-                    [inputId]="'species-' + species"
-                    [value]="species"
-                    [(ngModel)]="selectedSpecies"
-                    (onChange)="applyFilters()"
-                  />
-                  <label [for]="'species-' + species">{{ species }}</label>
-                </div>
-              }
-            </div>
-          </div>
-
-          <div class="filter-section">
-            <h3>Género</h3>
-            <div class="filter-options">
-              <div class="filter-option">
-                <p-checkbox
-                  inputId="male"
-                  [value]="'male'"
-                  [(ngModel)]="selectedGenders"
-                  (onChange)="applyFilters()"
-                />
-                <label for="male">Macho</label>
-              </div>
-              <div class="filter-option">
-                <p-checkbox
-                  inputId="female"
-                  [value]="'female'"
-                  [(ngModel)]="selectedGenders"
-                  (onChange)="applyFilters()"
-                />
-                <label for="female">Hembra</label>
-              </div>
-            </div>
-          </div>
-
-          <div class="filter-section">
-            <h3>Características</h3>
-            <div class="filter-options">
-              <div class="filter-option">
-                <p-checkbox
-                  inputId="vaccinated"
-                  [(ngModel)]="filters.vaccinated"
-                  (onChange)="applyFilters()"
-                />
-                <label for="vaccinated">Vacunado</label>
-              </div>
-              <div class="filter-option">
-                <p-checkbox
-                  inputId="sterilized"
-                  [(ngModel)]="filters.sterilized"
-                  (onChange)="applyFilters()"
-                />
-                <label for="sterilized">Esterilizado</label>
-              </div>
-              <div class="filter-option">
-                <p-checkbox
-                  inputId="microchipped"
-                  [(ngModel)]="filters.microchipped"
-                  (onChange)="applyFilters()"
-                />
-                <label for="microchipped">Microchip</label>
-              </div>
-            </div>
-          </div>
-
-          <button class="clear-filters-btn" (click)="clearFilters()">
-            <i class="pi pi-times"></i>
-            Limpiar filtros
-          </button>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="pets-main">
-          <!-- Results count -->
-          <div class="results-header">
-            <div class="results-count">
-              {{ filteredPets().length }} animal{{ filteredPets().length !== 1 ? 'es' : '' }} encontrado{{ filteredPets().length !== 1 ? 's' : '' }}
-            </div>
-          </div>
-
-          <!-- Pets Grid -->
-          <div class="pets-grid">
-            @for (pet of filteredPets(); track pet.id) {
-              <div class="pet-card" (click)="goToPetProfile(pet)">
-                <div class="pet-image-container">
-                  <img [src]="pet.image" [alt]="pet.name" />
-                  @if (pet.status !== 'available') {
-                    <div class="pet-status-overlay">
-                      <span class="status-badge" [class]="'status-' + pet.status">
-                        {{ getStatusLabel(pet.status) }}
-                      </span>
-                    </div>
-                  }
-                </div>
-                <div class="pet-info">
-                  <div class="pet-header">
-                    <h3>{{ pet.name }}</h3>
-                    <span class="pet-gender">
-                      <i class="pi" [class.pi-mars]="pet.gender === 'male'" [class.pi-venus]="pet.gender === 'female'"></i>
-                    </span>
-                  </div>
-                  <p class="pet-breed">{{ pet.breed }}</p>
-                  <p class="pet-age">{{ pet.age }}</p>
-                  <div class="pet-tags">
-                    @if (pet.vaccinated) {
-                      <span class="pet-tag">Vacunado</span>
-                    }
-                    @if (pet.sterilized) {
-                      <span class="pet-tag">Esterilizado</span>
-                    }
-                    @if (pet.microchipped) {
-                      <span class="pet-tag">Microchip</span>
-                    }
-                  </div>
-                  <div class="pet-location">
-                    <i class="pi pi-map-marker"></i>
-                    <span>{{ pet.location }}</span>
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-
-          @if (filteredPets().length === 0) {
-            <div class="no-pets">
-              <i class="pi pi-pets"></i>
-              <p>No se encontraron animales con estos criterios</p>
-              <button class="clear-filters-btn" (click)="clearFilters()">
-                Limpiar filtros
-              </button>
-            </div>
-          }
-        </main>
-      </div>
+      <app-pet-feed-grid
+        [items]="pets()"
+        itemLabel="animales"
+        itemKeyField="id"
+        [filterConfigs]="petFilterConfigs"
+        [columnConfigs]="petColumnConfigs"
+        [initialFilters]="petFilters()"
+        (filtersChange)="onFiltersChange($event)"
+        (itemClick)="onPetClick($event)"
+      />
 
       <!-- Pet Detail Modal -->
       <app-modal
@@ -333,147 +163,6 @@ interface Pet {
   styles: [`
     .adoptions-page { min-height: 100vh; background: var(--surface-bg); }
 
-    /* Mobile Filters Header */
-    .mobile-filters-header {
-      display: none;
-      padding: 1rem;
-      background: var(--surface-card);
-      border-bottom: 1px solid var(--surface-border);
-      position: sticky;
-      top: 50px;
-      z-index: 100;
-      gap: 1rem;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .filters-toggle-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.625rem 1rem;
-      background: var(--primary-color);
-      color: white;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-weight: 600;
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      position: relative;
-    }
-
-    .filters-toggle-btn:hover {
-      background: var(--primary-color-dark);
-      transform: translateY(-1px);
-    }
-
-    .filter-badge {
-      background: white;
-      color: var(--primary-color);
-      border-radius: var(--radius-full);
-      padding: 0.125rem 0.5rem;
-      font-size: 0.75rem;
-      font-weight: 700;
-      min-width: 1.25rem;
-      text-align: center;
-    }
-
-    .results-count-mobile {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-
-    /* Container */
-    .adoptions-container { max-width: 1400px; margin: 0 auto; padding: 0 2rem 2rem; display: grid; grid-template-columns: 280px 1fr; gap: 2rem; }
-
-    /* Filters Sidebar */
-    .filters-sidebar {
-      background: var(--surface-card);
-      border-radius: var(--radius-md);
-      padding: 1.5rem;
-      height: fit-content;
-      position: sticky;
-      top: 1rem;
-      max-height: calc(100vh - 2rem);
-      overflow-y: auto;
-    }
-
-    .filter-header {
-      display: none;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--surface-border);
-    }
-
-    .filter-header h3 {
-      margin: 0;
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .close-filters-btn {
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      cursor: pointer;
-      padding: 0.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: var(--radius-sm);
-      transition: all var(--transition-fast);
-    }
-
-    .close-filters-btn:hover {
-      background: var(--surface-hover);
-      color: var(--text-primary);
-    }
-
-    .filter-section { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--surface-border); }
-    .filter-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-    .filter-section h3 { margin: 0 0 1rem; font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
-    .search-filter { position: relative; }
-    .search-filter i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); }
-    .search-filter input { width: 100%; padding: 0.625rem 1rem 0.625rem 2.5rem; border: 1px solid var(--surface-border); border-radius: var(--radius-sm); background: var(--surface-hover); color: var(--text-primary); }
-    .filter-options { display: flex; flex-direction: column; gap: 0.75rem; }
-    .filter-option { display: flex; align-items: center; gap: 0.5rem; }
-    .filter-option label { font-size: 0.875rem; color: var(--text-secondary); cursor: pointer; }
-    .clear-filters-btn { width: 100%; padding: 0.75rem; background: none; border: 1px solid var(--surface-border); border-radius: var(--radius-sm); color: var(--text-secondary); cursor: pointer; transition: all var(--transition-fast); display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-    .clear-filters-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
-
-    /* Main Content */
-    .pets-main { min-height: 600px; }
-    .results-header { margin-bottom: 1.5rem; }
-    .results-count { font-size: 0.875rem; color: var(--text-secondary); }
-
-    /* Pets Grid */
-    .pets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
-    .pet-card { background: var(--surface-card); border-radius: var(--radius-md); overflow: hidden; transition: all var(--transition-fast); cursor: pointer; }
-    .pet-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
-    .pet-image-container { position: relative; width: 100%; height: 250px; overflow: hidden; background: var(--surface-hover); }
-    .pet-image-container img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-normal); }
-    .pet-card:hover .pet-image-container img { transform: scale(1.05); }
-    .pet-status-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
-    .status-badge { padding: 0.5rem 1.5rem; border-radius: var(--radius-full); font-weight: 600; font-size: 0.875rem; }
-    .status-pending { background: #fbbf24; color: white; }
-    .status-adopted { background: #10b981; color: white; }
-    .pet-info { padding: 1.25rem; }
-    .pet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-    .pet-header h3 { margin: 0; font-size: 1.25rem; font-weight: 600; color: var(--text-primary); }
-    .pet-gender { font-size: 1.25rem; color: var(--primary-color); }
-    .pet-breed { margin: 0 0 0.5rem; font-size: 0.875rem; color: var(--text-secondary); }
-    .pet-age { margin: 0 0 0.75rem; font-size: 0.875rem; color: var(--text-secondary); }
-    .pet-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
-    .pet-tag { padding: 0.25rem 0.5rem; background: var(--primary-color-light); color: var(--primary-color); border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 500; }
-    .pet-location { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-tertiary); }
-    .pet-location i { color: var(--primary-color); }
-    .no-pets { text-align: center; padding: 4rem 2rem; background: var(--surface-card); border-radius: var(--radius-md); }
-    .no-pets i { font-size: 3rem; color: var(--text-tertiary); margin-bottom: 1rem; }
-    .no-pets p { font-size: 1.125rem; color: var(--text-secondary); margin: 0 0 1rem; }
-
     /* Pet Detail Modal */
     .pet-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
     .pet-detail-image { border-radius: var(--radius-md); overflow: hidden; height: 100%; min-height: 400px; }
@@ -501,40 +190,8 @@ interface Pet {
     .pending-btn { background: #fbbf24; color: white; cursor: not-allowed; opacity: 0.7; }
     .adopted-btn { background: #10b981; color: white; cursor: not-allowed; opacity: 0.7; }
 
-    /* Tablet */
-    @media (max-width: 1024px) {
-      .adoptions-container { grid-template-columns: 1fr; }
-      .filters-sidebar {
-        display: block;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 1000;
-        border-radius: 0;
-        max-height: 100vh;
-        transform: translateX(-100%);
-        transition: transform var(--transition-normal);
-      }
-
-      .filters-sidebar:not(.collapsed) {
-        transform: translateX(0);
-      }
-
-      .filter-header {
-        display: flex;
-      }
-
-      .mobile-filters-header {
-        display: flex;
-      }
-    }
-
     /* Mobile */
     @media (max-width: 768px) {
-      .adoptions-container { padding: 0 1rem 2rem; }
-      .pets-grid { grid-template-columns: 1fr; }
       .pet-detail { grid-template-columns: 1fr; }
       .pet-detail-image { min-height: 250px; }
     }
@@ -545,17 +202,6 @@ export class AdoptionsPageComponent implements OnInit {
   private adoptionService = inject(AdoptionService);
   private router = inject(Router);
   private authService = inject(AuthService);
-
-  // Filters
-  searchQuery = '';
-  speciesOptions = ['Perro', 'Gato', 'Ave', 'Conejo', 'Otro'];
-  selectedSpecies: string[] = [];
-  selectedGenders: string[] = [];
-  filters = {
-    vaccinated: false,
-    sterilized: false,
-    microchipped: false
-  };
 
   // Pet Detail
   petDetailVisible = signal(false);
@@ -568,74 +214,96 @@ export class AdoptionsPageComponent implements OnInit {
   totalPets = computed(() => this.pets().length);
   availablePets = computed(() => this.pets().filter(p => p.status === 'available'));
 
-  filteredPets = computed(() => {
-    let result = [...this.pets()];
+  // Filters
+  petFilters = signal<Record<string, any>>({});
 
-    if (this.searchQuery) {
-      const query = this.searchQuery.toLowerCase();
-      result = result.filter(p =>
-        p.name.toLowerCase().includes(query) ||
-        p.breed.toLowerCase().includes(query)
-      );
+  // Generic component configs
+  petFilterConfigs: FilterConfig[] = [
+    {
+      type: 'text',
+      key: 'searchQuery',
+      label: 'Búsqueda',
+      placeholder: 'Buscar por nombre o raza...'
+    },
+    {
+      type: 'checkbox',
+      key: 'selectedSpecies',
+      label: 'Especie',
+      options: [
+        { label: 'Perro', value: 'Perro' },
+        { label: 'Gato', value: 'Gato' },
+        { label: 'Ave', value: 'Ave' },
+        { label: 'Conejo', value: 'Conejo' },
+        { label: 'Otro', value: 'Otro' }
+      ]
+    },
+    {
+      type: 'checkbox',
+      key: 'selectedGenders',
+      label: 'Género',
+      options: [
+        { label: 'Macho', value: 'male' },
+        { label: 'Hembra', value: 'female' }
+      ]
+    },
+    {
+      type: 'checkbox',
+      key: 'vaccinated',
+      label: 'Características',
+      options: [
+        { label: 'Vacunado', value: 'true' },
+        { label: 'Esterilizado', value: 'sterilized' },
+        { label: 'Microchip', value: 'microchipped' }
+      ]
     }
+  ];
 
-    if (this.selectedSpecies.length > 0) {
-      result = result.filter(p => this.selectedSpecies.includes(p.species));
+  petColumnConfigs: ColumnConfig[] = [
+    {
+      key: 'image',
+      label: 'Imagen',
+      type: 'image'
+    },
+    {
+      key: 'name',
+      label: 'Nombre',
+      type: 'text'
+    },
+    {
+      key: 'breed',
+      label: 'Raza',
+      type: 'text'
+    },
+    {
+      key: 'age',
+      label: 'Edad',
+      type: 'text'
+    },
+    {
+      key: 'location',
+      label: 'Ubicación',
+      type: 'text',
+      icon: 'pi-map-marker'
     }
-
-    if (this.selectedGenders.length > 0) {
-      result = result.filter(p => this.selectedGenders.includes(p.gender));
-    }
-
-    if (this.filters.vaccinated) {
-      result = result.filter(p => p.vaccinated);
-    }
-    if (this.filters.sterilized) {
-      result = result.filter(p => p.sterilized);
-    }
-    if (this.filters.microchipped) {
-      result = result.filter(p => p.microchipped);
-    }
-
-    return result;
-  });
-
-  // Filters state
-  filtersCollapsed = signal(true);
+  ];
 
   ngOnInit(): void {
     this.loadAvailablePets();
   }
 
-  toggleFilters(): void {
-    this.filtersCollapsed.update(value => !value);
+  onFiltersChange(filters: Record<string, any>): void {
+    this.petFilters.set(filters);
   }
 
-  hasActiveFilters(): boolean {
-    return !!this.searchQuery ||
-           this.selectedSpecies.length > 0 ||
-           this.selectedGenders.length > 0 ||
-           this.filters.vaccinated ||
-           this.filters.sterilized ||
-           this.filters.microchipped;
-  }
-
-  getActiveFilterCount(): number {
-    let count = 0;
-    if (this.searchQuery) count++;
-    count += this.selectedSpecies.length;
-    count += this.selectedGenders.length;
-    if (this.filters.vaccinated) count++;
-    if (this.filters.sterilized) count++;
-    if (this.filters.microchipped) count++;
-    return count;
+  onPetClick(pet: Pet): void {
+    this.petDetailVisible.set(true);
+    this.selectedPet.set(pet);
   }
 
   // Load available pets from the backend
   loadAvailablePets(): void {
     this.adoptionService.getAvailablePets().subscribe({
       next: (petResponses: AvailablePetResponse[]) => {
-        // Filter only pets available for adoption and map to Pet interface
         const mappedPets: Pet[] = petResponses
           .filter(p => p.pet.availableForAdoption)
           .map(p => this.mapPetResponseToPet(p));
@@ -673,16 +341,13 @@ export class AdoptionsPageComponent implements OnInit {
       gender: (petDetail.gender as 'male' | 'female') || 'male',
       location: petDetail.lastKnownLocation || 'Ubicación desconocida',
       shelter: petDetail.adoptionCenter || 'Sin refugio',
-      shelterImage: '',
       description: petDetail.bio || 'Sin descripción disponible',
       personality,
       image: p.image || petDetail.avatarUrl || 'https://i.pravatar.cc/300',
-      images: petDetail.imageUrls || [],
       status: p.status === 'AVAILABLE' ? 'available' : p.status === 'PENDING' ? 'pending' : 'adopted',
       vaccinated: !!petDetail.lastVaccinationDate,
       sterilized: petDetail.spayedNeutered,
       microchipped: !!petDetail.microchipId,
-      arrivalDate: petDetail.adoptionDate ? new Date(petDetail.adoptionDate) : new Date()
     };
   }
 
@@ -698,29 +363,12 @@ export class AdoptionsPageComponent implements OnInit {
     return speciesMap[species.toLowerCase()] || species;
   }
 
-  // Methods
-  applyFilters() {
-    // Filters are applied automatically via computed property
-  }
-
   clearFilters() {
-    this.searchQuery = '';
-    this.selectedSpecies = [];
-    this.selectedGenders = [];
-    this.filters = {
-      vaccinated: false,
-      sterilized: false,
-      microchipped: false
-    };
     this.messageService.add({
       severity: 'info',
       summary: 'Filtros limpiados',
       detail: 'Se han restablecido todos los filtros'
     });
-  }
-
-  goToPetProfile(pet: Pet) {
-    this.router.navigate(['/profile/pet', pet.petId]);
   }
 
   requestAdoption(pet: Pet) {
@@ -742,7 +390,6 @@ export class AdoptionsPageComponent implements OnInit {
           detail: `Tu solicitud de adopción para ${pet.name} ha sido enviada al refugio`
         });
         this.petDetailVisible.set(false);
-        // Update the pet status to pending
         this.pets.update(pets =>
           pets.map(p => p.id === pet.id ? { ...p, status: 'pending' } : p)
         );

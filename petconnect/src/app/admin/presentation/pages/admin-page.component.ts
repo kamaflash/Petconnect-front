@@ -15,11 +15,33 @@ import { AuthService } from '../../../auth/infrastructure/services/auth.service'
 import { SocialService, PostResponse, EventResponse, GroupResponse, StoryResponse } from '../../../social/infrastructure/services/social.service';
 import { PetResponse } from '../../../pets/domain/pet.model';
 import { PetService } from '../../../pets/infrastructure/services/pet.service';
+import { HomeService, VetServiceResponse } from '../../../home/infrastructure/services/home.service';
 
 interface AdminTab {
   label: string;
   icon: string;
   value: string;
+  roles?: string[];
+}
+
+interface ServiceItem {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  duration: string;
+  active: boolean;
+}
+
+interface ProductItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  category: string;
+  imageUrl: string;
+  active: boolean;
 }
 
 @Component({
@@ -179,6 +201,66 @@ interface AdminTab {
             </div>
           </div>
 
+          <!-- Servicios (Vet) -->
+          <div class="admin-section" *ngIf="activeTab() === 'services' && hasProfile('vet')">
+            <!-- Formulario de creación -->
+            <div class="form-container" *ngIf="showCreateServiceForm()">
+              <app-dynamic-form
+                [config]="serviceFormConfig"
+                [(formData)]="serviceFormData"
+                (onSubmitClick)="handleCreateService($event)"
+                (onCancel)="showCreateServiceForm.set(false)"
+              />
+            </div>
+
+            <!-- Lista de servicios -->
+            <div *ngIf="!showCreateServiceForm()">
+              <app-table-card
+                [type]="'service'"
+                [items]="adminServiceItems()"
+                [showSearch]="true"
+                [filteredItems]="adminServiceItems()"
+                [editable]="true"
+                [loading]="loading()"
+                (onAdd)="showCreateServiceForm.set(true)"
+              >
+                <ng-template card-actions let-item>
+                  <p-button icon="pi pi-trash" styleClass="p-button-sm p-button-danger" (onClick)="deleteServiceById(item.id)" />
+                </ng-template>
+              </app-table-card>
+            </div>
+          </div>
+
+          <!-- Productos (Seller) -->
+          <div class="admin-section" *ngIf="activeTab() === 'products' && hasProfile('seller')">
+            <!-- Formulario de creación -->
+            <div class="form-container" *ngIf="showCreateProductForm()">
+              <app-dynamic-form
+                [config]="productFormConfig"
+                [(formData)]="productFormData"
+                (onSubmitClick)="handleCreateProduct($event)"
+                (onCancel)="showCreateProductForm.set(false)"
+              />
+            </div>
+
+            <!-- Lista de productos -->
+            <div *ngIf="!showCreateProductForm()">
+              <app-table-card
+                [type]="'product'"
+                [items]="adminProductItems()"
+                [showSearch]="true"
+                [filteredItems]="adminProductItems()"
+                [editable]="true"
+                [loading]="loading()"
+                (onAdd)="showCreateProductForm.set(true)"
+              >
+                <ng-template card-actions let-item>
+                  <p-button icon="pi pi-trash" styleClass="p-button-sm p-button-danger" (onClick)="deleteProductById(item.id)" />
+                </ng-template>
+              </app-table-card>
+            </div>
+          </div>
+
           <!-- Grupos -->
           <div class="admin-section" *ngIf="activeTab() === 'groups'">
 
@@ -284,6 +366,7 @@ export class AdminPageComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly socialService = inject(SocialService);
   private readonly petService = inject(PetService);
+  private readonly homeService = inject(HomeService);
   private readonly messageService = inject(MessageService);
 
   // Loading state
@@ -312,6 +395,16 @@ export class AdminPageComponent implements OnInit {
   adminPets = signal<any[]>([]);
   adminStories = signal<any[]>([]);
   adminGroups = signal<any[]>([]);
+
+  // Vet services data
+  adminServices = signal<ServiceItem[]>([]);
+  showCreateServiceForm = signal(false);
+  serviceFormData = signal<any>({});
+
+  // Products data (for sellers)
+  adminProducts = signal<ProductItem[]>([]);
+  showCreateProductForm = signal(false);
+  productFormData = signal<any>({});
 
   // Form configurations
   postFormConfig: DynamicFormConfig = {
@@ -528,11 +621,121 @@ export class AdminPageComponent implements OnInit {
     ]
   };
 
+  // Service form configuration (for vets)
+  serviceFormConfig: DynamicFormConfig = {
+    title: 'Crear Nuevo Servicio',
+    submitLabel: 'Crear Servicio',
+    showCancel: true,
+    fields: [
+      {
+        key: 'name',
+        label: 'Nombre del Servicio',
+        type: 'input',
+        placeholder: 'Ej: Consulta general, Vacunación',
+        validation: { required: true, minLength: 2, maxLength: 100 }
+      },
+      {
+        key: 'description',
+        label: 'Descripción',
+        type: 'textarea',
+        placeholder: 'Describe el servicio...',
+        rows: 3,
+        validation: { required: true, maxLength: 500 }
+      },
+      {
+        key: 'price',
+        label: 'Precio (€)',
+        type: 'input',
+        placeholder: 'Ej: 50.00',
+        validation: { required: true }
+      },
+      {
+        key: 'duration',
+        label: 'Duración (minutos)',
+        type: 'input',
+        placeholder: 'Ej: 30',
+        validation: { required: true }
+      }
+    ]
+  };
+
+  // Product form configuration (for sellers)
+  productFormConfig: DynamicFormConfig = {
+    title: 'Crear Nuevo Producto',
+    submitLabel: 'Crear Producto',
+    showCancel: true,
+    fields: [
+      {
+        key: 'name',
+        label: 'Nombre del Producto',
+        type: 'input',
+        placeholder: 'Nombre del producto',
+        validation: { required: true, minLength: 2, maxLength: 100 }
+      },
+      {
+        key: 'description',
+        label: 'Descripción',
+        type: 'textarea',
+        placeholder: 'Describe el producto...',
+        rows: 3,
+        validation: { required: true, maxLength: 500 }
+      },
+      {
+        key: 'price',
+        label: 'Precio (€)',
+        type: 'input',
+        placeholder: 'Ej: 29.99',
+        validation: { required: true }
+      },
+      {
+        key: 'stock',
+        label: 'Stock',
+        type: 'input',
+        placeholder: 'Cantidad disponible',
+        validation: { required: true, min: 0 }
+      },
+      {
+        key: 'category',
+        label: 'Categoría',
+        type: 'select',
+        placeholder: 'Selecciona una categoría',
+        options: [
+          { label: 'Alimentos', value: 'food' },
+          { label: 'Accesorios', value: 'accessories' },
+          { label: 'Medicamentos', value: 'medicine' },
+          { label: 'Juguetes', value: 'toys' },
+          { label: 'Otro', value: 'other' }
+        ],
+        validation: { required: true }
+      },
+      {
+        key: 'imageUrl',
+        label: 'Imagen',
+        type: 'file',
+        placeholder: 'Selecciona una imagen',
+        accept: 'image/*',
+        maxFileSize: 5000000,
+        multiple: false
+      }
+    ]
+  };
+
   // User info
   userName = computed(() => {
     const user = this.authService.user();
     return user ? `${user.firstName} ${user.lastName}` : 'Usuario';
   });
+
+  // User profile type
+  userProfileType = computed(() => {
+    const user = this.authService.user();
+    return user?.profileType?.toLowerCase() || 'user';
+  });
+
+  // Check if user has specific profile
+  hasProfile = (profileType: string): boolean => {
+    return this.userProfileType() === profileType.toLowerCase();
+  };
 
   // Convert to TableCardItem format
   adminPostItems = computed((): TableCardItem[] => {
@@ -586,6 +789,26 @@ export class AdminPageComponent implements OnInit {
       avatar: group.avatarUrl || 'https://placehold.co/150',
       description: group.description,
       tags: group.active ? ['Activo'] : ['Inactivo'],
+    }));
+  });
+
+  adminServiceItems = computed((): TableCardItem[] => {
+    return this.adminServices().map(service => ({
+      id: service.id,
+      name: service.name,
+      avatar: 'https://placehold.co/150',
+      description: `${service.description} | Duración: ${service.duration}min | Precio: ${service.price}€`,
+      tags: service.active ? ['Activo'] : ['Inactivo'],
+    }));
+  });
+
+  adminProductItems = computed((): TableCardItem[] => {
+    return this.adminProducts().map(product => ({
+      id: product.id,
+      name: product.name,
+      avatar: product.imageUrl || 'https://placehold.co/150',
+      description: `${product.description} | Stock: ${product.stock} | Categoría: ${product.category}`,
+      tags: [product.price.toString() + '€', product.active ? 'Activo' : 'Inactivo'],
     }));
   });
 
@@ -772,15 +995,106 @@ export class AdminPageComponent implements OnInit {
     });
   }
 
+  // Service handlers (for vets)
+  handleCreateService(serviceData: any) {
+    const newService = {
+      id: Date.now().toString(),
+      name: serviceData.name,
+      description: serviceData.description,
+      price: serviceData.price,
+      duration: serviceData.duration,
+      active: true
+    };
+
+    this.adminServices.update(services => [...services, newService]);
+    this.showCreateServiceForm.set(false);
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Servicio creado',
+      detail: `El servicio ${serviceData.name} ha sido creado correctamente`
+    });
+  }
+
+  deleteServiceById(id: string) {
+    this.messageService.add({
+      severity: 'info',
+      summary: 'En desarrollo',
+      detail: 'La eliminación de servicios estará disponible próximamente'
+    });
+  }
+
+  // Product handlers (for sellers)
+  handleCreateProduct(productData: any) {
+    const newProduct = {
+      id: Date.now().toString(),
+      name: productData.name,
+      description: productData.description,
+      price: parseFloat(productData.price),
+      stock: parseInt(productData.stock),
+      category: productData.category,
+      imageUrl: productData.imageUrl?.[0]?.objectURL || 'https://placehold.co/150',
+      active: true
+    };
+
+    this.adminProducts.update(products => [...products, newProduct]);
+    this.showCreateProductForm.set(false);
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Producto creado',
+      detail: `El producto ${productData.name} ha sido creado correctamente`
+    });
+  }
+
+  deleteProductById(id: string) {
+    this.messageService.add({
+      severity: 'info',
+      summary: 'En desarrollo',
+      detail: 'La eliminación de productos estará disponible próximamente'
+    });
+  }
+
   // Tabs configuration
   adminTabs = computed((): Tab[] => {
-    return [
+    const profileType = this.userProfileType();
+    const tabs: Tab[] = [
+      // Common tabs for all users
       { id: 'posts', label: 'Publicaciones', icon: 'photo_library' },
-      { id: 'events', label: 'Eventos', icon: 'event' },
-      { id: 'pets', label: 'Mascotas', icon: 'pet_supplies' },
-      { id: 'stories', label: 'Historias', icon: 'schedule' },
-      { id: 'groups', label: 'Grupos', icon: 'groups' },
+      { id: 'pets', label: 'Mis Mascotas', icon: 'pet_supplies' },
     ];
+
+    // Add tabs based on profile type
+    if (profileType === 'vet') {
+      tabs.push(
+        { id: 'services', label: 'Mis Servicios', icon: 'medical_services' },
+        { id: 'appointments', label: 'Citas', icon: 'calendar_month' }
+      );
+    } else if (profileType === 'seller') {
+      tabs.push(
+        { id: 'products', label: 'Mis Productos', icon: 'shopping_bag' },
+        { id: 'orders', label: 'Pedidos', icon: 'receipt_long' }
+      );
+    } else if (profileType === 'shelter') {
+      tabs.push(
+        { id: 'adoptions', label: 'Adopciones', icon: 'favorite' },
+        { id: 'shelter-pets', label: 'Mascotas en Refugio', icon: 'pets' }
+      );
+    } else if (profileType === 'trainer') {
+      tabs.push(
+        { id: 'training-services', label: 'Servicios de Entrenamiento', icon: 'fitness_center' },
+        { id: 'sessions', label: 'Sesiones', icon: 'event_available' }
+      );
+    }
+
+    // Add general tabs
+    tabs.push(
+      { id: 'events', label: 'Eventos', icon: 'event' },
+      { id: 'stories', label: 'Historias', icon: 'schedule' },
+      { id: 'groups', label: 'Grupos', icon: 'groups' }
+    );
+
+    return tabs;
   });
 
   onTabChange(tabId: string) {

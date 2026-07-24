@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -17,6 +17,7 @@ import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ChipModule } from 'primeng/chip';
 import { BadgeModule } from 'primeng/badge';
+import { ProfileService, UserProfileResponse } from '../../../profile/infrastructure/services/profile.service';
 
 interface Vet {
   id: string;
@@ -130,6 +131,7 @@ interface Product {
               [showSearch]="true"
               [activeFilter]="activeVetFilter()"
               [filteredItems]="filteredVetItems()"
+              [type]="'story'"
               (searchChange)="onVetSearch($event)"
               (filterChange)="onVetFilter($event)"
             >
@@ -371,7 +373,7 @@ interface Product {
             <label>Veterinario</label>
             <select [(ngModel)]="selectedVet" class="w-full">
               <option value="">Seleccionar veterinario</option>
-              <option *ngFor="let option of vetOptions" [ngValue]="option.value">{{ option.label }}</option>
+              <option *ngFor="let option of vetOptions()" [ngValue]="option.value">{{ option.label }}</option>
             </select>
           </div>
           <div class="form-group">
@@ -883,8 +885,9 @@ interface Product {
     }
   `]
 })
-export class VetPageComponent {
+export class VetPageComponent implements OnInit {
   private messageService = inject(MessageService);
+  private readonly profileService = inject(ProfileService);
 
   // Tabs
   activeTab = signal('vets');
@@ -909,56 +912,7 @@ export class VetPageComponent {
   totalPets = 3;
 
   // Vets
-  vets = signal<Vet[]>([
-    {
-      id: '1',
-      name: 'Dr. Carlos Martínez',
-      avatar: 'https://i.pravatar.cc/150?img=10',
-      clinic: 'Veterinaria Central',
-      rating: 4.8,
-      reviews: 128,
-      specialty: 'Médico Veterinario',
-      location: 'Madrid, España',
-      distance: 2.5,
-      isFollowing: true,
-      userId: '3',
-      availability: 'Lun-Vie 9:00-18:00',
-      price: 'Desde 35€',
-      verified: true
-    },
-    {
-      id: '2',
-      name: 'Dra. Ana López',
-      avatar: 'https://i.pravatar.cc/150?img=11',
-      clinic: 'Clínica Animalia',
-      rating: 4.9,
-      reviews: 256,
-      specialty: 'Especialista en Animales Exóticos',
-      location: 'Barcelona, España',
-      distance: 5.2,
-      isFollowing: false,
-      userId: '2',
-      availability: 'Mar-Sáb 10:00-20:00',
-      price: 'Desde 45€',
-      verified: true
-    },
-    {
-      id: '3',
-      name: 'Dr. Luis García',
-      avatar: 'https://i.pravatar.cc/150?img=12',
-      clinic: 'Hospital Veterinario',
-      rating: 4.7,
-      reviews: 89,
-      specialty: 'Cirugía Veterinaria',
-      location: 'Valencia, España',
-      distance: 8.1,
-      isFollowing: true,
-      userId: '3',
-      availability: 'Lun-Fri 8:00-17:00',
-      price: 'Desde 50€',
-      verified: true
-    }
-  ]);
+  vets = signal<Vet[]>([]);
 
   // Vet Tips
   vetTips = signal<VetTip[]>([
@@ -1161,7 +1115,7 @@ export class VetPageComponent {
   ]);
 
   // Options
-  vetOptions = this.vets().map(v => ({ label: v.name, value: v.id }));
+  vetOptions = computed(() => this.vets().map(v => ({ label: v.name, value: v.id })));
   petOptions = [
     { label: 'Max', value: 'max' },
     { label: 'Luna', value: 'luna' },
@@ -1234,6 +1188,49 @@ export class VetPageComponent {
   }
 
   // Methods
+  ngOnInit(): void {
+    this.loadVets();
+  }
+
+  private loadVets(): void {
+    this.profileService.getAllProfiles().subscribe({
+      next: (profiles) => {
+        const vetProfiles = profiles
+          .filter(profile => profile.profileType?.toLowerCase() === 'vet')
+          .map(profile => this.mapProfileToVet(profile));
+
+        this.vets.set(vetProfiles);
+      },
+      error: (err) => {
+        console.error('Error loading vets:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar los veterinarios'
+        });
+      }
+    });
+  }
+
+  private mapProfileToVet(profile: UserProfileResponse): Vet {
+    return {
+      id: profile.id,
+      name: `${profile.firstName} ${profile.lastName}`,
+      avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=10',
+      clinic: profile.storeName || 'Clínica Veterinaria',
+      rating: 0,
+      reviews: 0,
+      specialty: profile.specialty || 'Veterinaria General',
+      location: profile.city || 'Ubicación no especificada',
+      distance: 0,
+      isFollowing: false,
+      userId: profile.authUserId,
+      availability: 'Consultar disponibilidad',
+      price: 'Consultar precio',
+      verified: false
+    };
+  }
+
   setActiveTab(tab: string) {
     this.activeTab.set(tab);
   }

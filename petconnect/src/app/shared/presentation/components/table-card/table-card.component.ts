@@ -35,7 +35,7 @@ export interface TableCardItem {
   [key: string]: any;
 }
 
-export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group';
+export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' | 'product';
 
 @Component({
   selector: 'app-table-card',
@@ -674,7 +674,9 @@ export class TableCardComponent {
       pet: 'Nueva mascota',
       event: 'Nuevo evento',
       story: 'Nueva historia',
-      group: 'Nuevo grupo'
+      group: 'Nuevo grupo',
+      service: 'Nuevo servicio',
+      product: 'Nuevo producto'
     };
     return labels[this.type()];
   });
