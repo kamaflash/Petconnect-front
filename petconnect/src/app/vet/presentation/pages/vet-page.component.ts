@@ -1221,7 +1221,7 @@ export class VetPageComponent implements OnInit {
       rating: 0,
       reviews: 0,
       specialty: profile.specialty || 'Veterinaria General',
-      location: profile.city || 'Ubicación no especificada',
+      location: profile.location || 'Ubicación no especificada',
       distance: 0,
       isFollowing: false,
       userId: profile.authUserId,

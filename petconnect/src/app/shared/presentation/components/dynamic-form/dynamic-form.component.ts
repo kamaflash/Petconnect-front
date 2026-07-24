@@ -13,9 +13,10 @@ import { FluidModule } from 'primeng/fluid';
 import { FileUploadModule, FileSelectEvent, FileUploadEvent } from 'primeng/fileupload';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { BadgeModule } from 'primeng/badge';
+import { LocationPickerComponent } from '../../../components/location-picker/location-picker.component';
 
 // Tipos de campo soportado
-export type FormFieldType = 'input' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox' | 'radio' | 'password' | 'file';
+export type FormFieldType = 'input' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox' | 'radio' | 'password' | 'file' | 'location';
 
 // Interfaz para opciones de select y radio
 export interface FormFieldOption {
@@ -101,7 +102,8 @@ export interface DynamicFormConfig {
     FluidModule,
     FileUploadModule,
     ProgressBarModule,
-    BadgeModule
+    BadgeModule,
+    LocationPickerComponent
   ],
   template: `
     <div class="dynamic-form-container">
@@ -312,6 +314,11 @@ export interface DynamicFormConfig {
                       <div></div>
                     </ng-template>
                   </p-fileUpload>
+                }
+                @case ('location') {
+<app-location-picker
+
+              />
                 }
               }
 

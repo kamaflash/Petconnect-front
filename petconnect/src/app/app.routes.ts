@@ -95,6 +95,11 @@ export const routes: Routes = [
           import('./profile/profile.routes').then(m => m.profileRoutes)
       },
       {
+        path: 'nearby',
+        loadChildren: () =>
+          import('./nearby/nearby.routes').then(m => m.nearbyRoutes)
+      },
+      {
         path: 'gamification',
         loadChildren: () =>
           import('./gamification/gamification.routes').then(m => m.gamificationRoutes)

@@ -9,8 +9,9 @@ export interface User {
   avatarUrl: string | null;
   coverImageUrl: string | null;
   dateOfBirth: string | null;
-  city: string | null;
-  country: string | null;
+  location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   profilePublic: boolean;
   notificationsEnabled: boolean;
   profileType: string;

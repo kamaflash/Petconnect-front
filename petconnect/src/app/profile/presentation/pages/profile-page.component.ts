@@ -25,6 +25,8 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { SkeletonModule } from 'primeng/skeleton';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
+import { LocationPickerComponent } from '../../../shared/components/location-picker/location-picker.component';
+import { GeocodingResult } from '../../../shared/services/geolocation.service';
 
 type ProfileType = 'user' | 'shelter' | 'seller' | 'vet' | 'pet' | 'trainer';
 
@@ -148,6 +150,7 @@ interface Pet {
     SkeletonModule,
     TabsComponent,
     MenuModule,
+    LocationPickerComponent
   ],
   providers: [MessageService],
   template: `
@@ -328,6 +331,23 @@ interface Pet {
               [formData]="profileFormData()"
               (onSubmitClick)="onProfileSubmit($event)"
             />
+
+            <!-- Location Picker Section -->
+            <div class="location-picker-section">
+              <h3 class="section-title">
+                <i class="pi pi-map-marker"></i>
+                Ubicación
+              </h3>
+              <p class="section-subtitle">
+                Selecciona tu ubicación para que otros usuarios puedan encontrarte
+              </p>
+
+              <app-location-picker
+                [initialAddress]="userProfile()?.location"
+                (locationConfirmed)="onLocationConfirmed($event)"
+                (locationCancelled)="onLocationCancelled()"
+              />
+            </div>
           </div>
 
           <!-- Conóceme - Información (otros perfiles) - TODOS LOS DATOS -->
@@ -1193,6 +1213,35 @@ interface Pet {
       letter-spacing: 0.03em;
     }
 
+    /* ============================================
+       LOCATION PICKER SECTION
+    ============================================ */
+    .location-picker-section {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--surface-border);
+    }
+
+    .section-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 0.5rem 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-title i {
+      color: var(--primary-color);
+    }
+
+    .section-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin: 0 0 1.5rem 0;
+    }
+
     /* Skeleton Card */
     .skeleton-card {
       pointer-events: none;
@@ -1389,6 +1438,14 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   // Dark mode detection
   isDarkMode = signal(false);
 
+  // ============================================
+  //  LOCATION SIGNALS
+  // ============================================
+
+  userLatitude = signal<number | null>(null);
+  userLongitude = signal<number | null>(null);
+  locationConfirmed = signal(false);
+
   // Perfil del usuario logueado
   ownProfile: AnyProfile = {
     id: '',
@@ -1484,7 +1541,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           avatar: user.avatarUrl || '',
           coverImage: user.coverImageUrl || '',
           bio: user.bio || '',
-          location: user.city ? user.city + (user.country ? ', ' + user.country : '') : '',
+          location: user.location || '',
           website: '',
           joinDate: user.createdAt || new Date(),
           isFollowing: false,
@@ -1583,7 +1640,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           avatar: profile.avatarUrl || '',
           coverImage: profile.coverImageUrl || '',
           bio: profile.bio || '',
-          location: profile.city ? profile.city + (profile.country ? ', ' + profile.country : '') : '',
+          location: profile.location || '',
           website: '',
           joinDate: new Date(),
           isFollowing: false,
@@ -1645,7 +1702,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           avatar: profile.avatarUrl || '',
           coverImage: profile.coverImageUrl || '',
           bio: profile.bio || '',
-          location: profile.city ? profile.city + (profile.country ? ', ' + profile.country : '') : '',
+          location: profile.location || '',
           website: '',
           joinDate: new Date(),
           isFollowing: false,
@@ -1702,7 +1759,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
               avatar: profile.avatarUrl || '',
               coverImage: profile.coverImageUrl || '',
               bio: profile.bio || '',
-              location: profile.city ? profile.city + (profile.country ? ', ' + profile.country : '') : '',
+          location: profile.location || '',
               website: '',
               joinDate: new Date(),
               isFollowing: false,
@@ -2146,18 +2203,10 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         validation: { maxLength: 500 }
       },
       {
-        key: 'city',
-        label: 'Ciudad',
-        type: 'input' as const,
-        placeholder: 'Madrid',
-        validation: { maxLength: 100 }
-      },
-      {
-        key: 'country',
-        label: 'País',
-        type: 'input' as const,
-        placeholder: 'España',
-        validation: { maxLength: 100 }
+        key: 'location',
+        label: 'Ubicación',
+        type: 'location' as const,
+        placeholder: 'Busca tu dirección'
       },
       {
         key: 'website',
@@ -2227,8 +2276,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       lastName: user?.lastName || '',
       phone: user?.phone || '',
       bio: user?.bio || '',
-      city: user?.city || '',
-      country: user?.country || '',
+      location: user?.location || '',
       website: (profile as any)?.website || ''
     };
 
@@ -2265,6 +2313,26 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
     return tabs;
   });
+
+  // ============================================
+  //  LOCATION HANDLERS
+  // ============================================
+
+  onLocationConfirmed(location: GeocodingResult): void {
+    this.userLatitude.set(location.lat);
+    this.userLongitude.set(location.lon);
+    this.locationConfirmed.set(true);
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Ubicación confirmada',
+      detail: 'Tu ubicación ha sido guardada. Recuerda guardar los cambios del perfil.'
+    });
+  }
+
+  onLocationCancelled(): void {
+    this.locationConfirmed.set(false);
+  }
 
   // ============================================
   //  ACTIONS
@@ -2393,8 +2461,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       lastName: data.lastName,
       phone: data.phone,
       bio: data.bio,
-      city: data.city,
-      country: data.country,
+      location: this.locationConfirmed() ? (this.userProfile()?.location || data.location) : data.location,
+      latitude: this.userLatitude(),
+      longitude: this.userLongitude(),
       website: data.website
     };
 
@@ -2466,8 +2535,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         bio: response.bio || currentUser.bio,
         avatarUrl: response.avatarUrl ? `${response.avatarUrl}?t=${timestamp}` : currentUser.avatarUrl,
         coverImageUrl: response.coverImageUrl ? `${response.coverImageUrl}?t=${timestamp}` : currentUser.coverImageUrl,
-        city: response.city || currentUser.city,
-        country: response.country || currentUser.country,
+        location: response.location || currentUser.location,
       };
       this.authService.updateUser(updatedUser);
     }
@@ -2479,8 +2547,13 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       avatar: response.avatarUrl ? `${response.avatarUrl}?t=${timestamp}` : currentProfile.avatar,
       coverImage: response.coverImageUrl ? `${response.coverImageUrl}?t=${timestamp}` : currentProfile.coverImage,
       bio: response.bio || currentProfile.bio,
-      location: response.city ? response.city + (response.country ? ', ' + response.country : '') : currentProfile.location,
+      location: response.location || currentProfile.location,
     } as AnyProfile;
+
+    // Resetear estado de ubicación
+    this.locationConfirmed.set(false);
+    this.userLatitude.set(response.latitude || null);
+    this.userLongitude.set(response.longitude || null);
 
     this.cdr.detectChanges();
 
@@ -2533,8 +2606,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         lastName: user?.lastName || '',
         phone: user?.phone || '',
         bio: user?.bio || '',
-        city: user?.city || '',
-        country: user?.country || '',
+        location: user?.location || '',
         website: ''
       })], { type: 'application/json' }));
 
@@ -2576,8 +2648,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         lastName: user?.lastName || '',
         phone: user?.phone || '',
         bio: user?.bio || '',
-        city: user?.city || '',
-        country: user?.country || '',
+        location: user?.location || '',
         website: ''
       })], { type: 'application/json' }));
 
