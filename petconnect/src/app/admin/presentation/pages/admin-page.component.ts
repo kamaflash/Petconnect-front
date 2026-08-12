@@ -16,6 +16,7 @@ import { SocialService, PostResponse, EventResponse, GroupResponse, StoryRespons
 import { PetResponse } from '../../../pets/domain/pet.model';
 import { PetService } from '../../../pets/infrastructure/services/pet.service';
 import { HomeService, VetServiceResponse } from '../../../home/infrastructure/services/home.service';
+import { MarketplaceService, CreateProductRequest } from '../../../marketplace/infrastructure/services/marketplace.service';
 
 interface AdminTab {
   label: string;
@@ -42,6 +43,8 @@ interface ProductItem {
   category: string;
   imageUrl: string;
   active: boolean;
+  rating?: number;
+  reviews?: number;
 }
 
 @Component({
@@ -367,6 +370,7 @@ export class AdminPageComponent implements OnInit {
   private readonly socialService = inject(SocialService);
   private readonly petService = inject(PetService);
   private readonly homeService = inject(HomeService);
+  private readonly marketplaceService = inject(MarketplaceService);
   private readonly messageService = inject(MessageService);
 
   // Loading state
@@ -807,7 +811,9 @@ export class AdminPageComponent implements OnInit {
       id: product.id,
       name: product.name,
       avatar: product.imageUrl || 'https://placehold.co/150',
-      description: `${product.description} | Stock: ${product.stock} | Categoría: ${product.category}`,
+      description: `${product.description || ''} | Stock: ${product.stock} | Categoría: ${product.category}`,
+      rating: product.rating || 0,
+      reviews: product.reviews || 0,
       tags: [product.price.toString() + '€', product.active ? 'Activo' : 'Inactivo'],
     }));
   });
@@ -841,6 +847,26 @@ export class AdminPageComponent implements OnInit {
     this.petService.getPetsByOwner(ownerId).subscribe({
       next: (pets) => this.adminPets.set(pets),
       error: (err) => console.error('Error loading pets:', err)
+    });
+
+    // Load products (for sellers)
+    this.marketplaceService.getMyProducts().subscribe({
+      next: (products: any[]) => {
+        console.log('Products loaded from API:', products);
+        const mapped = products.map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description || '',
+          price: Number(p.price),
+          stock: p.stock,
+          category: p.category,
+          imageUrl: p.imageUrl || '',
+          active: p.active
+        }));
+        console.log('Mapped products:', mapped);
+        this.adminProducts.set(mapped);
+      },
+      error: (err) => console.error('Error loading products:', err)
     });
 
     // Set loading to false after a short delay
@@ -1026,24 +1052,43 @@ export class AdminPageComponent implements OnInit {
 
   // Product handlers (for sellers)
   handleCreateProduct(productData: any) {
-    const newProduct = {
-      id: Date.now().toString(),
+    const request: CreateProductRequest = {
       name: productData.name,
       description: productData.description,
       price: parseFloat(productData.price),
       stock: parseInt(productData.stock),
       category: productData.category,
-      imageUrl: productData.imageUrl?.[0]?.objectURL || 'https://placehold.co/150',
-      active: true
+      imageUrl: productData.imageUrl?.[0]?.objectURL || undefined
     };
 
-    this.adminProducts.update(products => [...products, newProduct]);
-    this.showCreateProductForm.set(false);
-
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Producto creado',
-      detail: `El producto ${productData.name} ha sido creado correctamente`
+    this.marketplaceService.createProduct(request).subscribe({
+      next: (product: any) => {
+        const mapped: ProductItem = {
+          id: product.id,
+          name: product.name,
+          description: product.description || '',
+          price: Number(product.price),
+          stock: product.stock,
+          category: product.category,
+          imageUrl: product.imageUrl || '',
+          active: product.active
+        };
+        this.adminProducts.update(products => [...products, mapped]);
+        this.showCreateProductForm.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Producto creado',
+          detail: `El producto ${product.name} ha sido creado correctamente`
+        });
+      },
+      error: (err) => {
+        console.error('Error creating product:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo crear el producto'
+        });
+      }
     });
   }
 
@@ -1061,8 +1106,12 @@ export class AdminPageComponent implements OnInit {
     const tabs: Tab[] = [
       // Common tabs for all users
       { id: 'posts', label: 'Publicaciones', icon: 'photo_library' },
-      { id: 'pets', label: 'Mis Mascotas', icon: 'pet_supplies' },
     ];
+
+    // Add pets tab for all except sellers
+    if (profileType !== 'seller') {
+      tabs.push({ id: 'pets', label: 'Mis Mascotas', icon: 'pet_supplies' });
+    }
 
     // Add tabs based on profile type
     if (profileType === 'vet') {
@@ -1087,12 +1136,15 @@ export class AdminPageComponent implements OnInit {
       );
     }
 
-    // Add general tabs
+    // Add general tabs (exclude groups for sellers)
     tabs.push(
       { id: 'events', label: 'Eventos', icon: 'event' },
-      { id: 'stories', label: 'Historias', icon: 'schedule' },
-      { id: 'groups', label: 'Grupos', icon: 'groups' }
+      { id: 'stories', label: 'Historias', icon: 'schedule' }
     );
+
+    if (profileType !== 'seller') {
+      tabs.push({ id: 'groups', label: 'Grupos', icon: 'groups' });
+    }
 
     return tabs;
   });

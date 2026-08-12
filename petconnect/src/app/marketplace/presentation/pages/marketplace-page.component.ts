@@ -12,9 +12,11 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../../../adoptions/presentation/components/pet-feed-grid/pet-feed-grid.component';
+import { MarketplaceService, ProductResponse } from '../../infrastructure/services/marketplace.service';
+import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 
 interface Product {
   id: string;
@@ -86,6 +88,15 @@ interface CartItem {
                 <span class="cart-badge">{{ cartItems().length }}</span>
               }
             </button>
+            @if (isSeller()) {
+              <button
+                class="create-product-btn"
+                (click)="createProduct()"
+              >
+                <i class="pi pi-plus"></i>
+                <span>Crear producto</span>
+              </button>
+            }
           </div>
         </div>
       </div>
@@ -302,6 +313,26 @@ interface CartItem {
       padding: 0.15rem 0.4rem;
       border-radius: 999px;
       font-weight: 600;
+    }
+
+    .create-product-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      background: var(--surface-card);
+      color: var(--text-primary);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius_full);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all var(--transition-fast);
+    }
+
+    .create-product-btn:hover {
+      background: var(--surface-hover);
+      border-color: var(--primary-color);
+      color: var(--primary-color);
     }
 
     /* Cart Sidebar */
@@ -646,6 +677,9 @@ interface CartItem {
 })
 export class MarketplacePageComponent implements OnInit {
   private messageService = inject(MessageService);
+  private readonly marketplaceService = inject(MarketplaceService);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   // Products data
   products = signal<Product[]>([]);
@@ -742,8 +776,14 @@ export class MarketplacePageComponent implements OnInit {
     });
   });
 
+  isSeller = computed(() => this.authService.user()?.profileType?.toLowerCase() === 'seller');
+
   ngOnInit(): void {
     this.loadProducts();
+  }
+
+  createProduct(): void {
+    this.router.navigate(['/marketplace/create']);
   }
 
   onFiltersChange(filters: Record<string, any>): void {
@@ -751,50 +791,35 @@ export class MarketplacePageComponent implements OnInit {
   }
 
   loadProducts(): void {
-    // Mock data - replace with actual service call
-    this.products.set([
-      {
-        id: '1',
-        name: 'Comida para perros',
-        description: 'Alimento premium para perros adultos',
-        price: 29.99,
-        originalPrice: 34.99,
-        category: 'Alimento',
-        subcategory: 'Perros',
-        image: 'https://i.pravatar.cc/300',
-        rating: 4.5,
-        reviews: 120,
-        stock: 50,
-        brand: 'Marca A',
-        discount: 15
+    this.marketplaceService.getAllProducts().subscribe({
+      next: (products: ProductResponse[]) => {
+        this.products.set(products.map(p => ({
+          id: p.id,
+          name: p.name,
+          description: p.description || '',
+          price: Number(p.price),
+          originalPrice: p.originalPrice ? Number(p.originalPrice) : undefined,
+          category: p.category,
+          subcategory: p.subcategory || '',
+          image: p.imageUrl || 'https://i.pravatar.cc/300',
+          images: p.imageUrls,
+          rating: Number(p.rating),
+          reviews: p.reviews,
+          stock: p.stock,
+          brand: p.brand || '',
+          tags: p.tags ? p.tags.split(',') : undefined,
+          discount: p.discount || undefined
+        })));
       },
-      {
-        id: '2',
-        name: 'Juguete para gatos',
-        description: 'Juguete interactivo para gatos',
-        price: 9.99,
-        category: 'Juguetes',
-        subcategory: 'Gatos',
-        image: 'https://i.pravatar.cc/300',
-        rating: 4.0,
-        reviews: 85,
-        stock: 100,
-        brand: 'Marca B'
-      },
-      {
-        id: '3',
-        name: 'Collar para perros',
-        description: 'Collar ajustable de nylon',
-        price: 15.99,
-        category: 'Accesorios',
-        subcategory: 'Perros',
-        image: 'https://i.pravatar.cc/300',
-        rating: 4.8,
-        reviews: 200,
-        stock: 0,
-        brand: 'Marca C'
+      error: (error) => {
+        console.error('Error loading products:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudieron cargar los productos'
+        });
       }
-    ]);
+    });
   }
 
   toggleCart(): void {

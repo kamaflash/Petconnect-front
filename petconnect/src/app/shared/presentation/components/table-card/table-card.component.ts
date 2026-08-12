@@ -276,6 +276,36 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
                 }
               </div>
             }
+
+            @case ('product') {
+              <div class="product-grid">
+                @for (item of filteredItems(); track item.id) {
+                  <div class="product-card">
+                    <div class="card-actions-top">
+                      <ng-content select="[card-actions]"></ng-content>
+                    </div>
+                    @if (item.avatar) {
+                      <div class="product-image-container">
+                        <img [src]="item.avatar" [alt]="item.name" class="product-image" />
+                      </div>
+                    }
+                    <div class="product-content">
+                      <div class="product-name">{{ item.name }}</div>
+                      @if (item.description) {
+                        <div class="product-description">{{ item.description }}</div>
+                      }
+                      @if (item.tags && item.tags.length > 0) {
+                        <div class="product-tags">
+                          @for (tag of item.tags; track tag) {
+                            <p-tag [value]="tag" styleClass="p-tag-sm" />
+                          }
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
           }
         }
       </div>
@@ -644,6 +674,80 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
       .posts-grid-instagram {
         grid-template-columns: 1fr;
       }
+    }
+
+    /* ===== PRODUCT TYPE (PetFeedGrid style) ===== */
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .product-card {
+      background: var(--bitbucket-header-bg);
+      border: 1px solid var(--bitbucket-border);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    .dark .product-card { border-color: rgba(255,255,255,0.1); }
+
+    .product-card .card-actions-top {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      z-index: 3;
+      display: flex;
+      gap: 0.25rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .product-card:hover .card-actions-top { opacity: 1; }
+
+    .product-image-container {
+      position: relative;
+      width: 100%;
+      height: 250px;
+      overflow: hidden;
+      background: var(--bitbucket-bg-secondary, #f5f5f5);
+    }
+    .product-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+    .product-card:hover .product-image {
+      transform: scale(1.05);
+    }
+
+    .product-content {
+      padding: 1.25rem;
+    }
+    .product-name {
+      font-weight: 600;
+      font-size: 1rem;
+      color: var(--bitbucket-text-primary);
+      margin-bottom: 0.5rem;
+    }
+    .product-description {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--bitbucket-text-secondary);
+    }
+    .product-tags {
+      display: flex;
+      gap: 0.25rem;
+      flex-wrap: wrap;
     }
   `]
 })
