@@ -2164,7 +2164,9 @@ export class SocialPageComponent implements OnInit {
       'comment': 'pi pi-comment',
       'follow': 'pi pi-user-plus',
       'mention': 'pi pi-at',
-      'achievement': 'pi pi-star-fill'
+      'achievement': 'pi pi-star-fill',
+      'ADOPTION_REQUEST': 'pi pi-heart',
+      'ADOPTION_UPDATE': 'pi pi-paw'
     };
     return icons[type] || 'pi pi-bell';
   }

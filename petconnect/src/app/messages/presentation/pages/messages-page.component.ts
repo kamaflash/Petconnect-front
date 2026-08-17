@@ -1,4 +1,15 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import {
+  Component,
+  signal,
+  computed,
+  inject,
+  effect,
+  viewChild,
+  ElementRef,
+  OnInit,
+  OnDestroy
+} from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -7,30 +18,22 @@ import { AvatarModule } from 'primeng/avatar';
 import { BadgeModule } from 'primeng/badge';
 import { ScrollPanelModule } from 'primeng/scrollpanel';
 import { ToastModule } from 'primeng/toast';
+import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 
-interface Message {
-  id: string;
-  senderId: string;
-  content: string;
-  timestamp: Date;
-  read: boolean;
-}
-
-interface Conversation {
-  id: string;
-  user: {
-    id: string;
-    name: string;
-    avatar: string;
-    username: string;
-    isOnline: boolean;
-  };
-  lastMessage: string;
-  lastMessageTime: Date;
-  unreadCount: number;
-  messages: Message[];
-}
+import { AuthService } from '../../../auth/infrastructure/services/auth.service';
+import {
+  MessagesApiService,
+  UserProfileResponse
+} from '../../infrastructure/services/messages-api.service';
+import { MessageWebSocketService } from '../../infrastructure/services/message-websocket.service';
+import { WebSocketService } from '../../../shared/infrastructure/websocket/websocket.service';
+import {
+  ConversationDTO,
+  Message,
+  SendMessageRequest
+} from '../../domain/entities/message.model';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-messages-page',
@@ -44,6 +47,7 @@ interface Conversation {
     BadgeModule,
     ScrollPanelModule,
     ToastModule,
+    DialogModule,
   ],
   providers: [MessageService],
   template: `
@@ -53,7 +57,7 @@ interface Conversation {
         <div class="conversations-sidebar">
           <div class="conversations-header">
             <h1>Mensajes</h1>
-            <button class="new-message-btn">
+            <button class="new-message-btn" (click)="openNewConversationDialog()">
               <i class="pi pi-pencil"></i>
             </button>
           </div>
@@ -65,7 +69,6 @@ interface Conversation {
               pInputText
               placeholder="Buscar conversaciones..."
               [(ngModel)]="searchQuery"
-              (ngModelChange)="filterConversations()"
             />
           </div>
 
@@ -73,22 +76,19 @@ interface Conversation {
             @for (conversation of filteredConversations(); track conversation.id) {
               <div
                 class="conversation-item"
-                [class.active]="selectedConversation()?.id === conversation.id"
+                [class.active]="selectedId() === conversation.id"
                 (click)="selectConversation(conversation)"
               >
                 <div class="conversation-avatar">
-                  <p-avatar [image]="conversation.user.avatar" shape="circle" size="large"></p-avatar>
-                  @if (conversation.user.isOnline) {
-                    <span class="online-indicator"></span>
-                  }
+                  <p-avatar [image]="conversation.partnerAvatarUrl ?? undefined" shape="circle" size="large"></p-avatar>
                 </div>
                 <div class="conversation-content">
                   <div class="conversation-header">
-                    <span class="conversation-name">{{ conversation.user.name }}</span>
-                    <span class="conversation-time">{{ conversation.lastMessageTime | date:'shortTime' }}</span>
+                    <span class="conversation-name">{{ conversation.title }}</span>
+                    <span class="conversation-time">{{ conversation.lastMessageAt | date:'shortTime' }}</span>
                   </div>
                   <div class="conversation-preview">
-                    <p class="last-message">{{ conversation.lastMessage }}</p>
+                    <p class="last-message">{{ conversation.lastMessage || 'Empieza la conversación' }}</p>
                     @if (conversation.unreadCount > 0) {
                       <span class="unread-badge">{{ conversation.unreadCount }}</span>
                     }
@@ -107,16 +107,21 @@ interface Conversation {
               <div class="chat-header">
                 <div class="chat-user-info">
                   <div class="chat-avatar">
-                    <p-avatar [image]="conversation.user.avatar" shape="circle"></p-avatar>
-                    @if (conversation.user.isOnline) {
-                      <span class="online-indicator"></span>
-                    }
+                    <p-avatar [image]="conversation.partnerAvatarUrl ?? undefined" shape="circle"></p-avatar>
                   </div>
                   <div class="chat-user-details">
-                    <h3>{{ conversation.user.name }}</h3>
-                    <span class="user-status">
-                      {{ conversation.user.isOnline ? 'En línea' : 'Desconectado' }}
-                    </span>
+                    <h3>{{ conversation.title }}</h3>
+                    @if (isPartnerTyping()) {
+                      <span class="typing-indicator">
+                        <i class="pi pi-spin pi-spinner"></i>
+                        Escribiendo...
+                      </span>
+                    } @else {
+                      <span class="user-status" [class.online]="partnerOnline()">
+                        <span class="status-dot"></span>
+                        {{ partnerOnline() ? 'En línea' : 'Desconectado' }}
+                      </span>
+                    }
                   </div>
                 </div>
                 <div class="chat-actions">
@@ -133,15 +138,27 @@ interface Conversation {
               </div>
 
               <!-- Messages -->
-              <div class="messages-container" #scrollContainer>
+                           <div class="chat-messages" #scrollContainer>
                 <div class="messages-list">
-                  @for (message of conversation.messages; track message.id) {
-                    <div class="message-item" [class.sent]="message.senderId === 'currentUser'">
-                      <div class="message-bubble">
-                        <p class="message-content">{{ message.content }}</p>
-                        <span class="message-time">{{ message.timestamp | date:'shortTime' }}</span>
-                      </div>
+                  @if (loadingMessages()) {
+                    <div class="messages-loading">
+                      <i class="pi pi-spin pi-spinner"></i>
+                      <span>Cargando mensajes...</span>
                     </div>
+                  } @else if (messages().length === 0) {
+                    <div class="messages-empty">
+                      <i class="pi pi-comments"></i>
+                      <p>Sin mensajes todavía. ¡Escribe el primero!</p>
+                    </div>
+                  } @else {
+                    @for (message of messages(); track message.id) {
+                      <div class="message-item" [class.sent]="message.senderId === currentUserId()">
+                        <div class="message-bubble">
+                          <p class="message-content">{{ message.content }}</p>
+                          <span class="message-time">{{ message.createdAt | date:'shortTime' }}</span>
+                        </div>
+                      </div>
+                    }
                   }
                 </div>
               </div>
@@ -156,6 +173,7 @@ interface Conversation {
                   pInputText
                   placeholder="Escribe un mensaje..."
                   [(ngModel)]="newMessage"
+                  (ngModelChange)="onTypingInput()"
                   (keyup.enter)="sendMessage()"
                 />
                 <button class="send-btn" (click)="sendMessage()">
@@ -172,6 +190,43 @@ interface Conversation {
           }
         </div>
       </div>
+
+      <!-- Nuevo mensaje -->
+      <p-dialog
+        header="Nuevo mensaje"
+        [visible]="showNewDialog()"
+        (visibleChange)="showNewDialog.set($event)"
+        [style]="{ width: '420px' }"
+        [modal]="true"
+        [dismissableMask]="true"
+      >
+        <div class="new-message-search">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            pInputText
+            placeholder="Buscar personas..."
+            [(ngModel)]="newUserSearch"
+          />
+        </div>
+        <div class="new-message-users">
+          @if (newUserResults().length === 0) {
+            <p class="empty-users">No hay usuarios disponibles</p>
+          }
+          @for (user of newUserResults(); track user.authUserId) {
+            <div class="new-message-user" (click)="startNewConversation(user)">
+              <p-avatar
+                [image]="user.avatarUrl ?? undefined"
+                [label]="user.firstName"
+                shape="circle"
+              ></p-avatar>
+              <span class="new-message-name">
+                {{ user.firstName }} {{ user.lastName }}
+              </span>
+            </div>
+          }
+        </div>
+      </p-dialog>
     </div>
   `,
   styles: [`
@@ -397,6 +452,38 @@ interface Conversation {
     .user-status {
       font-size: 0.875rem;
       color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-tertiary);
+    }
+
+    .user-status.online {
+      color: var(--green-500, #22c55e);
+    }
+
+    .user-status.online .status-dot {
+      background: var(--green-500, #22c55e);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    }
+
+    .typing-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.875rem;
+      color: var(--green-500, #22c55e);
+      margin-top: 0.1rem;
+    }
+
+    .typing-indicator i {
+      font-size: 0.875rem;
     }
 
     .chat-actions {
@@ -423,9 +510,13 @@ interface Conversation {
       color: var(--text-primary);
     }
 
-    /* Messages */
-    .messages-container {
+        /* Messages list (scroll area). Clase distinta a .messages-container de la página
+       para evitar que herede display:flex/max-width/margin del wrapper y rompa el
+       apilado vertical de los mensajes (panel quedaba invisible). */
+    .chat-messages {
       flex: 1;
+      display: flex;
+      flex-direction: column;
       overflow-y: auto;
       padding: 1.5rem;
       min-height: 0;
@@ -435,6 +526,31 @@ interface Conversation {
       display: flex;
       flex-direction: column;
       gap: 1rem;
+    }
+
+    .messages-loading,
+    .messages-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--text-secondary);
+      padding: 2rem 0;
+      text-align: center;
+    }
+
+    .messages-loading i {
+      font-size: 1.5rem;
+    }
+
+    .messages-empty i {
+      font-size: 3rem;
+      color: var(--text-tertiary);
+    }
+
+    .messages-empty p {
+      margin: 0;
+      font-size: 0.9375rem;
     }
 
     .message-item {
@@ -588,6 +704,62 @@ interface Conversation {
       background: var(--text-tertiary);
     }
 
+    /* Nuevo mensaje dialog */
+    .new-message-search {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .new-message-search i {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-tertiary);
+    }
+
+    .new-message-search input {
+      width: 100%;
+      padding: 0.625rem 1rem 0.625rem 2.5rem;
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-full);
+      background: var(--surface-hover);
+      color: var(--text-primary);
+    }
+
+    .new-message-users {
+      display: flex;
+      flex-direction: column;
+      max-height: 320px;
+      overflow-y: auto;
+      gap: 0.25rem;
+    }
+
+    .new-message-user {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+
+    .new-message-user:hover {
+      background: var(--surface-hover);
+    }
+
+    .new-message-name {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .empty-users {
+      text-align: center;
+      color: var(--text-tertiary);
+      padding: 1rem 0;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
       .conversations-sidebar {
@@ -604,230 +776,363 @@ interface Conversation {
     }
   `]
 })
-export class MessagesPageComponent {
-  private messageService = inject(MessageService);
+export class MessagesPageComponent implements OnInit, OnDestroy {
+  private readonly messageService = inject(MessageService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly authService = inject(AuthService);
+  private readonly messagesApi = inject(MessagesApiService);
+  private readonly webSocket = inject(MessageWebSocketService);
 
+  // ---------- Estado ----------
+  currentUserId = signal('');
+  conversations = signal<ConversationDTO[]>([]);
+  selectedId = signal('');
+  messages = signal<Message[]>([]);
   searchQuery = '';
   newMessage = '';
+  loadingConversations = signal(false);
+  loadingMessages = signal(false);
 
-  conversations = signal<Conversation[]>([
-    {
-      id: '1',
-      user: {
-        id: '1',
-        name: 'Carlos Ruiz',
-        avatar: 'https://i.pravatar.cc/150?img=3',
-        username: '@carlos_pets',
-        isOnline: true
-      },
-      lastMessage: '¡Perfecto! Nos vemos mañana entonces',
-      lastMessageTime: new Date(Date.now() - 5 * 60 * 1000),
-      unreadCount: 2,
-      messages: [
-        {
-          id: 'm1',
-          senderId: '1',
-          content: 'Hola! ¿Cómo estás?',
-          timestamp: new Date(Date.now() - 60 * 60 * 1000),
-          read: true
-        },
-        {
-          id: 'm2',
-          senderId: 'currentUser',
-          content: 'Hola Carlos! Estoy bien, ¿y tú?',
-          timestamp: new Date(Date.now() - 55 * 60 * 1000),
-          read: true
-        },
-        {
-          id: 'm3',
-          senderId: '1',
-          content: 'Muy bien! Quería preguntarte sobre el paseo de perros de mañana',
-          timestamp: new Date(Date.now() - 10 * 60 * 1000),
-          read: true
-        },
-        {
-          id: 'm4',
-          senderId: 'currentUser',
-          content: 'Claro! Es a las 10:00 en el Parque Central',
-          timestamp: new Date(Date.now() - 8 * 60 * 1000),
-          read: true
-        },
-        {
-          id: 'm5',
-          senderId: '1',
-          content: '¡Perfecto! Nos vemos mañana entonces',
-          timestamp: new Date(Date.now() - 5 * 60 * 1000),
-          read: false
-        }
-      ]
-    },
-    {
-      id: '2',
-      user: {
-        id: '2',
-        name: 'Ana Martínez',
-        avatar: 'https://i.pravatar.cc/150?img=4',
-        username: '@ana_amazon',
-        isOnline: false
-      },
-      lastMessage: 'Gracias por la recomendación del veterinario',
-      lastMessageTime: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      unreadCount: 0,
-      messages: [
-        {
-          id: 'm6',
-          senderId: 'currentUser',
-          content: 'Hola Ana! ¿Cómo está tu gato?',
-          timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000),
-          read: true
-        },
-        {
-          id: 'm7',
-          senderId: '2',
-          content: 'Mucho mejor, gracias! El veterinario me recomendó una dieta especial',
-          timestamp: new Date(Date.now() - 2.5 * 60 * 60 * 1000),
-          read: true
-        },
-        {
-          id: 'm8',
-          senderId: 'currentUser',
-          content: 'Me alegro! ¿Cuál es la dieta?',
-          timestamp: new Date(Date.now() - 2.2 * 60 * 60 * 1000),
-          read: true
-        },
-        {
-          id: 'm9',
-          senderId: '2',
-          content: 'Gracias por la recomendación del veterinario',
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-          read: true
-        }
-      ]
-    },
-    {
-      id: '3',
-      user: {
-        id: '3',
-        name: 'Luis Gómez',
-        avatar: 'https://i.pravatar.cc/150?img=5',
-        username: '@luis_doglover',
-        isOnline: true
-      },
-      lastMessage: '¿Vienes al concurso de belleza?',
-      lastMessageTime: new Date(Date.now() - 5 * 60 * 60 * 1000),
-      unreadCount: 1,
-      messages: [
-        {
-          id: 'm10',
-          senderId: '3',
-          content: 'Hey! ¿Has visto el concurso de belleza canina?',
-          timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000),
-          read: true
-        },
-        {
-          id: 'm11',
-          senderId: 'currentUser',
-          content: 'Sí! Mi perro Rocky quiere participar',
-          timestamp: new Date(Date.now() - 5.5 * 60 * 60 * 1000),
-          read: true
-        },
-        {
-          id: 'm12',
-          senderId: '3',
-          content: '¿Vienes al concurso de belleza?',
-          timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000),
-          read: false
-        }
-      ]
-    },
-    {
-      id: '4',
-      user: {
-        id: '4',
-        name: 'María López',
-        avatar: 'https://i.pravatar.cc/150?img=7',
-        username: '@maria_pets',
-        isOnline: false
-      },
-      lastMessage: 'Te envié las fotos de Luna',
-      lastMessageTime: new Date(Date.now() - 24 * 60 * 60 * 1000),
-      unreadCount: 0,
-      messages: [
-        {
-          id: 'm13',
-          senderId: '4',
-          content: 'Hola! Te quería mostrar las fotos de Luna en el parque',
-          timestamp: new Date(Date.now() - 25 * 60 * 60 * 1000),
-          read: true
-        },
-        {
-          id: 'm14',
-          senderId: 'currentUser',
-          content: '¡Qué bonita! Se ve muy feliz',
-          timestamp: new Date(Date.now() - 24.5 * 60 * 60 * 1000),
-          read: true
-        },
-        {
-          id: 'm15',
-          senderId: '4',
-          content: 'Te envié las fotos de Luna',
-          timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
-          read: true
-        }
-      ]
+  // Diálogo de nueva conversación
+  showNewDialog = signal(false);
+  newUserSearch = '';
+  allUsers = signal<UserProfileResponse[]>([]);
+
+  private notificationSub!: Subscription;
+  private currentConversationSub!: Subscription;
+  private activeConversationId = '';
+
+  /** Estado online del interlocutor de la conversación activa (reactivo). */
+  partnerOnline = computed(() =>
+    this.webSocket.isUserOnline(this.selectedConversation()?.partnerId ?? null)
+  );
+
+  /** Indica si el interlocutor está escribiendo (reactivo). */
+  isPartnerTyping = computed(() =>
+    this.webSocket.isTyping(this.selectedConversation()?.id ?? '')
+  );
+
+  private messagesEl = viewChild<ElementRef<HTMLElement>>('scrollContainer');
+  private typingSub!: Subscription;
+  private typingTimer: any = null;
+
+  /** Mantiene el scroll siempre abajo para ver el último mensaje al instante. */
+  private autoScroll = effect(() => {
+    this.messages();
+    this.loadingMessages();
+    this.selectedId();
+    queueMicrotask(() => this.scrollToBottom());
+  });
+
+  constructor() {
+    // Si venimos desde "Contactar con solicitante" en administración, abrimos
+    // (o creamos) directamente la conversación con ese usuario.
+    const userId = this.route.snapshot.queryParamMap.get('userId');
+    if (userId) {
+      this.openOrCreateConversation(userId);
     }
-  ]);
+  }
 
-  selectedConversation = signal<Conversation | null>(null);
+  ngOnInit(): void {
+    const user = this.authService.user();
+    if (user) {
+      this.currentUserId.set(user.id);
+    }
 
+    this.loadConversations();
+
+    // Notificaciones globales de nuevos mensajes (todos los chats)
+    this.notificationSub = this.webSocket.onNotification().subscribe((notification) => {
+      if (notification && notification.type === 'NEW_MESSAGE' && notification.data) {
+        this.handleIncomingMessage(notification.data);
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.notificationSub?.unsubscribe();
+    this.currentConversationSub?.unsubscribe();
+    this.typingSub?.unsubscribe();
+    if (this.typingTimer) clearTimeout(this.typingTimer);
+    if (this.activeConversationId) {
+      this.webSocket.unsubscribeFromConversation(this.activeConversationId);
+      this.webSocket.unsubscribeFromTyping(this.activeConversationId);
+    }
+  }
+
+  // ---------- Conversaciones ----------
   filteredConversations = computed(() => {
-    if (!this.searchQuery) {
+    const query = this.searchQuery.toLowerCase();
+    if (!query) {
       return this.conversations();
     }
-
-    const query = this.searchQuery.toLowerCase();
     return this.conversations().filter(c =>
-      c.user.name.toLowerCase().includes(query) ||
-      c.lastMessage.toLowerCase().includes(query)
+      c.title?.toLowerCase().includes(query) ||
+      (c.lastMessage || '').toLowerCase().includes(query)
     );
   });
 
-  selectConversation(conversation: Conversation) {
-    this.selectedConversation.set(conversation);
+  selectedConversation = computed(
+    () => this.conversations().find(c => c.id === this.selectedId()) ?? null
+  );
 
-    // Mark messages as read
-    conversation.unreadCount = 0;
-    conversation.messages.forEach(m => m.read = true);
+  loadConversations(): void {
+    this.loadingConversations.set(true);
+    this.messagesApi.getConversations().subscribe({
+      next: (convs) => {
+        this.conversations.set(convs);
+        this.loadingConversations.set(false);
+      },
+      error: () => this.loadingConversations.set(false)
+    });
   }
 
-  filterConversations() {
-    // Filtering is handled by computed property
+  selectConversation(conversation: ConversationDTO): void {
+    const previousId = this.selectedId();
+    if (previousId && previousId !== conversation.id) {
+      this.webSocket.unsubscribeFromConversation(previousId);
+    }
+
+    this.selectedId.set(conversation.id);
+    this.activeConversationId = conversation.id;
+    this.messages.set([]);
+
+    // Cargar el historial SIEMPRE y ANTES de cualquier lógica WS, para que funcione
+    // a la primera pulsación (tanto al abrir una conversación como al re-seleccionarla).
+    this.loadMessagesRealtime(conversation.id);
+
+    // Suscripción en tiempo real (no debe bloquear la carga si fallara por cualquier motivo)
+    this.currentConversationSub?.unsubscribe();
+    this.typingSub?.unsubscribe();
+    this.webSocket.unsubscribeFromTyping(previousId);
+    try {
+      this.currentConversationSub = this.webSocket
+        .subscribeToConversation(conversation.id)
+        .subscribe((msg) => {
+          if (msg && msg.conversationId === this.activeConversationId) {
+            this.upsertMessage(msg);
+          }
+        });
+
+      // Suscripción al indicador "Escribiendo…" de esta conversación
+      this.typingSub = this.webSocket
+        .subscribeToTyping(conversation.id)
+        .subscribe();
+      this.webSocket.setTyping(conversation.id, false);
+    } catch (e) {
+      console.error('Error al suscribirse a la conversación', e);
+    }
+
+    // Marcar como leídos todos los mensajes de la conversación
+    this.webSocket.markAsRead(conversation.id);
+    this.scrollToBottom();
   }
 
-  sendMessage() {
+  private loadMessagesRealtime(conversationId: string): void {
+    this.loadingMessages.set(true);
+    this.messagesApi.getMessages(conversationId).subscribe({
+      next: (page) => {
+        // El backend las devuelve de más nueva a más antigua; invertir para cronológico.
+        this.messages.set([...(page.content ?? [])].reverse());
+        this.loadingMessages.set(false);
+        // Actualizar contador local de no leídos
+        this.conversations.update(list =>
+          list.map(c => (c.id === conversationId ? { ...c, unreadCount: 0 } : c))
+        );
+      },
+      error: () => this.loadingMessages.set(false)
+    });
+  }
+
+  // ---------- Enviar ----------
+  sendMessage(): void {
     const conversation = this.selectedConversation();
-    if (!this.newMessage.trim() || !conversation) {
+    const content = this.newMessage.trim();
+    if (!content || !conversation || !conversation.partnerId) {
       return;
     }
 
-    const message: Message = {
-      id: 'm' + Date.now(),
-      senderId: 'currentUser',
-      content: this.newMessage,
-      timestamp: new Date(),
-      read: false
+    const optimistic: Message = {
+      id: `temp-${Date.now()}`,
+      content,
+      senderId: this.currentUserId(),
+      receiverId: conversation.partnerId,
+      conversationId: conversation.id,
+      status: 'SENT',
+      type: 'TEXT',
+      attachmentUrl: null,
+      createdAt: new Date().toISOString(),
+      readAt: null
     };
 
-    conversation.messages.push(message);
-    conversation.lastMessage = this.newMessage;
-    conversation.lastMessageTime = new Date();
-
+    this.upsertMessage(optimistic);
     this.newMessage = '';
+    this.bumpConversation(conversation.id, content);
 
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Mensaje enviado',
-      detail: 'Tu mensaje ha sido enviado'
+    // Dejar de indicar "Escribiendo…" al enviar
+    if (this.typingTimer) clearTimeout(this.typingTimer);
+    this.webSocket.sendTyping(conversation.id, false);
+
+    // Persistencia vía REST (garantiza que el mensaje se guarde y se recupere al recargar).
+    // El backend además lo difunde por WebSocket (tiempo real) para el destinatario.
+    this.messagesApi
+      .sendMessage(conversation.id, {
+        receiverId: conversation.partnerId,
+        content,
+        type: 'TEXT'
+      })
+      .subscribe({
+        next: (saved) => this.upsertMessage(saved),
+        error: () =>
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo enviar el mensaje'
+          })
+      });
+  }
+
+  /** Se llama al escribir en el input: indica "Escribiendo…" con un debounce de 1.2s. */
+  onTypingInput(): void {
+    const conversation = this.selectedConversation();
+    if (!conversation) return;
+    this.webSocket.sendTyping(conversation.id, true);
+    if (this.typingTimer) clearTimeout(this.typingTimer);
+    this.typingTimer = setTimeout(() => {
+      this.webSocket.sendTyping(conversation.id, false);
+    }, 1200);
+  }
+
+  /** Lleva el scroll de mensajes hasta abajo (último mensaje siempre visible). */
+  private scrollToBottom(): void {
+    const el = this.messagesEl()?.nativeElement;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }
+
+  // ---------- Gestión de mensajes entrantes ----------
+  private handleIncomingMessage(message: Message): void {
+    // Si no es la conversación activa, solo actualizamos la lista
+    if (message.conversationId !== this.activeConversationId) {
+      this.conversations.update(list =>
+        [...list]
+          .map(c =>
+            c.id === message.conversationId
+              ? {
+                  ...c,
+                  lastMessage: message.content,
+                  lastMessageAt: message.createdAt,
+                  unreadCount: c.unreadCount + 1
+                }
+              : c
+          )
+          .sort((a, b) =>
+            new Date(b.lastMessageAt ?? 0).getTime() -
+            new Date(a.lastMessageAt ?? 0).getTime()
+          )
+      );
+      return;
+    }
+
+    this.upsertMessage(message);
+    this.bumpConversation(message.conversationId, message.content);
+    this.webSocket.markAsRead(message.conversationId);
+  }
+
+  /** Inserta un mensaje sin duplicar los optimistas (enviados localmente). */
+  private upsertMessage(message: Message): void {
+    this.messages.update(list => {
+      // Reemplazar el mensaje optimista por el real del servidor
+      const optimisticIndex = list.findIndex(
+        m =>
+          m.id.startsWith('temp-') &&
+          m.senderId === message.senderId &&
+          m.conversationId === message.conversationId &&
+          m.content === message.content
+      );
+      if (optimisticIndex >= 0) {
+        const copy = [...list];
+        copy[optimisticIndex] = message;
+        return copy;
+      }
+      if (list.some(m => m.id === message.id)) {
+        return list;
+      }
+      return [...list, message];
     });
+  }
+
+  private bumpConversation(conversationId: string, lastMessage: string): void {
+    this.conversations.update(list =>
+      [...list]
+        .map(c =>
+          c.id === conversationId
+            ? { ...c, lastMessage, lastMessageAt: new Date().toISOString() }
+            : c
+        )
+        .sort((a, b) =>
+          new Date(b.lastMessageAt ?? 0).getTime() -
+          new Date(a.lastMessageAt ?? 0).getTime()
+        )
+    );
+  }
+
+  // ---------- Abrir / crear conversación con otro usuario ----------
+  openOrCreateConversation(userId: string): void {
+    const existing = this.conversations().find(c => c.partnerId === userId);
+    if (existing) {
+      this.selectConversation(existing);
+      return;
+    }
+
+    this.messagesApi.createConversation(userId).subscribe({
+      next: (conversation) => {
+        if (!this.conversations().some(c => c.id === conversation.id)) {
+          this.conversations.update(list => [conversation, ...list]);
+        }
+        this.selectConversation(conversation);
+      },
+      error: () => this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'No se pudo abrir la conversación'
+      })
+    });
+  }
+
+  // ---------- Nueva conversación ----------
+  openNewConversationDialog(): void {
+    this.newUserSearch = '';
+    this.showNewDialog.set(true);
+    if (this.allUsers().length === 0) {
+      this.messagesApi.getAllProfiles().subscribe({
+        next: (users) => {
+          const me = this.currentUserId();
+          const existingPartners = new Set(
+            this.conversations()
+              .filter(c => !c.isGroup && c.partnerId)
+              .map(c => c.partnerId!)
+          );
+          this.allUsers.set(
+            users.filter(u => u.authUserId !== me && !existingPartners.has(u.authUserId))
+          );
+        }
+      });
+    }
+  }
+
+  newUserResults = computed(() => {
+    const query = this.newUserSearch.toLowerCase();
+    return this.allUsers().filter(u =>
+      !query ||
+      `${u.firstName} ${u.lastName}`.toLowerCase().includes(query)
+    );
+  });
+
+  startNewConversation(user: UserProfileResponse): void {
+    this.showNewDialog.set(false);
+    this.allUsers.update(list => list.filter(u => u.authUserId !== user.authUserId));
+    this.openOrCreateConversation(user.authUserId);
   }
 }

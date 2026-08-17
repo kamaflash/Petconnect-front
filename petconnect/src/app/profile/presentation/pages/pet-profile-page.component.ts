@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit, OnDestroy, ChangeDetectorRef, ViewChild } from '@angular/core';
+import { Component, signal, computed, inject, effect, OnInit, OnDestroy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
@@ -20,6 +20,8 @@ import { ProfileService, PetResponse } from '../../infrastructure/services/profi
 import { AdoptionService } from '../../../adoptions/infrastructure/services/adoption.service';
 import { CreateAdoptionRequest } from '../../../adoptions/infrastructure/services/adoption.service';
 import { MessageService } from 'primeng/api';
+import { PetOwnershipEventService } from '../../../shared/services/pet-ownership-event.service';
+import { AdoptionHistoryComponent } from '../../../shared/presentation/components/adoption-history/adoption-history.component';
 import {
   getSpeciesLabel,
   getGenderLabel,
@@ -56,6 +58,7 @@ interface PetComment {
     DynamicFormComponent,
     InfoItemComponent,
     StatCardComponent,
+    AdoptionHistoryComponent,
   ],
   providers: [MessageService],
   template: `
@@ -97,7 +100,13 @@ interface PetComment {
             <!-- User Info -->
             <div class="user-info">
               <div class="user-name-section">
-                <h1 class="user-name">{{ pet()?.name }}</h1>
+                <div class="name-group">
+                  <h1 class="user-name">{{ pet()?.name }}</h1>
+                  <div class="pet-owner-name" *ngIf="petOwnerName()">
+                    <i class="pi pi-user"></i>
+                    <span>{{ petOwnerName() }}</span>
+                  </div>
+                </div>
                 <div class="user-badges">
                   <span class="badge" [class.badge-success]="pet()?.availableForAdoption" [class.badge-secondary]="!pet()?.availableForAdoption">
                     {{ pet()?.availableForAdoption ? '🐾 En adopción' : '🏠 Adoptado' }}
@@ -116,20 +125,16 @@ interface PetComment {
               <button
                 *ngIf="canRequestAdoption()"
                 class="btn-primary btn-adopt"
-                (click)="requestAdoptionFromProfile()"
+                (click)="openAdoptionDialog()"
               >
                 <i class="pi pi-heart-fill"></i>
                 Solicitar Adopción
               </button>
 
-              <button
-                *ngIf="isOwner()"
-                class="btn-secondary"
-                (click)="openEditDialog('basic')"
-              >
-                <i class="pi pi-pencil"></i>
-                Editar Perfil
-              </button>
+              <div class="already-requested" *ngIf="hasPendingRequest() && !isOwner()">
+                <i class="pi pi-check-circle"></i>
+                <span>Solicitud de adopción enviada</span>
+              </div>
 
               <button
                 *ngIf="isOwner()"
@@ -485,6 +490,11 @@ interface PetComment {
               </div>
             </div>
           </div>
+
+          <!-- Historial Tab -->
+          <div class="tab-panel" *ngIf="activeTab() === 'history'">
+            <app-adoption-history [petId]="pet()?.id || ''" />
+          </div>
         </div>
       </div>
 
@@ -614,6 +624,25 @@ interface PetComment {
           [formData]="editPetFormData"
           (onSubmitClick)="onEditPetSubmit($event)"
           (onCancel)="showEditDialog = false"
+        />
+      </p-dialog>
+
+      <!-- Adoption Request Dialog -->
+      <p-dialog
+        [visible]="showAdoptionDialog"
+        [modal]="true"
+        [style]="{ width: '90vw', maxWidth: '560px' }"
+        [closable]="true"
+        (onHide)="showAdoptionDialog = false"
+        [dismissableMask]="true"
+        styleClass="adoption-dialog"
+        [header]="'Solicitar adopción de ' + (pet()?.name || '')"
+      >
+        <app-dynamic-form
+          [config]="adoptionFormConfig"
+          [formData]="adoptionRequestFormData()"
+          (onSubmitClick)="submitAdoptionRequest($event)"
+          (onCancel)="showAdoptionDialog = false"
         />
       </p-dialog>
 
@@ -807,9 +836,15 @@ interface PetComment {
     .user-name-section {
       display: flex;
       align-items: center;
+      justify-content: flex-start;
       gap: 12px;
-      flex-wrap: wrap;
       margin-bottom: 8px;
+    }
+
+    .name-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
     }
 
     .user-name {
@@ -818,6 +853,21 @@ interface PetComment {
       color: var(--text-primary);
       margin: 0;
       line-height: 1.2;
+    }
+
+    .pet-owner-name {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 2px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      line-height: 1.2;
+    }
+
+    .pet-owner-name i {
+      font-size: 13px;
     }
 
     .user-badges {
@@ -904,6 +954,23 @@ interface PetComment {
 
     .btn-primary:active {
       transform: translateY(0);
+    }
+
+    .already-requested {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 600;
+      background: var(--surface-hover);
+      color: var(--text-secondary);
+      border: 1px solid var(--text-tertiary);
+    }
+
+    .already-requested i {
+      color: var(--primary-color);
     }
 
     .btn-adopt {
@@ -2008,14 +2075,18 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   private readonly messageService = inject(MessageService);
   private readonly adoptionService = inject(AdoptionService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly petOwnershipEvent = inject(PetOwnershipEventService);
   private paramSubscription?: Subscription;
 
   // Loading state
   loading = signal(true);
 
   // Pet data
+  // Pet data
   pet = signal<PetResponse | null>(null);
   petId = signal<string | null>(null);
+  petOwnerName = signal<string | null>(null);
+  hasPendingRequest = signal(false);
   currentImageIndex = signal(0);
 
   // UI state
@@ -2023,6 +2094,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   lightboxVisible = false;
   showEditDialog = false;
   showDeleteDialog = false;
+  showAdoptionDialog = false;
   postModalVisible = false;
   currentPostIndex = signal(0);
 
@@ -2036,6 +2108,24 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
 
   // Edit form data
   editPetFormData = signal<any>({});
+
+  // Adoption request form config
+  adoptionFormConfig: DynamicFormConfig = {
+    title: 'Solicitar adopción',
+    submitLabel: 'Enviar solicitud',
+    showCancel: true,
+    fields: [
+      {
+        key: 'message',
+        label: 'Cuéntanos por qué quieres adoptar a esta mascota',
+        type: 'textarea',
+        placeholder: 'Comparte tu experiencia con mascotas, tu hogar y motivos...',
+        rows: 4,
+        validation: { required: true, minLength: 10, maxLength: 1000 }
+      }
+    ]
+  };
+  adoptionRequestFormData = signal<any>({});
 
   // Menu reference
   @ViewChild('actionMenu') actionMenu: any;
@@ -2078,7 +2168,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   canRequestAdoption = computed(() => {
     const pet = this.pet();
     const user = this.authService.user();
-    return pet && user && pet.availableForAdoption && pet.ownerId !== user.id;
+    return pet && user && pet.availableForAdoption && pet.ownerId !== user.id && !this.hasPendingRequest();
   });
 
   petTabs = computed((): Tab[] => {
@@ -2087,6 +2177,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       { id: 'photos', label: 'Fotos', icon: 'photo_library' },
       { id: 'posts', label: 'Publicaciones', icon: 'photo_library' },
       { id: 'comments', label: 'Comentarios', icon: 'comment' },
+      { id: 'history', label: 'Historial', icon: 'history' },
     ];
   });
 
@@ -2096,6 +2187,17 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       const id = params.get('id');
       this.petId.set(id);
       if (id) this.loadPetData(id);
+    });
+
+    // Refrescar el nombre/avatar del dueño cuando la mascota cambia de propietario
+    // (p. ej. al finalizar una adopción desde la administración).
+    effect(() => {
+      const changedId = this.petOwnershipEvent.changedPetId();
+      const currentPet = this.pet();
+      if (changedId && currentPet?.id === changedId) {
+        this.petOwnershipEvent.clear();
+        this.loadPetData(currentPet.id);
+      }
     });
   }
 
@@ -2118,7 +2220,9 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
 
     this.profileService.getPetById(petId).subscribe({
       next: (pet) => {
-        this.pet.set(pet);
+  this.pet.set(pet);
+        this.loadPetOwner(pet.ownerId);
+        this.checkExistingRequest(pet.id);
         this.loadPetStats(petId);
         this.loadPetPosts(petId);
         this.loadPetComments(petId);
@@ -2138,6 +2242,41 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
           summary: 'Error',
           detail: 'No se pudo cargar la información de la mascota'
         });
+      }
+    });
+  }
+
+  private loadPetOwner(ownerId: string): void {
+    this.profileService.getProfileByAuthUserId(ownerId).subscribe({
+      next: (profile) => {
+        this.petOwnerName.set(`${profile.firstName} ${profile.lastName}`.trim() || 'Usuario');
+      },
+            error: (err) => {
+        console.error('Error loading pet owner:', err);
+        this.petOwnerName.set(null);
+      }
+    });
+  }
+
+  private checkExistingRequest(petId: string): void {
+    const user = this.authService.user();
+    if (!user) {
+      this.hasPendingRequest.set(false);
+      return;
+    }
+    this.adoptionService.getMyAdoptionRequests().subscribe({
+      next: (requests) => {
+                const active = requests.some(r =>
+          r.petId === petId &&
+          (r.status || '').toLowerCase() !== 'rejected' &&
+          (r.status || '').toLowerCase() !== 'completed'
+        );
+        this.hasPendingRequest.set(active);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error checking existing adoption requests:', err);
+        this.hasPendingRequest.set(false);
       }
     });
   }
@@ -2673,12 +2812,25 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     });
   }
 
-  requestAdoptionFromProfile(): void {
+  openAdoptionDialog(): void {
+    if (!this.canRequestAdoption()) return;
+    this.adoptionRequestFormData.set({});
+    this.showAdoptionDialog = true;
+  }
+
+  submitAdoptionRequest(data: any): void {
     const pet = this.pet();
     if (!pet) return;
 
-    this.adoptionService.requestAdoption({ petId: pet.id }).subscribe({
+    const request: CreateAdoptionRequest = {
+      petId: pet.id,
+      message: data?.message
+    };
+
+    this.adoptionService.requestAdoption(request).subscribe({
       next: () => {
+        this.showAdoptionDialog = false;
+        this.hasPendingRequest.set(true);
         this.messageService.add({
           severity: 'success',
           summary: 'Solicitud enviada',

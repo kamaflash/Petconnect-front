@@ -1,4 +1,5 @@
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -17,6 +18,8 @@ import { PetResponse } from '../../../pets/domain/pet.model';
 import { PetService } from '../../../pets/infrastructure/services/pet.service';
 import { HomeService, VetServiceResponse } from '../../../home/infrastructure/services/home.service';
 import { MarketplaceService, CreateProductRequest } from '../../../marketplace/infrastructure/services/marketplace.service';
+import { AdoptionService, AdoptionRequest, AdoptionStatus } from '../../../adoptions/infrastructure/services/adoption.service';
+import { PetOwnershipEventService } from '../../../shared/services/pet-ownership-event.service';
 
 interface AdminTab {
   label: string;
@@ -293,6 +296,136 @@ interface ProductItem {
               </app-table-card>
             </div>
           </div>
+
+          <!-- Adopciones -->
+          <div class="admin-section" *ngIf="activeTab() === 'adoptions'">
+            <div class="section-header">
+              <h2>Solicitudes de adopción</h2>
+            </div>
+
+            <div class="adoptions-empty" *ngIf="adminAdoptions().length === 0">
+              <i class="pi pi-heart"></i>
+              <p>No tienes solicitudes de adopción todavía.</p>
+              <span class="empty-subtitle">Cuando alguien solicite adoptar una de tus mascotas, aparecerá aquí.</span>
+            </div>
+
+            <div class="adoptions-list" *ngIf="adminAdoptions().length > 0">
+              <div class="adoption-request-card" *ngFor="let req of adminAdoptions()">
+                <div class="adoption-request-main">
+                  <p-avatar [image]="req.petImage || 'https://placehold.co/150'" shape="circle" size="large"></p-avatar>
+                  <div class="adoption-request-info">
+                    <div class="adoption-request-title">
+                      <strong>{{ req.adopterName }}</strong>
+                      <p-tag
+                        [value]="adoptionStatusLabel(req.status)"
+                        [severity]="adoptionStatusSeverity(req.status)"
+                        styleClass="adoption-status-tag"
+                      ></p-tag>
+                    </div>
+                    <div class="adoption-request-pet">
+                      <i class="pi pi-paw"></i>
+                      <span>{{ req.petName }} · {{ req.species || 'Especie desconocida' }} {{ req.breed ? '· ' + req.breed : '' }}</span>
+                    </div>
+                    <div class="adoption-request-message" *ngIf="req.message">
+                      "{{ req.message }}"
+                    </div>
+                    <div class="adoption-steps" *ngIf="stageIndexOf(req.status) >= 0">
+                      <div
+                        class="adoption-step"
+                        *ngFor="let stage of adoptionStages; let i = index"
+                        [class.active]="i < stageIndexOf(req.status)"
+                        [class.current]="i === stageIndexOf(req.status)"
+                      >
+                        <span class="adoption-step-dot"></span>
+                        <span class="adoption-step-label">{{ adoptionStageShortLabel(stage) }}</span>
+                      </div>
+                      <span class="adoption-step-counter" *ngIf="req.status === 'completed'">✓ Finalizada</span>
+                      <span class="adoption-step-counter" *ngIf="req.status !== 'completed'">
+                        Etapa {{ stageIndexOf(req.status) + 1 }} de {{ adoptionStages.length }}
+                      </span>
+                    </div>
+                    <div class="adoption-request-date">
+                      {{ req.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                    </div>
+                  </div>
+                </div>
+                <div class="adoption-request-actions">
+                  <p-button
+                    *ngIf="canAdvance(req.status)"
+                    label="Avanzar etapa"
+                    icon="pi pi-arrow-right"
+                    styleClass="p-button-sm p-button-success"
+                    (onClick)="advanceAdoption(req)"
+                  />
+                  <p-button
+                    label="Contactar con solicitante"
+                    icon="pi pi-send"
+                    styleClass="p-button-sm p-button-secondary"
+                    (onClick)="contactAdopter(req)"
+                  />
+                  <p-button
+                    *ngIf="canReject(req.status)"
+                    label="Rechazar"
+                    icon="pi pi-times"
+                    styleClass="p-button-sm p-button-danger p-button-outlined"
+                    (onClick)="rejectAdoption(req)"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="adoptions-section-title">
+              <h3>Mis solicitudes enviadas</h3>
+            </div>
+            <div class="adoptions-empty" *ngIf="myAdoptionRequests().length === 0">
+              <i class="pi pi-send"></i>
+              <p>No has enviado solicitudes de adopción todavía.</p>
+              <span class="empty-subtitle">Las solicitudes que realices aparecerán aquí.</span>
+            </div>
+            <div class="adoptions-list" *ngIf="myAdoptionRequests().length > 0">
+              <div class="adoption-request-card" *ngFor="let req of myAdoptionRequests()">
+                <div class="adoption-request-main">
+                  <p-avatar [image]="req.petImage || 'https://placehold.co/150'" shape="circle" size="large"></p-avatar>
+                  <div class="adoption-request-info">
+                    <div class="adoption-request-title">
+                      <strong>{{ req.petName }}</strong>
+                      <p-tag
+                        [value]="adoptionStatusLabel(req.status)"
+                        [severity]="adoptionStatusSeverity(req.status)"
+                        styleClass="adoption-status-tag"
+                      ></p-tag>
+                    </div>
+                    <div class="adoption-request-pet">
+                      <i class="pi pi-paw"></i>
+                      <span>{{ req.species || 'Especie desconocida' }} {{ req.breed ? '· ' + req.breed : '' }}</span>
+                    </div>
+                    <div class="adoption-steps" *ngIf="stageIndexOf(req.status) >= 0">
+                      <div
+                        class="adoption-step"
+                        *ngFor="let stage of adoptionStages; let i = index"
+                        [class.active]="i < stageIndexOf(req.status)"
+                        [class.current]="i === stageIndexOf(req.status)"
+                      >
+                        <span class="adoption-step-dot"></span>
+                        <span class="adoption-step-label">{{ adoptionStageShortLabel(stage) }}</span>
+                      </div>
+                      <span class="adoption-step-counter" *ngIf="isCompleted(req.status)">✓ Finalizada</span>
+                      <span class="adoption-step-counter" *ngIf="!isCompleted(req.status)">
+                        Etapa {{ stageIndexOf(req.status) + 1 }} de {{ adoptionStages.length }}
+                      </span>
+                    </div>
+                    <div class="adoption-request-date">
+                      {{ req.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                    </div>
+                  </div>
+                </div>
+                <div class="adoption-readonly-note">
+                  <i class="pi pi-lock"></i>
+                  <span>Solicitud enviada</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -355,6 +488,173 @@ interface ProductItem {
       border-radius: 0.5rem;
     }
 
+    /* Adopciones */
+    .adoptions-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1rem;
+      text-align: center;
+      color: var(--bitbucket-text-secondary);
+    }
+
+    .adoptions-empty i {
+      font-size: 2.5rem;
+      opacity: 0.4;
+      margin-bottom: 0.75rem;
+    }
+
+    .adoptions-empty p {
+      margin: 0 0 0.25rem;
+      font-weight: 600;
+      color: var(--bitbucket-text-primary);
+    }
+
+    .adoptions-empty .empty-subtitle {
+      font-size: 0.875rem;
+      opacity: 0.7;
+    }
+
+    .adoptions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .adoption-request-card {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--bitbucket-border);
+      border-radius: 0.5rem;
+      background-color: var(--bitbucket-header-bg);
+    }
+
+    .adoption-request-main {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .adoption-request-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .adoption-request-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .adoption-request-title strong {
+      font-size: 1rem;
+      color: var(--bitbucket-text-primary);
+    }
+
+    .adoption-request-pet {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.25rem;
+      font-size: 0.875rem;
+      color: var(--bitbucket-text-secondary);
+    }
+
+    .adoption-request-message {
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      font-style: italic;
+      color: var(--bitbucket-text-primary);
+      background-color: var(--bitbucket-body-bg);
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+    }
+
+    .adoption-request-date {
+      margin-top: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--bitbucket-text-secondary);
+      opacity: 0.8;
+    }
+
+    .adoption-request-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .adoption-steps {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .adoption-step {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      color: var(--bitbucket-text-secondary);
+      opacity: 0.5;
+    }
+
+    .adoption-step .adoption-step-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--bitbucket-border);
+      flex-shrink: 0;
+    }
+
+    .adoption-step.active {
+      opacity: 0.8;
+    }
+
+    .adoption-step.active .adoption-step-dot {
+      background-color: var(--primary-color, #4f46e5);
+    }
+
+    .adoption-step.current .adoption-step-dot {
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
+      background-color: var(--primary-color, #4f46e5);
+    }
+
+    .adoption-step.current {
+      opacity: 1;
+      color: var(--bitbucket-text-primary);
+      font-weight: 600;
+    }
+
+    .adoption-step-counter {
+      margin-left: 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--bitbucket-text-secondary);
+    }
+
+    @media (max-width: 640px) {
+      .adoption-request-card {
+        flex-direction: column;
+      }
+
+      .adoption-request-actions {
+        width: 100%;
+        justify-content: flex-end;
+      }
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
       .section-header {
@@ -371,7 +671,10 @@ export class AdminPageComponent implements OnInit {
   private readonly petService = inject(PetService);
   private readonly homeService = inject(HomeService);
   private readonly marketplaceService = inject(MarketplaceService);
+  private readonly adoptionService = inject(AdoptionService);
   private readonly messageService = inject(MessageService);
+  private readonly router = inject(Router);
+  private readonly petOwnershipEvent = inject(PetOwnershipEventService);
 
   // Loading state
   loading = signal(true);
@@ -399,6 +702,10 @@ export class AdminPageComponent implements OnInit {
   adminPets = signal<any[]>([]);
   adminStories = signal<any[]>([]);
   adminGroups = signal<any[]>([]);
+    adminAdoptions = signal<AdoptionRequest[]>([]);
+
+  // Solicitudes de adopción enviadas por el usuario actual (solo lectura)
+  myAdoptionRequests = signal<AdoptionRequest[]>([]);
 
   // Vet services data
   adminServices = signal<ServiceItem[]>([]);
@@ -869,6 +1176,18 @@ export class AdminPageComponent implements OnInit {
       error: (err) => console.error('Error loading products:', err)
     });
 
+        // Load adoption requests for pets owned by the current user
+    this.adoptionService.getAdoptionRequestsForMyPets().subscribe({
+      next: (requests) => this.adminAdoptions.set(requests),
+      error: (err) => console.error('Error loading adoption requests:', err)
+    });
+
+    // Load adoption requests sent by the current user (solicitudes enviadas)
+    this.adoptionService.getMyAdoptionRequests().subscribe({
+      next: (requests) => this.myAdoptionRequests.set(requests),
+      error: (err) => console.error('Error loading my adoption requests:', err)
+    });
+
     // Set loading to false after a short delay
     setTimeout(() => {
       this.loading.set(false);
@@ -1142,8 +1461,10 @@ export class AdminPageComponent implements OnInit {
       { id: 'stories', label: 'Historias', icon: 'schedule' }
     );
 
-    if (profileType !== 'seller') {
-      tabs.push({ id: 'groups', label: 'Grupos', icon: 'groups' });
+    // Replace the generic 'groups' tab with an 'adoptions' tab for pet owners
+    // (only added once; shelters already receive an adoptions tab above)
+    if (profileType !== 'seller' && !tabs.some(t => t.id === 'adoptions')) {
+      tabs.push({ id: 'adoptions', label: 'Adopciones', icon: 'favorite' });
     }
 
     return tabs;
@@ -1151,6 +1472,109 @@ export class AdminPageComponent implements OnInit {
 
   onTabChange(tabId: string) {
     this.setActiveTab(tabId);
+  }
+
+  // ========== ADOPCIONES ==========
+
+    readonly adoptionStages: AdoptionStatus[] = ['pending', 'pending_contact', 'pending_delivery', 'completed'];
+
+  adoptionStatusLabel(status: string): string {
+    switch (status?.toLowerCase()) {
+      case 'pending': return 'Pendiente de aceptación';
+      case 'pending_contact': return 'En contacto';
+      case 'pending_delivery': return 'Pendiente de entrega';
+      case 'completed': return 'Entregada / Finalizada';
+      case 'approved': return 'Aprobada';
+      case 'rejected': return 'Rechazada';
+      default: return 'Pendiente';
+    }
+  }
+
+  adoptionStatusSeverity(status: string): 'success' | 'danger' | 'warn' {
+    switch (status?.toLowerCase()) {
+      case 'completed':
+      case 'approved':
+        return 'success';
+      case 'rejected':
+        return 'danger';
+      case 'pending':
+      case 'pending_contact':
+      case 'pending_delivery':
+      default:
+        return 'warn';
+    }
+  }
+
+  adoptionStageShortLabel(stage: AdoptionStatus): string {
+    switch (stage) {
+      case 'pending': return 'Pendiente';
+      case 'pending_contact': return 'Contacto';
+      case 'pending_delivery': return 'Entrega';
+      case 'completed': return 'Entregado';
+      default: return stage;
+    }
+  }
+
+    stageIndexOf(status: string): number {
+    return this.adoptionStages.indexOf((status || '').toLowerCase() as AdoptionStatus);
+  }
+
+  canAdvance(status: string): boolean {
+    const s = (status || '').toLowerCase();
+    const i = this.adoptionStages.indexOf(s as AdoptionStatus);
+    // Permite avanzar si el status está en la secuencia y no es el último (completed)
+    return i >= 0 && i < this.adoptionStages.length - 1;
+  }
+
+  canReject(status: string): boolean {
+    const s = (status || '').toLowerCase();
+    // Solo NO permite rechazar si ya está completed (terminal) o rejected (terminal)
+    return s !== 'completed' && s !== 'rejected';
+  }
+
+  isCompleted(status: string): boolean {
+    const s = (status || '').toLowerCase();
+    return s === 'completed';
+  }
+
+  advanceAdoption(req: AdoptionRequest): void {
+    const next = this.adoptionStages[this.stageIndexOf(req.status) + 1];
+    if (!next) return;
+    this.updateAdoptionStatus(req, next);
+  }
+
+  rejectAdoption(req: AdoptionRequest): void {
+    this.updateAdoptionStatus(req, 'rejected');
+  }
+
+  contactAdopter(req: AdoptionRequest): void {
+    this.router.navigate(['/messages'], {
+      queryParams: { userId: req.adopterId, name: req.adopterName }
+    });
+  }
+
+  private updateAdoptionStatus(req: AdoptionRequest, status: AdoptionStatus): void {
+    this.adoptionService.updateAdoptionRequestStatus(req.id, status).subscribe({
+      next: (updated) => {
+        this.adminAdoptions.update(requests => requests.map(r => r.id === updated.id ? updated : r));
+        // Al finalizar la adopción, notificar cambio de propiedad de la mascota
+        if (status === 'completed') {
+          this.petOwnershipEvent.notify(req.petId, 'adoption_completed', req.id);
+        }
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Solicitud actualizada',
+          detail: `La solicitud de ${req.adopterName} para ${req.petName} avanzó a "${this.adoptionStatusLabel(status)}"`
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar la solicitud de adopción'
+        });
+      }
+    });
   }
 
   // Delete actions

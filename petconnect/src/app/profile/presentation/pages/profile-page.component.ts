@@ -255,6 +255,11 @@ interface Pet {
                   <span>{{ userProfile()?.isFollowing ? 'Siguiendo' : 'Seguir' }}</span>
                 </button>
 
+                <button *ngIf="!isOwnProfile()" class="btn-action btn-message" (click)="openChat()">
+                  <i class="pi pi-send"></i>
+                  <span>Mensaje</span>
+                </button>
+
                 <button *ngIf="isOwnProfile()" class="btn-action btn-more" (click)="profileMenu.toggle($event)">
                   <i class="pi pi-ellipsis-h"></i>
                 </button>
@@ -926,6 +931,18 @@ interface Pet {
     .btn-following:hover {
       border-color: #ef4444;
       color: #ef4444;
+    }
+
+    .btn-message {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+      color: #fff;
+    }
+
+    .btn-message:hover {
+      background: var(--primary-color-dark);
+      border-color: var(--primary-color-dark);
+      color: #fff;
     }
 
     .btn-following:hover i {
@@ -2421,6 +2438,21 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  /**
+   * Abre el chat (o lo crea) con el usuario cuyo perfil se está viendo.
+   */
+  openChat(): void {
+    const targetUserId = this.profileId();
+    if (!targetUserId) return;
+
+    this.router.navigate(['/messages'], {
+      queryParams: {
+        userId: targetUserId,
+        name: this.userProfile()?.name || ''
+      }
+    });
   }
 
   toggleAdoptionStatus(petId: string, adoptionStatus: string | undefined): void {
