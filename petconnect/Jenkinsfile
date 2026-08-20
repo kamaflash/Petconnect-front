@@ -24,20 +24,17 @@ pipeline {
         REGISTRY   = ''  // Déjalo vacío si no subes a DockerHub
         // SonarQube (OPCIONAL / deshabilitado). Actívalo cuando configures servidor + plugin.
         RUN_SONAR   = 'false'
-        // Credencial (token) de SonarQube, p.ej. 'sonar-token'. Se usa en la etapa SonarQube.
-        SONAR_TOKEN_URL = ''
+        SONAR_TOKEN_URL = ''  // Credencial (token) de SonarQube, p.ej. 'sonar-token'.
     }
 
     stages {
-        // El checkout del código ya lo hace Jenkins automáticamente al cargar
-        // el pipeline (Pipeline script from SCM). Sin stage manual redundante.
+        // El checkout del código ya lo hace Jenkins al cargar el pipeline (SCM).
+        // El proyecto Angular está en la RAÍZ del repo (package.json en raíz).
 
         // 1. Instalar dependencias.
         stage('Install Dependencies') {
             steps {
-                dir('petconnect') {
-                    sh 'npm ci'
-                }
+                sh 'npm ci'
             }
             post {
                 success { echo '✅ Dependencias instaladas' }
@@ -48,9 +45,7 @@ pipeline {
         // 2. Lint (ESLint) - falla ante cualquier warning.
         stage('Lint') {
             steps {
-                dir('petconnect') {
-                    sh 'npm run lint'
-                }
+                sh 'npm run lint'
             }
             post {
                 success { echo '✅ Lint correcto' }
@@ -58,12 +53,10 @@ pipeline {
             }
         }
 
-        // 3. Test (vitest headless via @angular/build:unit-test).
+        // 3. Test (vitest headless vía @angular/build:unit-test).
         stage('Test') {
             steps {
-                dir('petconnect') {
-                    sh 'npx ng test --watch=false'
-                }
+                sh 'npx ng test --watch=false'
             }
             post {
                 success { echo '✅ Tests correctos' }
@@ -72,7 +65,7 @@ pipeline {
         }
 
         // 4. SonarQube (OPCIONAL / deshabilitado): análisis estático.
-        //    Se salta a menos que RUN_SONAR sea 'true' y exista SONAR_TOKEN_URL.
+        //    Se salta a menos que RUN_SONAR='true' y exista SONAR_TOKEN_URL.
         //    Requiere: servidor SonarQube + plugin 'SonarQube Scanner' + credencial token.
         stage('SonarQube') {
             when {
@@ -82,12 +75,10 @@ pipeline {
                 }
             }
             steps {
-                dir('petconnect') {
-                    withSonarQubeEnv('SonarQube') {
-                        sh 'npm run sonar'
-                        timeout(time: 10, unit: 'MINUTES') {
-                            waitForQualityGate abortPipeline: true
-                        }
+                withSonarQubeEnv('SonarQube') {
+                    sh 'npm run sonar'
+                    timeout(time: 10, unit: 'MINUTES') {
+                        waitForQualityGate abortPipeline: true
                     }
                 }
             }
@@ -96,9 +87,7 @@ pipeline {
         // 5. Build (producción Angular).
         stage('Build') {
             steps {
-                dir('petconnect') {
-                    sh 'npm run build -- --configuration=production'
-                }
+                sh 'npm run build -- --configuration=production'
             }
             post {
                 success { echo '✅ Build correcto' }
@@ -110,10 +99,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    dir('petconnect') {
-                        docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
-                        docker.build("${IMAGE_NAME}:latest")
-                    }
+                    docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
+                    docker.build("${IMAGE_NAME}:latest")
                 }
             }
         }
@@ -144,12 +131,10 @@ pipeline {
             }
             steps {
                 script {
-                    dir('petconnect') {
-                        sh '''
-                            docker compose down
-                            docker compose up -d --build
-                        '''
-                    }
+                    sh '''
+                        docker compose down
+                        docker compose up -d --build
+                    '''
                 }
             }
         }
