@@ -1,9 +1,9 @@
 import { Routes } from '@angular/router';
-import { GamificationPageComponent } from './presentation/pages/gamification-page.component';
+import { GamificationDashboardComponent } from './presentation/pages/gamification-dashboard.component';
 
 export const gamificationRoutes: Routes = [
   {
     path: '',
-    component: GamificationPageComponent,
+    component: GamificationDashboardComponent,
   },
 ];

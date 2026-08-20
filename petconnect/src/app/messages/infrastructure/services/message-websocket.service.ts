@@ -60,6 +60,16 @@ export class MessageWebSocketService {
     return this.webSocketService.isTyping(conversationId);
   }
 
+  /** Recarga el total de mensajes no leídos desde el backend. */
+  refreshUnreadCount(): void {
+    this.webSocketService.refreshUnreadCount();
+  }
+
+  /** Resta `by` mensajes del contador global de no leídos. */
+  decrementUnreadCount(by = 1): void {
+    this.webSocketService.decrementUnreadCount(by);
+  }
+
   /** Establece el indicador de escritura para una conversación. */
   setTyping(conversationId: string, isTyping: boolean): void {
     this.webSocketService.setTyping(conversationId, isTyping);

@@ -283,7 +283,7 @@ export type PostViewMode = 'feed' | 'grid';
       width: 100%;
       max-height: 600px;
       object-fit: contain;
-      background: #000;
+      background: var(--surface-hover);
     }
 
     .post-actions {

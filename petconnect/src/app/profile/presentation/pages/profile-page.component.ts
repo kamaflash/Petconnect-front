@@ -27,6 +27,8 @@ import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { LocationPickerComponent } from '../../../shared/components/location-picker/location-picker.component';
 import { GeocodingResult } from '../../../shared/services/geolocation.service';
+import { DialogModule } from 'primeng/dialog';
+import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
 
 type ProfileType = 'user' | 'shelter' | 'seller' | 'vet' | 'pet' | 'trainer';
 
@@ -150,7 +152,9 @@ interface Pet {
     SkeletonModule,
     TabsComponent,
     MenuModule,
-    LocationPickerComponent
+    LocationPickerComponent,
+    DialogModule,
+    PostFeedComponent
   ],
   providers: [MessageService],
   template: `
@@ -280,7 +284,7 @@ interface Pet {
           <!-- Publicaciones - Grid 3 columnas estilo Instagram -->
           <div class="tab-panel" *ngIf="activeTab() === 'posts'">
             <div class="posts-grid-instagram" *ngIf="!loading()">
-              <div class="post-card-instagram" *ngFor="let post of userPosts()">
+              <div class="post-card-instagram" *ngFor="let post of userPostItems()" (click)="openPost(post)">
                 <img [src]="post.image" alt="Post" class="post-image-instagram" />
                 <div class="post-overlay-instagram">
                   <span><i class="pi pi-heart-fill"></i> {{ post.likes }}</span>
@@ -612,6 +616,27 @@ interface Pet {
 
       <!-- Menu -->
       <p-menu #profileMenu [model]="profileMenuItems" [popup]="true" appendTo="body" />
+
+      <!-- Modal de Publicación -->
+      <p-dialog
+        [visible]="postModalVisible()"
+        [modal]="true"
+        [style]="{ width: '90vw', maxWidth: '620px' }"
+        [closable]="true"
+        (onHide)="closePostModal()"
+        [dismissableMask]="true"
+        styleClass="profile-post-modal"
+        [showHeader]="false"
+      >
+        <ng-container *ngIf="selectedPost()">
+          <app-post-feed
+            [posts]="selectedPostsArray()"
+            [loading]="false"
+            [currentUserId]="selectedPost()?.user?.userId || ''"
+          >
+          </app-post-feed>
+        </ng-container>
+      </p-dialog>
     </div>
   `,
   styles: [`
@@ -1433,6 +1458,14 @@ interface Pet {
     .mb-2 { margin-bottom: 8px; }
     .mb-3 { margin-bottom: 12px; }
     .mt-2 { margin-top: 8px; }
+
+    /* Modal de publicación */
+    :host ::ng-deep .profile-post-modal .p-dialog-content {
+      padding: 0;
+    }
+    :host ::ng-deep .profile-post-modal .p-dialog {
+      max-height: 95vh;
+    }
   `]
 })
 export class ProfilePageComponent implements OnInit, OnDestroy {
@@ -1513,14 +1546,62 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   });
 
   // Publicaciones del usuario
-  userPosts = signal([
-    { id: '1', image: 'https://picsum.photos/300/300?random=1', likes: 24, comments: 5 },
-    { id: '2', image: 'https://picsum.photos/300/300?random=2', likes: 18, comments: 3 },
-    { id: '3', image: 'https://picsum.photos/300/300?random=3', likes: 32, comments: 8 },
-    { id: '4', image: 'https://picsum.photos/300/300?random=4', likes: 15, comments: 2 },
-    { id: '5', image: 'https://picsum.photos/300/300?random=5', likes: 42, comments: 7 },
-    { id: '6', image: 'https://picsum.photos/300/300?random=6', likes: 28, comments: 4 },
-  ]);
+  userPosts = signal<{
+    id: string;
+    image: string;
+    caption: string;
+    likes: number;
+    comments: number;
+    liked: boolean;
+    saved: boolean;
+    timestamp: Date;
+  }[]>([]);
+
+  // Post seleccionado para el modal
+  postModalVisible = signal(false);
+  selectedPost = signal<PostItem | null>(null);
+
+  // Publicaciones construidas como PostItem para el feed
+  userPostItems = computed((): PostItem[] => {
+    const isOwn = !this.profileId();
+    const profileId = isOwn
+      ? (this.authService.user()?.id || '')
+      : (this.profileId() || '');
+
+    const authorProfile = isOwn
+      ? this.ownProfile
+      : this.loadedProfiles()[this.profileId() || ''];
+
+    const authorName = authorProfile?.name || 'Usuario';
+    const authorAvatar = isOwn
+      ? (this.authService.user()?.avatarUrl || authorProfile?.avatar || 'https://i.pravatar.cc/150?img=1')
+      : (authorProfile?.avatar || 'https://i.pravatar.cc/150?img=1');
+    const authorUsername = isOwn
+      ? (this.authService.user()?.firstName && this.authService.user()?.lastName
+          ? '@' + (this.authService.user()!.firstName + '.' + this.authService.user()!.lastName).toLowerCase()
+          : '@usuario')
+      : (authorProfile?.type === 'user'
+          ? '@' + ((authorProfile as UserProfile).username || 'usuario')
+          : '@usuario');
+
+    return this.userPosts().map(post => ({
+      id: post.id,
+      user: {
+        name: authorName,
+        avatar: authorAvatar,
+        username: authorUsername,
+        userId: profileId,
+      },
+      image: post.image,
+      caption: post.caption,
+      likes: post.likes,
+      comments: post.comments,
+      liked: post.liked,
+      saved: post.saved,
+      timestamp: post.timestamp,
+      likeAvatars: [],
+    }));
+  });
 
   // Contadores de seguidores y seguidos
   followersCount = signal(0);
@@ -1641,10 +1722,63 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       this.loadPetsForProfile(this.profileId()!);
     }
 
+    this.loadUserPosts();
+
     setTimeout(() => {
       this.loading.set(false);
       this.cdr.detectChanges();
     }, 1000);
+  }
+
+  private loadUserPosts(): void {
+    const authorId = this.isOwnProfile()
+      ? this.authService.user()?.id
+      : this.profileId();
+
+    if (!authorId) {
+      this.userPosts.set([]);
+      return;
+    }
+
+    this.socialService.getPostsByAuthor(authorId).subscribe({
+      next: (posts) => {
+        this.userPosts.set(
+          (posts || []).map(post => ({
+            id: post.id,
+            image: post.imageUrl,
+            caption: post.caption || '',
+            likes: post.likesCount || 0,
+            comments: post.commentsCount || 0,
+            liked: false,
+            saved: false,
+            timestamp: post.createdAt ? new Date(post.createdAt) : new Date(),
+          }))
+        );
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error loading user posts:', err);
+        this.userPosts.set([]);
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  openPost(post: PostItem): void {
+    this.selectedPost.set(post);
+    this.postModalVisible.set(true);
+    this.cdr.detectChanges();
+  }
+
+  closePostModal(): void {
+    this.postModalVisible.set(false);
+    this.selectedPost.set(null);
+    this.cdr.detectChanges();
+  }
+
+  selectedPostsArray(): PostItem[] {
+    const post = this.selectedPost();
+    return post ? [post] : [];
   }
 
   private loadOwnProfile(authUserId: string): void {

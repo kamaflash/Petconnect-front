@@ -1,5 +1,8 @@
-import { Component, OnInit, inject, ChangeDetectorRef, signal, computed } from '@angular/core';
+﻿import { Component, OnInit, inject, ChangeDetectorRef, signal, computed } from '@angular/core';
+
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
@@ -8,21 +11,44 @@ import { AvatarGroupModule } from 'primeng/avatargroup';
 import { InputTextModule } from 'primeng/inputtext';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { SkeletonModule } from 'primeng/skeleton';
-import { RouterLink } from '@angular/router';
-import { HomeService, PostResponse, UserProfileResponse, StoryResponse, SuggestionResponse, MarketplacePromoResponse, VetServiceResponse, AdoptionResponse, AchievementResponse, UserLevelResponse, FollowResponse } from '../../infrastructure/services/home.service';
-import { Story, Post, Suggestion, PromoItem, User, VetService, Adoption, Achievement, UserLevel } from '../../infrastructure/models/home.models';
-import { finalize, catchError } from 'rxjs/operators';
-import { forkJoin, Observable, of } from 'rxjs';
-import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
+
+import {
+  HomeService,
+  PostResponse,
+  UserProfileResponse,
+} from '../../infrastructure/services/home.service';
+
+import {
+  Story,
+  Post,
+  Suggestion,
+  PromoItem,
+  User,
+  Adoption,
+  Achievement,
+  UserLevel,
+} from '../../infrastructure/models/home.models';
+
 import { ProfileService } from '../../../profile/infrastructure/services/profile.service';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { LikeService } from '../../../shared/infrastructure/services/like.service';
 
+import { forkJoin, of } from 'rxjs';
+import { catchError, finalize } from 'rxjs/operators';
+
+import {
+  PostFeedComponent,
+  PostItem,
+} from '../../../shared/presentation/components/post-feed/post-feed.component';
+
 @Component({
   selector: 'app-home-page',
   standalone: true,
+
   imports: [
     CommonModule,
+    RouterLink,
+
     ButtonModule,
     CardModule,
     TagModule,
@@ -31,861 +57,1313 @@ import { LikeService } from '../../../shared/infrastructure/services/like.servic
     InputTextModule,
     ProgressBarModule,
     SkeletonModule,
-    RouterLink,
+
     PostFeedComponent,
   ],
+
   template: `
     <div class="home-page">
       <div class="home-container">
-        <!-- Columna Izquierda - Sidebar -->
+        <!-- ========================================================= -->
+        <!-- LEFT COLUMN -->
+        <!-- ========================================================= -->
+
         <div class="left-column">
-          <!-- Anuncios de Mercado -->
+          <!-- ===================== MERCADO ===================== -->
+
           <div class="card-modern">
             <div class="card-header">
               <i class="pi pi-shopping-cart card-header-icon"></i>
-              <span class="card-header-title">Mercado</span>
+              <span class="card-header-title"> Mercado </span>
             </div>
+
             <div class="card-body">
-              <div class="promo-item" *ngFor="let promo of marketPromos">
-                <img [src]="promo.image" [alt]="promo.title" class="promo-image" />
-                <div class="promo-content">
-                  <p class="promo-title">{{ promo.title }}</p>
-                  <p class="promo-desc">{{ promo.description }}</p>
-                  <p-tag *ngIf="promo.tag" [value]="promo.tag" severity="warn"></p-tag>
+              @if (loadingPromos()) {
+                <div class="loading-list">
+                  <p-skeleton width="100%" height="70px" styleClass="mb-2" />
+
+                  <p-skeleton width="100%" height="70px" styleClass="mb-2" />
                 </div>
-              </div>
+              } @else {
+                @for (promo of marketPromos; track promo.title) {
+                  <div class="promo-item">
+                    <img [src]="promo.image" [alt]="promo.title" class="promo-image" />
+
+                    <div class="promo-content">
+                      <p class="promo-title">
+                        {{ promo.title }}
+                      </p>
+
+                      <p class="promo-desc">
+                        {{ promo.description }}
+                      </p>
+
+                      @if (promo.tag) {
+                        <p-tag [value]="promo.tag" severity="warn"> </p-tag>
+                      }
+                    </div>
+                  </div>
+                }
+
+                @if (marketPromos.length === 0) {
+                  <div class="empty-state">No hay promociones disponibles.</div>
+                }
+              }
             </div>
           </div>
 
-          <!-- Veterinarios -->
+          <!-- ===================== VETERINARIOS ===================== -->
+
           <div class="card-modern">
             <div class="card-header">
               <i class="pi pi-user-md card-header-icon"></i>
-              <span class="card-header-title">Veterinarios</span>
+
+              <span class="card-header-title"> Veterinarios </span>
             </div>
+
             <div class="card-body">
-              <div class="suggestion-item" *ngFor="let vet of vets">
-                <p-avatar [image]="vet.avatar" shape="circle" size="normal"></p-avatar>
-                <div class="suggestion-info">
-                  <a [routerLink]="'/profile/' + vet.userId" class="suggestion-name">{{ vet.name }}</a>
-                  <span class="suggestion-username">{{ vet.username }}</span>
-                  <span class="suggestion-followers">{{ vet.followers }} seguidores</span>
-                </div>
-                <button
-                  class="follow-btn"
-                  [class.following]="vet.isFollowing"
-                  (click)="toggleFollow(vet)"
-                >
-                  <i [class]="vet.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"></i>
-                  {{ vet.isFollowing ? 'Siguiendo' : 'Seguir' }}
-                </button>
-              </div>
+              @if (loadingVets()) {
+                @for (item of [1, 2, 3]; track item) {
+                  <div class="skeleton-user">
+                    <p-skeleton shape="circle" size="40px"> </p-skeleton>
+
+                    <div class="skeleton-user-info">
+                      <p-skeleton width="80%" height="12px"> </p-skeleton>
+
+                      <p-skeleton width="55%" height="10px"> </p-skeleton>
+                    </div>
+                  </div>
+                }
+              } @else {
+                @for (vet of vets; track vet.userId) {
+                  <div class="suggestion-item">
+                    <p-avatar [image]="vet.avatar" shape="circle" size="normal"> </p-avatar>
+
+                    <div class="suggestion-info">
+                      <a [routerLink]="'/profile/' + vet.userId" class="suggestion-name">
+                        {{ vet.name }}
+                      </a>
+
+                      <span class="suggestion-username">
+                        {{ vet.username }}
+                      </span>
+
+                      <span class="suggestion-followers"> {{ vet.followers }} seguidores </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="follow-btn"
+                      [class.following]="vet.isFollowing"
+                      (click)="toggleFollow(vet)"
+                    >
+                      <i [class]="vet.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"> </i>
+
+                      {{ vet.isFollowing ? 'Siguiendo' : 'Seguir' }}
+                    </button>
+                  </div>
+                }
+
+                @if (vets.length === 0) {
+                  <div class="empty-state">No hay veterinarios disponibles.</div>
+                }
+              }
             </div>
           </div>
 
-          <!-- Nuevas Adopciones -->
+          <!-- ===================== ADOPCIONES ===================== -->
+
           <div class="card-modern">
             <div class="card-header">
               <i class="pi pi-heart card-header-icon"></i>
-              <span class="card-header-title">Adopciones</span>
+
+              <span class="card-header-title"> Adopciones </span>
             </div>
+
             <div class="card-body">
-              <div class="adoption-item" *ngFor="let adoption of newAdoptions">
-                <img [src]="adoption.image" [alt]="adoption.name" class="adoption-image" />
-                <div class="adoption-info">
-                  <p class="adoption-name">{{ adoption.name }}</p>
-                  <p class="adoption-breed">{{ adoption.breed }}</p>
-                  <p-button label="Conocer" [routerLink]="'/adoptions'" styleClass="p-button-sm p-button-outlined" />
-                </div>
-              </div>
+              @if (loadingAdoptions()) {
+                @for (item of [1, 2, 3]; track item) {
+                  <div class="skeleton-user">
+                    <p-skeleton shape="circle" size="56px"> </p-skeleton>
+
+                    <div class="skeleton-user-info">
+                      <p-skeleton width="80%" height="12px"> </p-skeleton>
+
+                      <p-skeleton width="60%" height="10px"> </p-skeleton>
+                    </div>
+                  </div>
+                }
+              } @else {
+                @for (adoption of newAdoptions; track adoption.name) {
+                  <div class="adoption-item">
+                    <img [src]="adoption.image" [alt]="adoption.name" class="adoption-image" />
+
+                    <div class="adoption-info">
+                      <p class="adoption-name">
+                        {{ adoption.name }}
+                      </p>
+
+                      <p class="adoption-breed">
+                        {{ adoption.breed }}
+                      </p>
+
+                      <p-button
+                        label="Conocer"
+                        [routerLink]="'/profile/pet/' + adoption.id"
+                        styleClass="p-button-sm p-button-outlined"
+                      >
+                      </p-button>
+                    </div>
+                  </div>
+                }
+
+                @if (newAdoptions.length === 0) {
+                  <div class="empty-state">No hay nuevas adopciones.</div>
+                }
+              }
             </div>
           </div>
         </div>
 
-        <!-- Columna Central - Feed -->
+        <!-- ========================================================= -->
+        <!-- CENTER COLUMN -->
+        <!-- ========================================================= -->
+
         <div class="center-column">
-          <!-- Loading Progress Bar -->
+          <!-- ===================== LOADING ===================== -->
+
           @if (loadingPosts()) {
             <div class="loading-overlay">
-              <p-progressBar mode="indeterminate" [style]="{'height': '4px'}" />
+              <p-progressBar mode="indeterminate" [style]="{ height: '4px' }"> </p-progressBar>
             </div>
           }
 
-          <!-- Stories -->
+          <!-- ===================== STORIES ===================== -->
+
           <div class="stories-card">
             <div class="stories-scroll">
-              <a class="story-item" *ngFor="let story of stories" [routerLink]="'/profile/' + story.user.userId">
-                <div class="story-ring" [class.seen]="story.seen">
-                  <p-avatar
-                    [image]="story.user.avatar"
-                    shape="circle"
-                    size="large"
-                  ></p-avatar>
-                </div>
-                <span class="story-name">{{ story.user.name }}</span>
-              </a>
+              @if (loadingStories()) {
+                @for (item of [1, 2, 3, 4, 5]; track item) {
+                  <div class="story-item">
+                    <p-skeleton shape="circle" size="56px"> </p-skeleton>
+
+                    <p-skeleton width="50px" height="9px"> </p-skeleton>
+                  </div>
+                }
+              } @else {
+                @for (story of stories; track story.id) {
+                  <a class="story-item" [routerLink]="'/profile/' + story.user.userId">
+                    <div class="story-ring" [class.seen]="story.seen">
+                      <p-avatar [image]="story.user.avatar" shape="circle" size="large"> </p-avatar>
+                    </div>
+
+                    <span class="story-name">
+                      {{ story.user.name }}
+                    </span>
+                  </a>
+                }
+
+                @if (stories.length === 0) {
+                  <div class="empty-stories">No hay historias nuevas.</div>
+                }
+              }
             </div>
           </div>
 
-          <!-- Feed -->
+          <!-- ===================== FEED ===================== -->
+
           <app-post-feed
             [posts]="postItems()"
             [loading]="loadingPosts()"
             [currentUserId]="currentUserId()"
             (likeToggled)="onLikeToggled($event)"
             (saveToggled)="onSaveToggled($event)"
-          />
+          >
+          </app-post-feed>
         </div>
 
-        <!-- Columna Derecha -->
+        <!-- ========================================================= -->
+        <!-- RIGHT COLUMN -->
+        <!-- ========================================================= -->
+
         <div class="right-column">
-          <!-- Level Card -->
+          <!-- ===================== LEVEL ===================== -->
+
           <div class="level-card">
             <div class="level-top">
               <div class="level-text">
-                <span class="level-label">Tu Nivel</span>
-                <span class="level-number">Nivel 12</span>
+                <span class="level-label"> Tu Nivel </span>
+
+                <span class="level-number"> Nivel {{ userLevel.level }} </span>
               </div>
+
               <i class="pi pi-trophy level-icon"></i>
             </div>
+
             <div class="level-bar-wrap">
-              <p-progressBar [value]="65" styleClass="level-progress-bar"></p-progressBar>
-              <span class="level-xp">650 / 1000 XP</span>
+              <p-progressBar [value]="levelProgress" styleClass="level-progress-bar">
+              </p-progressBar>
+
+              <span class="level-xp"> {{ userLevel.currentXp }} / {{ userLevel.totalXp }} XP </span>
             </div>
           </div>
 
-          <!-- Achievements -->
+          <!-- ===================== ACHIEVEMENTS ===================== -->
+
           <div class="card-modern">
             <div class="card-header">
-              <span class="card-header-title">Próximos Logros</span>
+              <span class="card-header-title"> Próximos Logros </span>
             </div>
+
             <div class="card-body">
-              <div class="achievement-item" *ngFor="let achievement of upcomingAchievements">
-                <div class="achievement-icon" [class.unlocked]="achievement.unlocked">
-                  <i class="pi" [class]="achievement.icon"></i>
-                </div>
-                <div class="achievement-info">
-                  <p class="achievement-name">{{ achievement.name }}</p>
-                  <p class="achievement-desc">{{ achievement.description }}</p>
-                  <div class="achievement-bar">
-                    <p-progressBar [value]="(achievement.progress / achievement.total) * 100" styleClass="achievement-progress-bar"></p-progressBar>
-                    <span class="achievement-count">{{ achievement.progress }} / {{ achievement.total }}</span>
+              @if (loadingAchievements()) {
+                @for (item of [1, 2, 3]; track item) {
+                  <div class="skeleton-achievement">
+                    <p-skeleton shape="circle" size="44px"> </p-skeleton>
+
+                    <div class="skeleton-user-info">
+                      <p-skeleton width="80%" height="12px"> </p-skeleton>
+
+                      <p-skeleton width="100%" height="8px"> </p-skeleton>
+
+                      <p-skeleton width="100%" height="5px"> </p-skeleton>
+                    </div>
                   </div>
-                </div>
-              </div>
+                }
+              } @else {
+                @for (achievement of upcomingAchievements; track achievement.name) {
+                  <div class="achievement-item">
+                    <div class="achievement-icon" [class.unlocked]="achievement.unlocked">
+                      <i class="pi" [class]="achievement.icon"> </i>
+                    </div>
+
+                    <div class="achievement-info">
+                      <p class="achievement-name">
+                        {{ achievement.name }}
+                      </p>
+
+                      <p class="achievement-desc">
+                        {{ achievement.description }}
+                      </p>
+
+                      <div class="achievement-bar">
+                        <p-progressBar
+                          [value]="getAchievementProgress(achievement)"
+                          styleClass="achievement-progress-bar"
+                        >
+                        </p-progressBar>
+
+                        <span class="achievement-count">
+                          {{ achievement.progress }} /
+                          {{ achievement.total }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                @if (upcomingAchievements.length === 0) {
+                  <div class="empty-state">No hay logros pendientes.</div>
+                }
+              }
             </div>
           </div>
 
-   <!-- Suggestions - Perfiles -->
-           <div class="card-modern">
-             <div class="card-header">
-               <span class="card-header-title">Quién seguir</span>
-             </div>
-             <div class="card-body">
-               <div class="suggestion-item" *ngFor="let suggestion of suggestions">
-                 <p-avatar [image]="suggestion.avatar" shape="circle" size="normal"></p-avatar>
-                 <div class="suggestion-info">
-                   <a [routerLink]="'/profile/' + suggestion.userId" class="suggestion-name">{{ suggestion.name }}</a>
-                   <span class="suggestion-username">{{ suggestion.username }}</span>
-                   <span class="suggestion-followers">{{ suggestion.followers }} seguidores</span>
-                 </div>
-                  <button
-                    class="follow-btn"
-                    [class.following]="suggestion.isFollowing"
-                    (click)="toggleFollow(suggestion)"
-                  >
-                    <i [class]="suggestion.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"></i>
-                    {{ suggestion.isFollowing ? 'Siguiendo' : 'Seguir' }}
-                  </button>
-               </div>
-             </div>
-           </div>
+          <!-- ===================== SUGGESTIONS ===================== -->
 
-          <!-- Trends -->
           <div class="card-modern">
             <div class="card-header">
-              <span class="card-header-title">Tendencias</span>
+              <span class="card-header-title"> Quién seguir </span>
             </div>
+
             <div class="card-body">
-              <div class="trend-item" *ngFor="let trend of trendingTopics()">
-                <span class="trend-category">#{{ trend.rank }} Tendencia</span>
-                <span class="trend-name">{{ trend.name }}</span>
-                <span class="trend-posts">{{ trend.posts }} publicaciones</span>
-              </div>
+              @if (loadingSuggestions()) {
+                @for (item of [1, 2, 3, 4]; track item) {
+                  <div class="skeleton-user">
+                    <p-skeleton shape="circle" size="40px"> </p-skeleton>
+
+                    <div class="skeleton-user-info">
+                      <p-skeleton width="80%" height="12px"> </p-skeleton>
+
+                      <p-skeleton width="55%" height="10px"> </p-skeleton>
+                    </div>
+                  </div>
+                }
+              } @else {
+                @for (suggestion of suggestions; track suggestion.userId) {
+                  <div class="suggestion-item">
+                    <p-avatar [image]="suggestion.avatar" shape="circle" size="normal"> </p-avatar>
+
+                    <div class="suggestion-info">
+                      <a [routerLink]="'/profile/' + suggestion.userId" class="suggestion-name">
+                        {{ suggestion.name }}
+                      </a>
+
+                      <span class="suggestion-username">
+                        {{ suggestion.username }}
+                      </span>
+
+                      <span class="suggestion-followers">
+                        {{ suggestion.followers }} seguidores
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="follow-btn"
+                      [class.following]="suggestion.isFollowing"
+                      (click)="toggleFollow(suggestion)"
+                    >
+                      <i [class]="suggestion.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"> </i>
+
+                      {{ suggestion.isFollowing ? 'Siguiendo' : 'Seguir' }}
+                    </button>
+                  </div>
+                }
+
+                @if (suggestions.length === 0) {
+                  <div class="empty-state">No hay sugerencias disponibles.</div>
+                }
+              }
+            </div>
+          </div>
+
+          <!-- ===================== TRENDS ===================== -->
+
+          <div class="card-modern">
+            <div class="card-header">
+              <span class="card-header-title"> Tendencias </span>
+            </div>
+
+            <div class="card-body">
+              @for (trend of trendingTopics(); track trend.rank) {
+                <div class="trend-item">
+                  <span class="trend-category"> #{{ trend.rank }} Tendencia </span>
+
+                  <span class="trend-name">
+                    {{ trend.name }}
+                  </span>
+
+                  <span class="trend-posts"> {{ trend.posts }} publicaciones </span>
+                </div>
+              }
+
+              @if (trendingTopics().length === 0) {
+                <div class="empty-state">No hay tendencias disponibles.</div>
+              }
             </div>
           </div>
         </div>
       </div>
     </div>
   `,
-  styles: [`
-    /* ===== PAGE ===== */
-    .home-page {
-      min-height: 100vh;
-      padding: 1.5rem 0;
-    }
 
-    .home-container {
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 300px 1fr 320px;
-      max-width: 1280px;
-      gap: 1.5rem;
-      padding: 0 1.5rem;
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    /* ===== MODERN CARD ===== */
-    .card-modern {
-      background: var(--surface-card);
-      border-radius: var(--radius-md);
-      overflow: hidden;
-      margin-bottom: 1rem;
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 1rem 1.25rem;
-      border-bottom: 1px solid var(--surface-border);
-    }
-
-    .card-header-icon {
-      color: var(--text-secondary);
-      font-size: 1.125rem;
-    }
-
-    .card-header-title {
-      font-size: 0.9375rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .card-body {
-      padding: 0.5rem 1.25rem;
-    }
-
-    /* ===== LEFT COLUMN ===== */
-    .left-column {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-
-    .promo-item {
-      display: flex;
-      gap: 0.75rem;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid var(--surface-border);
-    }
-
-    .promo-item:last-child { border-bottom: none; }
-
-    .promo-image {
-      width: 56px;
-      height: 56px;
-      border-radius: var(--radius-sm);
-      object-fit: cover;
-      flex-shrink: 0;
-    }
-
-    .promo-content { flex: 1; min-width: 0; }
-
-    .promo-title {
-      font-weight: 600;
-      color: var(--text-primary);
-      margin: 0 0 0.125rem 0;
-      font-size: 0.8125rem;
-    }
-
-    .promo-desc {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      margin: 0 0 0.25rem 0;
-      line-height: 1.4;
-    }
-
-    /* Services */
-    .service-item {
-      display: flex;
-      gap: 0.75rem;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid var(--surface-border);
-    }
-
-    .service-item:last-child { border-bottom: none; }
-
-    .service-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: var(--radius-sm);
-      background: var(--primary-color-light);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--primary-color);
-      font-size: 1.125rem;
-      flex-shrink: 0;
-    }
-
-    .service-info { flex: 1; min-width: 0; }
-
-    .service-title {
-      font-weight: 600;
-      color: var(--text-primary);
-      margin: 0 0 0.125rem 0;
-      font-size: 0.8125rem;
-    }
-
-    .service-desc {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      margin: 0;
-      line-height: 1.4;
-    }
-
-    /* Adoptions */
-    .adoption-item {
-      display: flex;
-      gap: 0.75rem;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid var(--surface-border);
-      align-items: center;
-    }
-
-    .adoption-item:last-child { border-bottom: none; }
-
-    .adoption-image {
-      width: 56px;
-      height: 56px;
-      border-radius: var(--radius-full);
-      object-fit: cover;
-      flex-shrink: 0;
-      border: 2px solid var(--primary-color);
-    }
-
-    .adoption-info { flex: 1; min-width: 0; }
-
-    .adoption-name {
-      font-weight: 600;
-      color: var(--text-primary);
-      margin: 0;
-      font-size: 0.8125rem;
-    }
-
-    .adoption-breed {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      margin: 0.125rem 0 0.375rem 0;
-    }
-
-    /* ===== CENTER COLUMN ===== */
-    .center-column {
-      min-width: 0;
-      flex: 1;
-      width: 100%;
-      min-height: 0;
-      overflow: visible;
-    }
-
-    /* Stories */
-    .stories-card {
-      background: var(--surface-card);
-      border-radius: var(--radius-md);
-      padding: 1rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .stories-scroll {
-      display: flex;
-      gap: 1rem;
-      overflow-x: auto;
-      padding: 0.25rem 0;
-      scrollbar-width: none;
-    }
-
-    .stories-scroll::-webkit-scrollbar { display: none; }
-
-    .story-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.375rem;
-      cursor: pointer;
-      flex-shrink: 0;
-      text-decoration: none;
-      min-width: 64px;
-    }
-
-    .story-ring {
-      padding: 2px;
-      border-radius: var(--radius-full);
-      background: var(--instagram-gradient);
-    }
-
-    .story-ring.seen {
-      background: var(--surface-border);
-    }
-
-    .story-ring :host ::ng-deep .p-avatar {
-      border: 2px solid var(--surface-card);
-    }
-
-    .story-add-ring {
-      background: var(--primary-color);
-    }
-
-    .story-add-avatar {
-      background: transparent !important;
-    }
-
-    .story-name {
-      font-size: 0.6875rem;
-      color: var(--text-secondary);
-      max-width: 64px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      text-align: center;
-    }
-
-    /* ===== RIGHT COLUMN ===== */
-    .right-column {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-    }
-
-    /* Level Card */
-    .level-card {
-      border-radius: var(--radius-md);
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-    }
-
-    .level-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 0.75rem;
-    }
-
-    .level-text {
-      display: flex;
-      flex-direction: column;
-      gap: 0.125rem;
-    }
-
-    .level-label {
-      font-size: 0.8125rem;
-      opacity: 0.85;
-    }
-
-    .level-number {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    .level-icon {
-      font-size: 1.75rem;
-      opacity: 0.85;
-    }
-
-    .level-bar-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 0.375rem;
-    }
-
-    .level-progress-bar {
-      height: 6px !important;
-      border-radius: var(--radius-full) !important;
-    }
-
-    .level-progress-bar :host ::ng-deep .p-progressbar {
-      height: 6px;
-      background: rgba(255, 255, 255, 0.25);
-      border-radius: var(--radius-full);
-    }
-
-    .level-progress-bar :host ::ng-deep .p-progressbar-value {
-      background: white;
-      border-radius: var(--radius-full);
-    }
-
-    .level-xp {
-      font-size: 0.75rem;
-      opacity: 0.85;
-    }
-
-    /* Achievements */
-    .achievement-item {
-      display: flex;
-      gap: 0.75rem;
-      padding: 0.75rem 0;
-      border-bottom: 1px solid var(--surface-border);
-    }
-
-    .achievement-item:last-child { border-bottom: none; }
-
-    .achievement-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: var(--radius-full);
-      background: var(--surface-hover);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-tertiary);
-      font-size: 1.25rem;
-      flex-shrink: 0;
-      border: 2px solid var(--surface-border);
-    }
-
-    .achievement-icon.unlocked {
-      background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover));
-      color: white;
-      border-color: transparent;
-    }
-
-    .achievement-info { flex: 1; min-width: 0; }
-
-    .achievement-name {
-      font-weight: 600;
-      color: var(--text-primary);
-      margin: 0 0 0.125rem 0;
-      font-size: 0.8125rem;
-    }
-
-    .achievement-desc {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      margin: 0 0 0.375rem 0;
-    }
-
-    .achievement-bar {
-      display: flex;
-      flex-direction: column;
-      gap: 0.125rem;
-    }
-
-    .achievement-progress-bar {
-      height: 4px !important;
-      border-radius: var(--radius-full) !important;
-    }
-
-    .achievement-progress-bar :host ::ng-deep .p-progressbar {
-      height: 4px;
-      background: var(--surface-hover);
-      border-radius: var(--radius-full);
-    }
-
-    .achievement-progress-bar :host ::ng-deep .p-progressbar-value {
-      background: linear-gradient(90deg, var(--primary-color), var(--primary-color-hover));
-      border-radius: var(--radius-full);
-    }
-
-    .achievement-count {
-      font-size: 0.6875rem;
-      color: var(--text-tertiary);
-    }
-
-    /* Suggestions */
-    .suggestion-item {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      padding: 0.625rem 0;
-      border-bottom: 1px solid var(--surface-border);
-      text-decoration: none;
-    }
-
-    .suggestion-item:last-child { border-bottom: none; }
-
-    .suggestion-info { flex: 1; min-width: 0; }
-
-    .suggestion-name {
-      display: block;
-      font-weight: 600;
-      color: var(--text-primary);
-      font-size: 0.8125rem;
-    }
-
-    .suggestion-username {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      margin-top: 0.0625rem;
-    }
-
-    /* Follow button - modern minimal style */
-    .follow-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.375rem 0.875rem;
-      border-radius: 9999px;
-      font-size: 0.8125rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      border: 1px solid var(--surface-border);
-      background: transparent;
-      color: var(--text-primary);
-      flex-shrink: 0;
-      line-height: 1;
-    }
-
-    .follow-btn:hover {
-      background: var(--surface-hover);
-      border-color: var(--text-secondary);
-    }
-
-    .follow-btn.following {
-      background: var(--surface-card);
-      border-color: var(--surface-border);
-      color: var(--text-secondary);
-    }
-
-    .follow-btn.following:hover {
-      border-color: #ef4444;
-      color: #ef4444;
-    }
-
-    .follow-btn.following:hover i {
-      color: #ef4444;
-    }
-
-    .follow-btn i {
-      font-size: 0.8125rem;
-    }
-
-    .suggestion-followers {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      margin-top: 0.0625rem;
-    }
-
-    /* Trends */
-    .trend-item {
-      padding: 0.75rem;
-      background: var(--surface-hover);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      margin-bottom: 0.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.125rem;
-    }
-
-    .trend-item:last-child { margin-bottom: 0; }
-
-    .trend-item:hover {
-      background: var(--surface-hover);
-      transform: translateX(2px);
-    }
-
-    .trend-category {
-      font-size: 0.6875rem;
-      color: var(--text-tertiary);
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-
-    .trend-name {
-      font-weight: 600;
-      color: var(--text-primary);
-      font-size: 0.875rem;
-    }
-
-    .trend-posts {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-    }
-
-    /* Loading Overlay */
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-    }
-
-    :host ::ng-deep .loading-overlay .p-progressbar {
-      height: 4px;
-    }
-
-    :host ::ng-deep .loading-overlay .p-progressbar-value {
-      background: var(--primary-color);
-    }
-
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 1200px) {
-      .home-container {
-        grid-template-columns: 1fr 320px;
-        max-width: 800px;
+  styles: [
+    `
+      /* ============================================================
+       PAGE
+       ============================================================ */
+
+      .home-page {
+        min-height: 100vh;
+        padding: 1.5rem 0;
       }
-      .left-column { display: none; }
-    }
 
-    @media (max-width: 900px) {
       .home-container {
-        grid-template-columns: 1fr;
-        max-width: 600px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 300px minmax(0, 1fr) 320px;
+        max-width: 1280px;
+        gap: 1.5rem;
+        padding: 0 1.5rem;
+        width: 100%;
+        box-sizing: border-box;
       }
-      .right-column { display: none; }
-    }
 
-    @media (max-width: 640px) {
-      .home-page { padding: 0.75rem 0; }
-      .home-container { padding: 0 0.75rem; gap: 1rem; }
-    }
-  `]
+      /* ============================================================
+       CARDS
+       ============================================================ */
+
+      .card-modern {
+        background: var(--surface-card);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        margin-bottom: 1rem;
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .card-header-icon {
+        color: var(--text-secondary);
+        font-size: 1.125rem;
+      }
+
+      .card-header-title {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .card-body {
+        padding: 0.5rem 1.25rem;
+      }
+
+      /* ============================================================
+       LEFT COLUMN
+       ============================================================ */
+
+      .left-column {
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ============================================================
+       PROMOS
+       ============================================================ */
+
+      .promo-item {
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .promo-item:last-child {
+        border-bottom: none;
+      }
+
+      .promo-image {
+        width: 56px;
+        height: 56px;
+        border-radius: var(--radius-sm);
+        object-fit: cover;
+        flex-shrink: 0;
+      }
+
+      .promo-content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .promo-title {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 0.125rem 0;
+        font-size: 0.8125rem;
+      }
+
+      .promo-desc {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin: 0 0 0.25rem 0;
+        line-height: 1.4;
+      }
+
+      /* ============================================================
+       SUGGESTIONS / VETS
+       ============================================================ */
+
+      .suggestion-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.625rem 0;
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .suggestion-item:last-child {
+        border-bottom: none;
+      }
+
+      .suggestion-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .suggestion-name {
+        display: block;
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.8125rem;
+        text-decoration: none;
+      }
+
+      .suggestion-name:hover {
+        color: var(--primary-color);
+      }
+
+      .suggestion-username {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: 0.0625rem;
+      }
+
+      .suggestion-followers {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: 0.0625rem;
+      }
+
+      /* ============================================================
+       FOLLOW BUTTON
+       ============================================================ */
+
+      .follow-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+
+        padding: 0.375rem 0.875rem;
+
+        border-radius: 9999px;
+
+        font-size: 0.8125rem;
+        font-weight: 500;
+
+        cursor: pointer;
+        transition: all 0.2s ease;
+
+        border: 1px solid var(--surface-border);
+
+        background: transparent;
+        color: var(--text-primary);
+
+        flex-shrink: 0;
+        line-height: 1;
+      }
+
+      .follow-btn:hover {
+        background: var(--surface-hover);
+        border-color: var(--text-secondary);
+      }
+
+      .follow-btn.following {
+        background: var(--surface-card);
+        border-color: var(--surface-border);
+        color: var(--text-secondary);
+      }
+
+      .follow-btn.following:hover {
+        border-color: #ef4444;
+        color: #ef4444;
+      }
+
+      .follow-btn.following:hover i {
+        color: #ef4444;
+      }
+
+      .follow-btn i {
+        font-size: 0.8125rem;
+      }
+
+      /* ============================================================
+       ADOPTIONS
+       ============================================================ */
+
+      .adoption-item {
+        display: flex;
+        gap: 0.75rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--surface-border);
+        align-items: center;
+      }
+
+      .adoption-item:last-child {
+        border-bottom: none;
+      }
+
+      .adoption-image {
+        width: 56px;
+        height: 56px;
+        border-radius: var(--radius-full);
+        object-fit: cover;
+        flex-shrink: 0;
+        border: 2px solid var(--primary-color);
+      }
+
+      .adoption-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .adoption-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+        font-size: 0.8125rem;
+      }
+
+      .adoption-breed {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin: 0.125rem 0 0.375rem 0;
+      }
+
+      /* ============================================================
+       CENTER COLUMN
+       ============================================================ */
+
+      .center-column {
+        min-width: 0;
+        width: 100%;
+        min-height: 0;
+        overflow: visible;
+      }
+
+      /* ============================================================
+       STORIES
+       ============================================================ */
+
+      .stories-card {
+        background: var(--surface-card);
+        border-radius: var(--radius-md);
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .stories-scroll {
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        padding: 0.25rem 0;
+
+        scrollbar-width: none;
+      }
+
+      .stories-scroll::-webkit-scrollbar {
+        display: none;
+      }
+
+      .story-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        gap: 0.375rem;
+
+        cursor: pointer;
+        flex-shrink: 0;
+
+        text-decoration: none;
+
+        min-width: 64px;
+      }
+
+      .story-ring {
+        padding: 2px;
+        border-radius: var(--radius-full);
+        background: var(--instagram-gradient);
+      }
+
+      .story-ring.seen {
+        background: var(--surface-border);
+      }
+
+      :host ::ng-deep .story-ring .p-avatar {
+        border: 2px solid var(--surface-card);
+      }
+
+      .story-name {
+        font-size: 0.6875rem;
+        color: var(--text-secondary);
+
+        max-width: 64px;
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        text-align: center;
+      }
+
+      /* ============================================================
+       RIGHT COLUMN
+       ============================================================ */
+
+      .right-column {
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ============================================================
+       LEVEL
+       ============================================================ */
+
+      .level-card {
+        border-radius: var(--radius-md);
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+      }
+
+      .level-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+
+        margin-bottom: 0.75rem;
+      }
+
+      .level-text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+      }
+
+      .level-label {
+        font-size: 0.8125rem;
+        opacity: 0.85;
+      }
+
+      .level-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .level-icon {
+        font-size: 1.75rem;
+        opacity: 0.85;
+      }
+
+      .level-bar-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 0.375rem;
+      }
+
+      :host ::ng-deep .level-progress-bar {
+        height: 6px !important;
+        border-radius: var(--radius-full) !important;
+      }
+
+      :host ::ng-deep .level-progress-bar .p-progressbar {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.25);
+        border-radius: var(--radius-full);
+      }
+
+      :host ::ng-deep .level-progress-bar .p-progressbar-value {
+        background: white;
+        border-radius: var(--radius-full);
+      }
+
+      .level-xp {
+        font-size: 0.75rem;
+        opacity: 0.85;
+      }
+
+      /* ============================================================
+       ACHIEVEMENTS
+       ============================================================ */
+
+      .achievement-item {
+        display: flex;
+        gap: 0.75rem;
+
+        padding: 0.75rem 0;
+
+        border-bottom: 1px solid var(--surface-border);
+      }
+
+      .achievement-item:last-child {
+        border-bottom: none;
+      }
+
+      .achievement-icon {
+        width: 44px;
+        height: 44px;
+
+        border-radius: var(--radius-full);
+
+        background: var(--surface-hover);
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        color: var(--text-tertiary);
+
+        font-size: 1.25rem;
+
+        flex-shrink: 0;
+
+        border: 2px solid var(--surface-border);
+      }
+
+      .achievement-icon.unlocked {
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover));
+
+        color: white;
+        border-color: transparent;
+      }
+
+      .achievement-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .achievement-name {
+        font-weight: 600;
+        color: var(--text-primary);
+
+        margin: 0 0 0.125rem 0;
+
+        font-size: 0.8125rem;
+      }
+
+      .achievement-desc {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+
+        margin: 0 0 0.375rem 0;
+      }
+
+      .achievement-bar {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+      }
+
+      :host ::ng-deep .achievement-progress-bar {
+        height: 4px !important;
+        border-radius: var(--radius-full) !important;
+      }
+
+      :host ::ng-deep .achievement-progress-bar .p-progressbar {
+        height: 4px;
+        background: var(--surface-hover);
+        border-radius: var(--radius-full);
+      }
+
+      :host ::ng-deep .achievement-progress-bar .p-progressbar-value {
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-color-hover));
+
+        border-radius: var(--radius-full);
+      }
+
+      .achievement-count {
+        font-size: 0.6875rem;
+        color: var(--text-tertiary);
+      }
+
+      /* ============================================================
+       TRENDS
+       ============================================================ */
+
+      .trend-item {
+        padding: 0.75rem;
+
+        background: var(--surface-hover);
+
+        border-radius: var(--radius-sm);
+
+        cursor: pointer;
+
+        transition: all var(--transition-fast);
+
+        margin-bottom: 0.5rem;
+
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+      }
+
+      .trend-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .trend-item:hover {
+        transform: translateX(2px);
+      }
+
+      .trend-category {
+        font-size: 0.6875rem;
+
+        color: var(--text-tertiary);
+
+        text-transform: uppercase;
+
+        letter-spacing: 0.03em;
+      }
+
+      .trend-name {
+        font-weight: 600;
+
+        color: var(--text-primary);
+
+        font-size: 0.875rem;
+      }
+
+      .trend-posts {
+        font-size: 0.75rem;
+
+        color: var(--text-secondary);
+      }
+
+      /* ============================================================
+       LOADING
+       ============================================================ */
+
+      .loading-overlay {
+        position: fixed;
+
+        top: 0;
+        left: 0;
+        right: 0;
+
+        z-index: 1000;
+      }
+
+      :host ::ng-deep .loading-overlay .p-progressbar {
+        height: 4px;
+      }
+
+      :host ::ng-deep .loading-overlay .p-progressbar-value {
+        background: var(--primary-color);
+      }
+
+      /* ============================================================
+       SKELETONS
+       ============================================================ */
+
+      .skeleton-user {
+        display: flex;
+        align-items: center;
+
+        gap: 0.75rem;
+
+        padding: 0.75rem 0;
+      }
+
+      .skeleton-user-info {
+        flex: 1;
+
+        display: flex;
+        flex-direction: column;
+
+        gap: 0.375rem;
+      }
+
+      .skeleton-achievement {
+        display: flex;
+
+        gap: 0.75rem;
+
+        padding: 0.75rem 0;
+      }
+
+      /* ============================================================
+       EMPTY STATES
+       ============================================================ */
+
+      .empty-state {
+        padding: 1rem 0;
+
+        text-align: center;
+
+        font-size: 0.8125rem;
+
+        color: var(--text-secondary);
+      }
+
+      .empty-stories {
+        padding: 0.75rem;
+
+        font-size: 0.75rem;
+
+        color: var(--text-secondary);
+      }
+
+      .loading-list {
+        padding: 0.5rem 0;
+      }
+
+      /* ============================================================
+       RESPONSIVE
+       ============================================================ */
+
+      @media (max-width: 1200px) {
+        .home-container {
+          grid-template-columns: minmax(0, 1fr) 320px;
+
+          max-width: 800px;
+        }
+
+        .left-column {
+          display: none;
+        }
+      }
+
+      @media (max-width: 900px) {
+        .home-container {
+          grid-template-columns: minmax(0, 1fr);
+
+          max-width: 600px;
+        }
+
+        .right-column {
+          display: none;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .home-page {
+          padding: 0.75rem 0;
+        }
+
+        .home-container {
+          padding: 0 0.75rem;
+
+          gap: 1rem;
+        }
+      }
+    `,
+  ],
 })
 export class HomePageComponent implements OnInit {
+  /* ============================================================
+     DEPENDENCIES
+     ============================================================ */
+
   private readonly homeService = inject(HomeService);
   private readonly profileService = inject(ProfileService);
   private readonly authService = inject(AuthService);
   private readonly likeService = inject(LikeService);
   private readonly cdr = inject(ChangeDetectorRef);
 
+  /* ============================================================
+     DATA
+     ============================================================ */
+
   stories: Story[] = [];
+
   posts = signal<Post[]>([]);
+
   suggestions: Suggestion[] = [];
+
   marketPromos: PromoItem[] = [];
+
   vets: Suggestion[] = [];
+
   newAdoptions: Adoption[] = [];
+
   upcomingAchievements: Achievement[] = [];
-  userLevel: UserLevel = { level: 12, currentXp: 650, totalXp: 1000 };
-  trendingTopics = signal<{ rank: number; name: string; posts: number }[]>([]);
 
-  // Current user
-  currentUserId = signal('');
+  /* ============================================================
+     USER LEVEL
+     ============================================================ */
 
-  // Vet user IDs (to exclude from suggestions)
+  userLevel: UserLevel = new UserLevel({
+    level: 12,
+    currentXp: 650,
+    totalXp: 1000,
+  });
+
+  /* ============================================================
+     TRENDS
+     ============================================================ */
+
+  trendingTopics = signal<
+    {
+      rank: number;
+      name: string;
+      posts: number;
+    }[]
+  >([]);
+
+  /* ============================================================
+     CURRENT USER
+     ============================================================ */
+
+  currentUserId = signal<string>('');
+
+  /* ============================================================
+     VETS
+     ============================================================ */
+
   vetUserIds = signal<Set<string>>(new Set());
 
-  // Loading states
+  /* ============================================================
+     LOADING STATES
+     ============================================================ */
+
   loadingPosts = signal(true);
+
   loadingStories = signal(true);
+
   loadingSuggestions = signal(true);
+
   loadingPromos = signal(true);
+
   loadingVets = signal(true);
+
   loadingAdoptions = signal(true);
+
   loadingAchievements = signal(true);
 
-  // Convert posts to PostItem format for the component
-  // Sort posts by timestamp (newest first) to match social-page behavior
+  /* ============================================================
+     COMPUTED
+     ============================================================ */
+
   postItems = computed((): PostItem[] => {
-    return this.posts()
+    return [...this.posts()]
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .map(post => ({
-      id: post.id,
-      user: {
-        name: post.user.name,
-        avatar: post.user.avatar,
-        username: post.user.username || '@usuario',
-        userId: post.user.userId
-      },
-      image: post.image,
-      caption: post.caption,
-      likes: post.likes,
-      comments: post.comments,
-      liked: post.liked,
-      saved: post.saved,
-      timestamp: post.timestamp,
-      likeAvatars: post.likeAvatars
-    }));
+      .map((post) => ({
+        id: post.id,
+
+        user: {
+          name: post.user.name,
+          avatar: post.user.avatar,
+          username: post.user.username || '@usuario',
+          userId: post.user.userId,
+        },
+
+        image: post.image,
+
+        caption: post.caption,
+
+        likes: post.likes,
+
+        comments: post.comments,
+
+        liked: post.liked,
+
+        saved: post.saved,
+
+        timestamp: post.timestamp,
+
+        likeAvatars: post.likeAvatars,
+      }));
   });
+
+  get levelProgress(): number {
+    if (!this.userLevel.totalXp || this.userLevel.totalXp <= 0) {
+      return 0;
+    }
+
+    return Math.min(100, Math.max(0, (this.userLevel.currentXp / this.userLevel.totalXp) * 100));
+  }
+
+  /* ============================================================
+     INIT
+     ============================================================ */
 
   ngOnInit(): void {
     this.initializeCurrentUser();
+
     this.loadAllData();
   }
 
+  /* ============================================================
+     CURRENT USER
+     ============================================================ */
+
   private initializeCurrentUser(): void {
     const currentUser = this.authService.user();
-    if (currentUser) {
+
+    if (currentUser?.id) {
       this.currentUserId.set(currentUser.id);
     }
   }
 
+  /* ============================================================
+     LOAD ALL DATA
+     ============================================================ */
+
   private loadAllData(): void {
     this.loadStories();
+
     this.loadPosts();
+
     this.loadVetsAndSuggestions();
+
     this.loadMarketPromos();
+
     this.loadNewAdoptions();
+
     this.loadAchievements();
+
     this.loadUserLevel();
+
     this.loadTrendingTopics();
   }
 
-  private loadVetsAndSuggestions(): void {
-    // Load vets first, then suggestions (to avoid duplicates)
-    this.loadVets();
-    // Small delay to ensure vets are loaded first
-    setTimeout(() => {
-      this.loadSuggestions();
-    }, 100);
-  }
+  /* ============================================================
+     STORIES
+     ============================================================ */
 
   private loadStories(): void {
     this.loadingStories.set(true);
 
     forkJoin({
       stories: this.homeService.getStories(),
-      profiles: this.homeService.getAllProfiles()
-    }).pipe(
-      finalize(() => {
-        this.loadingStories.set(false);
-        this.cdr.detectChanges();
-      })
-    ).subscribe({
-      next: (response) => {
-        if (response.stories && response.stories.length > 0) {
+
+      profiles: this.homeService.getAllProfiles(),
+    })
+      .pipe(
+        finalize(() => {
+          this.loadingStories.set(false);
+
+          this.cdr.detectChanges();
+        }),
+      )
+      .subscribe({
+        next: (response) => {
+          if (!response.stories || response.stories.length === 0) {
+            this.stories = [];
+
+            return;
+          }
+
           const profiles = response.profiles || [];
 
-          // Create a map for faster lookup (keyed by authUserId)
-          const profileMap = new Map(profiles.map(p => [p.authUserId, p]));
+          const profileMap = new Map(profiles.map((profile) => [profile.authUserId, profile]));
 
-          this.stories = response.stories.map(story => {
+          this.stories = response.stories.map((story) => {
             const profile = profileMap.get(story.userId);
+
             return new Story({
               id: story.id,
+
               user: new User({
                 name: profile ? `${profile.firstName} ${profile.lastName}` : 'Usuario',
+
                 avatar: profile?.avatarUrl || 'https://i.pravatar.cc/150?img=1',
-                userId: profile?.authUserId || story.userId // Use authUserId as the unique identifier
+
+                userId: profile?.authUserId || story.userId,
               }),
-              seen: story.seen
+
+              seen: story.seen,
             });
           });
-          this.cdr.detectChanges();
-        } else {
+        },
+
+        error: (error) => {
+          console.error('Error loading stories:', error);
+
           this.stories = [];
-          this.cdr.detectChanges();
-        }
-      },
-      error: (err) => {
-        console.error('Error loading stories:', err);
-        this.stories = [];
-        this.cdr.detectChanges();
-      }
-    });
+        },
+      });
   }
+
+  /* ============================================================
+     POSTS
+     ============================================================ */
 
   private loadPosts(): void {
     this.loadingPosts.set(true);
+
     const userId = this.currentUserId();
 
-    // If user is logged in, load posts from followed users
     if (userId) {
       this.homeService.getPostsByFollowing(userId).subscribe({
         next: (posts) => {
@@ -893,476 +1371,669 @@ export class HomePageComponent implements OnInit {
             next: (profiles) => {
               this.processPosts(posts, profiles, userId);
             },
+
             error: () => {
               this.processPosts(posts, [], userId);
-            }
+            },
           });
         },
-        error: (err) => {
-          console.error('Error loading posts from following:', err);
-          // Fallback to all posts
-          this.homeService.getAllPosts().subscribe({
-            next: (posts) => {
-              this.homeService.getAllProfiles().subscribe({
-                next: (profiles) => {
-                  this.processPosts(posts, profiles, userId);
-                },
-                error: () => {
-                  this.processPosts(posts, [], userId);
-                }
-              });
-            },
-            error: () => {
-              this.loadingPosts.set(false);
-              this.cdr.detectChanges();
-            }
-          });
-        }
-      });
-    } else {
-      // If not logged in, load all posts
-      this.homeService.getAllPosts().subscribe({
-        next: (posts) => {
-          this.homeService.getAllProfiles().subscribe({
-            next: (profiles) => {
-              this.processPosts(posts, profiles, '');
-            },
-            error: () => {
-              this.processPosts(posts, [], '');
-            }
-          });
+
+        error: (error) => {
+          console.error('Error loading posts from following:', error);
+
+          this.loadAllPostsFallback(userId);
         },
-        error: (err) => {
-          console.error('Error loading posts:', err);
-          this.loadingPosts.set(false);
-          this.cdr.detectChanges();
-        }
       });
+
+      return;
     }
+
+    this.loadAllPostsFallback('');
   }
 
-  private processPosts(posts: PostResponse[], profiles: UserProfileResponse[], userId: string): void {
-    if (posts && posts.length > 0) {
-      // First, create posts with basic data
-      const loadedPosts = posts.map(post => {
-        const profile = profiles.find(p => p.authUserId === post.authorId);
-        return new Post({
-          id: post.id,
-          user: new User({
-            name: profile ? `${profile.firstName} ${profile.lastName}` : 'Usuario',
-            avatar: profile?.avatarUrl || 'https://i.pravatar.cc/150?img=1',
-            username: profile ? `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}` : '@usuario',
-            userId: post.authorId
-          }),
-          timestamp: new Date(post.createdAt),
-          image: post.imageUrl,
-          likes: post.likesCount || 0,
-          comments: post.commentsCount || 0,
-          caption: post.caption || '',
-          liked: false,
-          saved: false
-        });
-      });
+  private loadAllPostsFallback(userId: string): void {
+    this.homeService.getAllPosts().subscribe({
+      next: (posts) => {
+        this.homeService.getAllProfiles().subscribe({
+          next: (profiles) => {
+            this.processPosts(posts, profiles, userId);
+          },
 
-      // If user is logged in, fetch like status and avatars for each post
-      if (userId && loadedPosts.length > 0) {
-        const likeStatusRequests = loadedPosts.map(post =>
-          this.likeService.getLikeStatus('POST', post.id, userId).pipe(
-            catchError(() => of({ liked: false, count: post.likes }))
-          )
+          error: () => {
+            this.processPosts(posts, [], userId);
+          },
+        });
+      },
+
+      error: (error) => {
+        console.error('Error loading posts:', error);
+
+        this.posts.set([]);
+
+        this.loadingPosts.set(false);
+
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  private processPosts(
+    posts: PostResponse[],
+    profiles: UserProfileResponse[],
+    userId: string,
+  ): void {
+    if (!posts || posts.length === 0) {
+      this.posts.set([]);
+
+      this.loadingPosts.set(false);
+
+      this.cdr.detectChanges();
+
+      return;
+    }
+
+    const loadedPosts = posts.map((post) => {
+      const profile = profiles.find((p) => p.authUserId === post.authorId);
+
+      return new Post({
+        id: post.id,
+
+        user: new User({
+          name: profile ? `${profile.firstName} ${profile.lastName}` : 'Usuario',
+
+          avatar: profile?.avatarUrl || 'https://i.pravatar.cc/150?img=1',
+
+          username: profile
+            ? `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}`
+            : '@usuario',
+
+          userId: post.authorId,
+        }),
+
+        timestamp: new Date(post.createdAt),
+
+        image: post.imageUrl,
+
+        likes: post.likesCount || 0,
+
+        comments: post.commentsCount || 0,
+
+        caption: post.caption || '',
+
+        liked: false,
+
+        saved: false,
+      });
+    });
+
+    if (!userId || loadedPosts.length === 0) {
+      this.posts.set(loadedPosts);
+
+      this.loadingPosts.set(false);
+
+      this.cdr.detectChanges();
+
+      return;
+    }
+
+    /* ==========================================================
+       LIKE STATUS
+       ========================================================== */
+
+    const likeStatusRequests = loadedPosts.map((post) =>
+      this.likeService.getLikeStatus('POST', post.id, userId).pipe(
+        catchError(() =>
+          of({
+            liked: false,
+            count: post.likes,
+          }),
+        ),
+      ),
+    );
+
+    forkJoin(likeStatusRequests).subscribe({
+      next: (likeStatuses) => {
+        loadedPosts.forEach((post, index) => {
+          const status = likeStatuses[index];
+
+          post.liked = status?.liked ?? false;
+
+          post.likes = status?.count ?? post.likes;
+        });
+
+        /* ========================================================
+             LIKE AVATARS
+             ======================================================== */
+
+        const likeAvatarsRequests = loadedPosts.map((post) =>
+          this.likeService.getLikes('POST', post.id).pipe(catchError(() => of([]))),
         );
 
-        forkJoin(likeStatusRequests).subscribe({
-          next: (likeStatuses) => {
-            // Update liked status and likes count
+        forkJoin(likeAvatarsRequests).subscribe({
+          next: (likesArrays) => {
             loadedPosts.forEach((post, index) => {
-              post.liked = likeStatuses[index].liked;
-              post.likes = likeStatuses[index].count;
+              const likes = likesArrays[index] || [];
+
+              const avatarUrls = likes
+
+                .map((like) => {
+                  const profile = profiles.find((p) => p.authUserId === like.userId);
+
+                  return profile?.avatarUrl;
+                })
+
+                .filter((url): url is string => !!url)
+
+                .slice(0, 3);
+
+              post.likeAvatars = avatarUrls;
             });
 
-            // Fetch like avatars for each post (up to 3)
-            const likeAvatarsRequests = loadedPosts.map(post =>
-              this.likeService.getLikes('POST', post.id).pipe(
-                catchError(() => of([]))
-              )
+            this.posts.set(loadedPosts);
+
+            this.loadingPosts.set(false);
+
+            this.cdr.detectChanges();
+          },
+
+          error: (error) => {
+            console.error('Error loading like avatars:', error);
+
+            this.posts.set(loadedPosts);
+
+            this.loadingPosts.set(false);
+
+            this.cdr.detectChanges();
+          },
+        });
+      },
+
+      error: (error) => {
+        console.error('Error loading like status:', error);
+
+        this.posts.set(loadedPosts);
+
+        this.loadingPosts.set(false);
+
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  /* ============================================================
+     VETS + SUGGESTIONS
+     ============================================================ */
+
+  private loadVetsAndSuggestions(): void {
+    this.loadVets();
+  }
+
+  /* ============================================================
+     VETS
+     ============================================================ */
+
+  private loadVets(): void {
+    this.loadingVets.set(true);
+
+    const userId = this.currentUserId();
+
+    this.profileService.getAllProfiles().subscribe({
+      next: (response) => {
+        if (!response || response.length === 0) {
+          this.vets = [];
+
+          this.vetUserIds.set(new Set());
+
+          this.loadingVets.set(false);
+
+          this.loadSuggestions();
+
+          this.cdr.detectChanges();
+
+          return;
+        }
+
+        const vetProfiles = response
+          .filter((profile) => profile.profileType?.toLowerCase() === 'vet')
+          .slice(0, 4);
+
+        if (!userId) {
+          this.vets = vetProfiles.map((profile) => this.createSuggestion(profile, false));
+
+          this.updateVetIds();
+
+          this.loadingVets.set(false);
+
+          this.loadSuggestions();
+
+          this.cdr.detectChanges();
+
+          return;
+        }
+
+        this.homeService.getFollowing(userId).subscribe({
+          next: (followingResponse) => {
+            const followedUserIds = new Set(
+              (followingResponse || []).map((follow) => follow.followingId || follow.id),
             );
 
-            forkJoin(likeAvatarsRequests).subscribe({
-              next: (likesArrays) => {
-                loadedPosts.forEach((post, index) => {
-                  const likes = likesArrays[index];
-                  // Get avatar URLs for users who liked the post
-                  const avatarUrls = likes
-                    .map(like => {
-                      const profile = profiles.find(p => p.authUserId === like.userId);
-                      return profile?.avatarUrl;
-                    })
-                    .filter((url): url is string => !!url)
-                    .slice(0, 3);
-                  post.likeAvatars = avatarUrls;
-                });
-                this.posts.set(loadedPosts);
-                this.loadingPosts.set(false);
-                this.cdr.detectChanges();
-              },
-              error: () => {
-                this.posts.set(loadedPosts);
-                this.loadingPosts.set(false);
-                this.cdr.detectChanges();
-              }
-            });
-          },
-          error: () => {
-            // If like status check fails, still show posts with liked: false
-            this.posts.set(loadedPosts);
-            this.loadingPosts.set(false);
+            this.vets = vetProfiles.map((profile) =>
+              this.createSuggestion(profile, followedUserIds.has(profile.authUserId)),
+            );
+
+            this.updateVetIds();
+
+            this.loadingVets.set(false);
+
+            this.loadSuggestions();
+
             this.cdr.detectChanges();
-          }
+          },
+
+          error: (error) => {
+            console.error('Error loading following for vets:', error);
+
+            this.vets = vetProfiles.map((profile) => this.createSuggestion(profile, false));
+
+            this.updateVetIds();
+
+            this.loadingVets.set(false);
+
+            this.loadSuggestions();
+
+            this.cdr.detectChanges();
+          },
         });
-      } else {
-        this.posts.set(loadedPosts);
-        this.loadingPosts.set(false);
+      },
+
+      error: (error) => {
+        console.error('Error loading vets:', error);
+
+        this.vets = [];
+
+        this.vetUserIds.set(new Set());
+
+        this.loadingVets.set(false);
+
+        this.loadSuggestions();
+
         this.cdr.detectChanges();
-      }
-    } else {
-      this.posts.set([]);
-      this.loadingPosts.set(false);
-      this.cdr.detectChanges();
-    }
+      },
+    });
   }
+
+  private updateVetIds(): void {
+    this.vetUserIds.set(new Set(this.vets.map((vet) => vet.userId)));
+  }
+
+  /* ============================================================
+     SUGGESTIONS
+     ============================================================ */
 
   private loadSuggestions(): void {
     this.loadingSuggestions.set(true);
+
     const userId = this.currentUserId();
 
-    this.profileService.getAllProfiles().pipe(
-      finalize(() => {
-        this.loadingSuggestions.set(false);
-        this.cdr.detectChanges();
-      })
-    ).subscribe({
+    this.profileService.getAllProfiles().subscribe({
       next: (response) => {
-        if (response && response.length > 0) {
-          // Get the list of users that the current user follows
-          if (userId) {
-            this.homeService.getFollowing(userId).subscribe({
-              next: (followingResponse) => {
-                const followedUserIds = new Set(
-                  (followingResponse || []).map(f => f.followingId || f.id)
-                );
-
-                // Map profiles to suggestions, excluding the current user, pet profiles, and vets
-                // Use authUserId as the unique identifier for the user
-                const vetIds = this.vetUserIds();
-                this.suggestions = response
-                  .filter(profile => profile.profileType !== 'PET' && profile.authUserId !== userId && !vetIds.has(profile.authUserId))
-                  .slice(0, 5) // Limit to 5 suggestions
-                  .map(profile => new Suggestion({
-                    name: `${profile.firstName} ${profile.lastName}`,
-                    username: `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}`,
-                    avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=1',
-                    followers: this.formatFollowers(Math.floor(Math.random() * 1000) + 100),
-                    userId: profile.authUserId,
-                    isFollowing: followedUserIds.has(profile.authUserId)
-                  }));
-                this.cdr.detectChanges();
-              },
-              error: () => {
-                // If following endpoint fails, show profiles without follow status
-                this.suggestions = response
-                  .filter(profile => profile.profileType !== 'PET' && profile.authUserId !== userId)
-                  .slice(0, 5)
-                  .map(profile => new Suggestion({
-                    name: `${profile.firstName} ${profile.lastName}`,
-                    username: `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}`,
-                    avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=1',
-                    followers: this.formatFollowers(Math.floor(Math.random() * 1000) + 100),
-                    userId: profile.authUserId,
-                    isFollowing: false
-                  }));
-                this.cdr.detectChanges();
-              }
-            });
-          } else {
-            // If not logged in, show profiles without follow status
-            this.suggestions = response
-              .filter(profile => profile.profileType !== 'PET')
-              .slice(0, 5)
-              .map(profile => new Suggestion({
-                name: `${profile.firstName} ${profile.lastName}`,
-                username: `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}`,
-                avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=1',
-                followers: this.formatFollowers(Math.floor(Math.random() * 1000) + 100),
-                userId: profile.authUserId,
-                isFollowing: false
-              }));
-            this.cdr.detectChanges();
-          }
-        } else {
+        if (!response || response.length === 0) {
           this.suggestions = [];
+
+          this.loadingSuggestions.set(false);
+
           this.cdr.detectChanges();
+
+          return;
         }
+
+        const vetIds = this.vetUserIds();
+
+        const loadSuggestionsWithFollowing = (followedUserIds: Set<string>) => {
+          this.suggestions = response
+
+            .filter(
+              (profile) =>
+                profile.profileType !== 'PET' &&
+                profile.authUserId !== userId &&
+                !vetIds.has(profile.authUserId),
+            )
+
+            .slice(0, 4)
+
+            .map((profile) =>
+              this.createSuggestion(profile, followedUserIds.has(profile.authUserId)),
+            );
+
+          this.loadingSuggestions.set(false);
+
+          this.cdr.detectChanges();
+        };
+
+        if (!userId) {
+          loadSuggestionsWithFollowing(new Set());
+
+          return;
+        }
+
+        this.homeService.getFollowing(userId).subscribe({
+          next: (followingResponse) => {
+            const followedUserIds = new Set(
+              (followingResponse || []).map((follow) => follow.followingId || follow.id),
+            );
+
+            loadSuggestionsWithFollowing(followedUserIds);
+          },
+
+          error: (error) => {
+            console.error('Error loading following for suggestions:', error);
+
+            loadSuggestionsWithFollowing(new Set());
+          },
+        });
       },
-      error: (err) => {
-        console.error('Error loading suggestions:', err);
+
+      error: (error) => {
+        console.error('Error loading suggestions:', error);
+
         this.suggestions = [];
+
+        this.loadingSuggestions.set(false);
+
         this.cdr.detectChanges();
-      }
+      },
     });
   }
+
+  /* ============================================================
+     CREATE SUGGESTION
+     ============================================================ */
+
+  private createSuggestion(profile: UserProfileResponse, isFollowing: boolean): Suggestion {
+    return new Suggestion({
+      name: `${profile.firstName} ${profile.lastName}`,
+
+      username: `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}`,
+
+      avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=1',
+
+      followers: this.formatFollowers(Math.floor(Math.random() * 1000) + 100),
+
+      userId: profile.authUserId,
+
+      isFollowing,
+    });
+  }
+
+  /* ============================================================
+     MARKET PROMOS
+     ============================================================ */
 
   private loadMarketPromos(): void {
     this.loadingPromos.set(true);
 
-    this.homeService.getMarketPromos().pipe(
-      finalize(() => {
-        this.loadingPromos.set(false);
-        this.cdr.detectChanges();
-      })
-    ).subscribe({
-      next: (response) => {
-        if (response && response.length > 0) {
-          this.marketPromos = response.map(promo => new PromoItem(promo));
+    this.homeService
+      .getMarketPromos()
+      .pipe(
+        finalize(() => {
+          this.loadingPromos.set(false);
+
           this.cdr.detectChanges();
-        } else {
-          this.marketPromos = [];
-          this.cdr.detectChanges();
-        }
-      },
-      error: (err) => {
-        console.error('Error loading market promos:', err);
-        this.marketPromos = [];
-        this.cdr.detectChanges();
-      }
-    });
-  }
+        }),
+      )
+      .subscribe({
+        next: (response) => {
+          if (response && response.length > 0) {
+            this.marketPromos = response
 
-  private loadVets(): void {
-    this.loadingVets.set(true);
-    const userId = this.currentUserId();
+              .map((promo) => new PromoItem(promo))
 
-    this.profileService.getAllProfiles().pipe(
-      finalize(() => {
-        this.loadingVets.set(false);
-        this.cdr.detectChanges();
-      })
-    ).subscribe({
-      next: (response) => {
-        if (response && response.length > 0) {
-          // If user is logged in, get following status
-          if (userId) {
-            this.homeService.getFollowing(userId).subscribe({
-              next: (followingResponse) => {
-                const followedUserIds = new Set(
-                  (followingResponse || []).map(f => f.followingId || f.id)
-                );
-
-                // Filter profiles with profileType equal to 'vet'
-                // Use authUserId as the unique identifier for the user
-                const vetProfiles = response
-                  .filter(profile => profile.profileType?.toLowerCase() === 'vet')
-                  .slice(0, 5) // Limit to 5 vets
-                  .map(profile => new Suggestion({
-                    name: `${profile.firstName} ${profile.lastName}`,
-                    username: `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}`,
-                    avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=1',
-                    followers: this.formatFollowers(Math.floor(Math.random() * 1000) + 100),
-                    userId: profile.authUserId,
-                    isFollowing: followedUserIds.has(profile.authUserId)
-                  }));
-
-                // Store vet user IDs to exclude from suggestions
-                this.vetUserIds.set(new Set(vetProfiles.map(v => v.userId)));
-                this.vets = vetProfiles;
-                this.cdr.detectChanges();
-              },
-              error: () => {
-                // If following endpoint fails, show vets without follow status
-                this.vets = response
-                  .filter(profile => profile.profileType?.toLowerCase() === 'vet')
-                  .slice(0, 5)
-                  .map(profile => new Suggestion({
-                    name: `${profile.firstName} ${profile.lastName}`,
-                    username: `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}`,
-                    avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=1',
-                    followers: this.formatFollowers(Math.floor(Math.random() * 1000) + 100),
-                    userId: profile.authUserId,
-                    isFollowing: false
-                  }));
-                this.cdr.detectChanges();
-              }
-            });
+              .slice(0, 4);
           } else {
-            // If not logged in, show vets without follow status
-            this.vets = response
-              .filter(profile => profile.profileType?.toLowerCase() === 'vet')
-              .slice(0, 5)
-              .map(profile => new Suggestion({
-                name: `${profile.firstName} ${profile.lastName}`,
-                username: `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}`,
-                avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=1',
-                followers: this.formatFollowers(Math.floor(Math.random() * 1000) + 100),
-                userId: profile.authUserId,
-                isFollowing: false
-              }));
-            this.cdr.detectChanges();
+            this.marketPromos = [];
           }
-        } else {
-          this.vets = [];
-          this.cdr.detectChanges();
-        }
-      },
-      error: (err) => {
-        console.error('Error loading vets:', err);
-        this.vets = [];
-        this.cdr.detectChanges();
-      }
-    });
+        },
+
+        error: (error) => {
+          console.error('Error loading market promos:', error);
+
+          this.marketPromos = [];
+        },
+      });
   }
+
+  /* ============================================================
+     ADOPTIONS
+     ============================================================ */
 
   private loadNewAdoptions(): void {
     this.loadingAdoptions.set(true);
 
-    this.homeService.getNewAdoptions().pipe(
-      finalize(() => {
-        this.loadingAdoptions.set(false);
-        this.cdr.detectChanges();
-      })
-    ).subscribe({
-      next: (response) => {
-        if (response && response.length > 0) {
-          this.newAdoptions = response.map(adoption => new Adoption(adoption));
+    this.homeService
+      .getNewAdoptions()
+      .pipe(
+        finalize(() => {
+          this.loadingAdoptions.set(false);
+
           this.cdr.detectChanges();
-        } else {
+        }),
+      )
+      .subscribe({
+        next: (response) => {
+          if (response && response.length > 0) {
+            this.newAdoptions = response
+
+              .map((adoption) => new Adoption(adoption))
+
+              .slice(0, 4);
+          } else {
+            this.newAdoptions = [];
+          }
+        },
+
+        error: (error) => {
+          console.error('Error loading new adoptions:', error);
+
           this.newAdoptions = [];
-          this.cdr.detectChanges();
-        }
-      },
-      error: (err) => {
-        console.error('Error loading new adoptions:', err);
-        this.newAdoptions = [];
-        this.cdr.detectChanges();
-      }
-    });
+        },
+      });
   }
+
+  /* ============================================================
+     ACHIEVEMENTS
+     ============================================================ */
 
   private loadAchievements(): void {
     this.loadingAchievements.set(true);
 
-    this.homeService.getUpcomingAchievements().pipe(
-      finalize(() => {
-        this.loadingAchievements.set(false);
-        this.cdr.detectChanges();
-      })
-    ).subscribe({
-      next: (response) => {
-        if (response && response.length > 0) {
-          this.upcomingAchievements = response.map(achievement => new Achievement(achievement));
+    this.homeService
+      .getUpcomingAchievements()
+      .pipe(
+        finalize(() => {
+          this.loadingAchievements.set(false);
+
           this.cdr.detectChanges();
-        } else {
+        }),
+      )
+      .subscribe({
+        next: (response) => {
+          if (response && response.length > 0) {
+            this.upcomingAchievements = response
+
+              .map((achievement) => new Achievement(achievement))
+
+              .slice(0, 4);
+          } else {
+            this.upcomingAchievements = [];
+          }
+        },
+
+        error: (error) => {
+          console.error('Error loading achievements:', error);
+
           this.upcomingAchievements = [];
-          this.cdr.detectChanges();
-        }
-      },
-      error: (err) => {
-        console.error('Error loading achievements:', err);
-        this.upcomingAchievements = [];
-        this.cdr.detectChanges();
-      }
-    });
+        },
+      });
   }
+
+  /* ============================================================
+     USER LEVEL
+     ============================================================ */
 
   private loadUserLevel(): void {
     this.homeService.getUserLevel().subscribe({
       next: (response) => {
         if (response) {
           this.userLevel = new UserLevel(response);
+
           this.cdr.detectChanges();
         }
       },
-      error: (err) => {
-        console.error('Error loading user level:', err);
-      }
+
+      error: (error) => {
+        console.error('Error loading user level:', error);
+      },
     });
   }
+
+  /* ============================================================
+     ACHIEVEMENT PROGRESS
+     ============================================================ */
+
+  getAchievementProgress(achievement: Achievement): number {
+    if (!achievement.total || achievement.total <= 0) {
+      return 0;
+    }
+
+    return Math.min(100, Math.max(0, (achievement.progress / achievement.total) * 100));
+  }
+
+  /* ============================================================
+     FOLLOWERS
+     ============================================================ */
 
   private formatFollowers(count: number): string {
     if (count >= 1000) {
       return `${(count / 1000).toFixed(1)}k`;
     }
+
     return count.toString();
   }
+
+  /* ============================================================
+     TRENDING TOPICS
+     ============================================================ */
 
   private loadTrendingTopics(): void {
     this.homeService.getTrendingTopics().subscribe({
       next: (topics) => {
-        // Show only top 3 trending topics
-        const topTopics = topics.slice(0, 3);
-        this.trendingTopics.set(topTopics.map((topic, index) => ({
-          rank: index + 1,
-          name: topic.name,
-          posts: topic.postsCount
-        })));
+        const topTopics = (topics || []).slice(0, 4);
+
+        this.trendingTopics.set(
+          topTopics.map((topic, index) => ({
+            rank: index + 1,
+
+            name: topic.name,
+
+            posts: topic.postsCount,
+          })),
+        );
       },
-      error: (err) => {
-        console.error('Error loading trending topics:', err);
-      }
+
+      error: (error) => {
+        console.error('Error loading trending topics:', error);
+
+        this.trendingTopics.set([]);
+      },
     });
   }
 
+  /* ============================================================
+     LIKE TOGGLE
+     ============================================================ */
+
   onLikeToggled(post: PostItem): void {
-    // Handle like toggle from child component
-    const currentPosts = this.posts();
-    const index = currentPosts.findIndex(p => p.id === post.id);
-    if (index !== -1) {
-      currentPosts[index].liked = post.liked;
-      currentPosts[index].likes = post.likes;
-      this.posts.set([...currentPosts]);
+    const currentPosts = [...this.posts()];
+
+    const index = currentPosts.findIndex((p) => p.id === post.id);
+
+    if (index === -1) {
+      return;
     }
+
+    currentPosts[index].liked = post.liked;
+
+    currentPosts[index].likes = post.likes;
+
+    this.posts.set(currentPosts);
   }
+
+  /* ============================================================
+     SAVE TOGGLE
+     ============================================================ */
 
   onSaveToggled(post: PostItem): void {
-    // Handle save toggle from child component
-    const currentPosts = this.posts();
-    const index = currentPosts.findIndex(p => p.id === post.id);
-    if (index !== -1) {
-      currentPosts[index].saved = post.saved;
-      this.posts.set([...currentPosts]);
+    const currentPosts = [...this.posts()];
+
+    const index = currentPosts.findIndex((p) => p.id === post.id);
+
+    if (index === -1) {
+      return;
     }
+
+    currentPosts[index].saved = post.saved;
+
+    this.posts.set(currentPosts);
   }
 
-  // Toggle follow/unfollow for a suggestion
+  /* ============================================================
+     FOLLOW / UNFOLLOW
+     ============================================================ */
+
   toggleFollow(suggestion: Suggestion): void {
     const userId = this.currentUserId();
-    if (!userId) return;
+
+    if (!userId) {
+      return;
+    }
 
     const wasFollowing = suggestion.isFollowing;
-    suggestion.isFollowing = !suggestion.isFollowing;
+
+    // Optimistic UI
+    suggestion.isFollowing = !wasFollowing;
+
+    this.cdr.detectChanges();
 
     if (suggestion.isFollowing) {
-      // Follow the user
       this.homeService.followUser(userId, suggestion.userId).subscribe({
         next: () => {
-          // Refresh posts to include new followed user's posts
           this.loadPosts();
         },
-        error: () => {
-          // Revert on error
+
+        error: (error) => {
+          console.error('Error following user:', error);
+
           suggestion.isFollowing = wasFollowing;
-        }
-      });
-    } else {
-      // Unfollow the user
-      this.homeService.unfollowUser(userId, suggestion.userId).subscribe({
-        next: () => {
-          // Refresh posts to remove unfollowed user's posts
-          this.loadPosts();
+
+          this.cdr.detectChanges();
         },
-        error: () => {
-          // Revert on error
-          suggestion.isFollowing = wasFollowing;
-        }
       });
+
+      return;
     }
+
+    this.homeService.unfollowUser(userId, suggestion.userId).subscribe({
+      next: () => {
+        this.loadPosts();
+      },
+
+      error: (error) => {
+        console.error('Error unfollowing user:', error);
+
+        suggestion.isFollowing = wasFollowing;
+
+        this.cdr.detectChanges();
+      },
+    });
   }
 }

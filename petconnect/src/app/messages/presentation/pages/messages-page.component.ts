@@ -882,6 +882,9 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
       next: (convs) => {
         this.conversations.set(convs);
         this.loadingConversations.set(false);
+        // Sincronizar el contador global de no leídos con el servidor
+        // (refleja las conversaciones ya leídas en la página).
+        this.webSocket.refreshUnreadCount();
       },
       error: () => this.loadingConversations.set(false)
     });
@@ -936,9 +939,14 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
         this.messages.set([...(page.content ?? [])].reverse());
         this.loadingMessages.set(false);
         // Actualizar contador local de no leídos
+        const previous = this.conversations().find(c => c.id === conversationId)?.unreadCount ?? 0;
         this.conversations.update(list =>
           list.map(c => (c.id === conversationId ? { ...c, unreadCount: 0 } : c))
         );
+        // Reflejar la lectura en el contador global del header.
+        if (previous > 0) {
+          this.webSocket.decrementUnreadCount(previous);
+        }
       },
       error: () => this.loadingMessages.set(false)
     });

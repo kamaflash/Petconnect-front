@@ -9,6 +9,10 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { AuthService } from '../../infrastructure/services/auth.service';
 import { RegisterData } from '../../domain/repositories/auth.repository';
 import { Router, RouterLink } from '@angular/router';
+import { environment } from '../../../../environments/environment';
+
+// Google Identity Services inyecta `window.google` tras cargar el script.
+declare const google: any;
 
 interface ProfileTypeOption {
   value: 'user' | 'vet' | 'shelter' | 'trainer' | 'seller';
@@ -1287,14 +1291,58 @@ export class LoginPageComponent {
     }
   }
 
-  async onGoogleLogin(): Promise<void> {
-    this.googleLoading.set(true);
-    this.error.set(null);
+    private googleScriptLoaded = false;
+  private googleInitialized = false;
+
+  /** Carga el script de Google Identity Services y lo inicializa una sola vez. */
+  private loadGoogle(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (this.googleInitialized) {
+        resolve();
+        return;
+      }
+
+      const init = () => {
+        google.accounts.id.initialize({
+          client_id: environment.googleClientId,
+          callback: (response: any) => this.handleGoogleCredential(response)
+        });
+        this.googleInitialized = true;
+        resolve();
+      };
+
+      if (typeof google !== 'undefined' && google?.accounts?.id) {
+        init();
+        return;
+      }
+
+      if (this.googleScriptLoaded) {
+        // El script está cargado pero google aún no está listo: reintentar en breve.
+        setTimeout(() => init(), 50);
+        return;
+      }
+
+      this.googleScriptLoaded = true;
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => init();
+      script.onerror = () => reject(new Error('No se pudo cargar Google Identity Services'));
+      document.head.appendChild(script);
+    });
+  }
+
+  /** Callback de GIS: recibe el ID token y lo envía al backend. */
+  private async handleGoogleCredential(response: { credential?: string }): Promise<void> {
+    if (!response?.credential) {
+      this.googleLoading.set(false);
+      this.error.set('No se obtuvo la credencial de Google');
+      return;
+    }
 
     try {
-      // Simulación de login con Google
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('Login con Google exitoso');
+      await this.authService.loginWithGoogle(response.credential);
 
       if (this.inModal()) {
         this.loginSuccess.emit();
@@ -1306,6 +1354,25 @@ export class LoginPageComponent {
       this.error.set('Error al iniciar sesión con Google. Por favor, intenta de nuevo.');
     } finally {
       this.googleLoading.set(false);
+    }
+  }
+
+  async onGoogleLogin(): Promise<void> {
+    this.googleLoading.set(true);
+    this.error.set(null);
+
+    try {
+      await this.loadGoogle();
+      // `prompt` abre el selector de cuenta de Google (Sign in with Google).
+      google.accounts.id.prompt({
+        context: 'signin',
+        // Si el usuario cierra el diálogo sin elegir cuenta, no bloqueamos el loading.
+        cancel_on_click: true
+      });
+      // El callback handleGoogleCredential se encarga de navegar / cerrar el modal.
+    } catch (err) {
+      this.googleLoading.set(false);
+      this.error.set('Google Identity Services no está disponible. Por favor, intenta de nuevo.');
     }
   }
 

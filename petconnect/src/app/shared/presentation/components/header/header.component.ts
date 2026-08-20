@@ -1,3 +1,4 @@
+/* eslint-disable import/order */
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
@@ -5,14 +6,14 @@ import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { ThemeService } from '../../../infrastructure/services/theme.service';
 import { TooltipModule } from 'primeng/tooltip';
-import { InputTextModule } from 'primeng/inputtext';
-import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../modal/modal';
 import { LoginPageComponent } from "../../../../auth/presentation/pages/login-page.component";
 import { Router } from '@angular/router';
 import { AvatarModule } from 'primeng/avatar';
 import { AuthService } from '../../../../auth/infrastructure/services/auth.service';
+import { WebSocketService } from '../../../infrastructure/websocket/websocket.service';
 import { RippleModule } from 'primeng/ripple';
+/* eslint-enable import/order */
 
 @Component({
   selector: 'app-header',
@@ -22,8 +23,6 @@ import { RippleModule } from 'primeng/ripple';
     ButtonModule,
     MenuModule,
     TooltipModule,
-    InputTextModule,
-    FormsModule,
     ModalComponent,
     LoginPageComponent,
     AvatarModule,
@@ -38,29 +37,6 @@ import { RippleModule } from 'primeng/ripple';
                <img src="https://res.cloudinary.com/dxjcjee8f/image/upload/v1784374711/m9caz3kr9yusdgis1k42.png" alt="Petopia" class="logo-image" />
            </div>
         </div>
-
-        <!-- Center: Search (only when logged in) -->
-        @if (isLoggedIn()) {
-          <div class="header-center">
-            <div class="search-wrapper">
-              <i class="pi pi-search search-icon"></i>
-              <input
-                pInputText
-                class="search-input"
-                type="text"
-                [ngModel]="searchQuery()"
-                (ngModelChange)="searchQuery.set($event)"
-                (keyup.enter)="onSearch()"
-                placeholder="Buscar mascotas, servicios..."
-              />
-              @if (searchQuery()) {
-                <button class="clear-button" (click)="clearSearch()">
-                  <i class="pi pi-times"></i>
-                </button>
-              }
-            </div>
-          </div>
-        }
 
         <!-- Right: Actions -->
         <div class="header-right">
@@ -97,6 +73,20 @@ import { RippleModule } from 'primeng/ripple';
                 pTooltip="Mensajes"
                 tooltipPosition="bottom"
                 (click)="onMessages()"
+              >
+                @if (unreadMessages() > 0) {
+                  <span class="messages-badge">{{ unreadMessagesDisplay() }}</span>
+                }
+              </button>
+
+              <!-- Admin -->
+              <button
+                pButton
+                icon="pi pi-shield"
+                class="p-button-text p-button-sm header-btn"
+                pTooltip="Administración"
+                tooltipPosition="bottom"
+                (click)="onAdmin()"
               ></button>
 
               <!-- User menu -->
@@ -150,6 +140,18 @@ import { RippleModule } from 'primeng/ripple';
                 pTooltip="Cambiar tema"
                 tooltipPosition="bottom"
               ></button>
+              <button
+                pButton
+                icon="pi pi-envelope"
+                class="p-button-text p-button-sm header-btn"
+                pTooltip="Mensajes"
+                tooltipPosition="bottom"
+                (click)="onMessages()"
+              >
+                @if (unreadMessages() > 0) {
+                  <span class="messages-badge">{{ unreadMessagesDisplay() }}</span>
+                }
+              </button>
               <button
                 pButton
                 icon="pi pi-bell"
@@ -241,7 +243,7 @@ import { RippleModule } from 'primeng/ripple';
       font-size: 1.1rem !important;
     }
 
-    /* ===== NOTIFICATION DOT ===== */
+        /* ===== NOTIFICATION DOT ===== */
     .notification-dot {
       position: absolute;
       top: 6px;
@@ -251,6 +253,25 @@ import { RippleModule } from 'primeng/ripple';
       background: #ef4444;
       border-radius: 50%;
       border: 2px solid var(--surface-card);
+    }
+
+    /* ===== MESSAGES BADGE ===== */
+    .messages-badge {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      min-width: 17px;
+      height: 17px;
+      padding: 0 4px;
+      background: #ef4444;
+      color: #fff;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      line-height: 17px;
+      text-align: center;
+      border-radius: var(--radius-full);
+      box-sizing: border-box;
+      pointer-events: none;
     }
 
     /* ===== USER BUTTON ===== */
@@ -370,25 +391,21 @@ import { RippleModule } from 'primeng/ripple';
       .mobile-actions {
         display: flex;
       }
-
-      .header-center {
-        display: none;
-      }
     }
   `]
 })
 export class HeaderComponent implements OnInit {
   private readonly themeService = inject(ThemeService);
-  private readonly authService = inject(AuthService);
+    private readonly authService = inject(AuthService);
+  private readonly webSocket = inject(WebSocketService);
   private readonly router = inject(Router);
 
   // ===== Estados =====
   isLoggedIn = computed(() => this.authService.isAuthenticated());
   isDarkMode = signal(false);
-  searchQuery = signal('');
   showLoginModal = signal(false);
 
-  menuItems: MenuItem[] = [];
+    menuItems: MenuItem[] = [];
 
   // ===== User Data =====
   userAvatar = computed(() => this.authService.user()?.avatarUrl || 'https://i.pravatar.cc/150?img=1');
@@ -398,7 +415,13 @@ export class HeaderComponent implements OnInit {
     return user ? `${user.firstName} ${user.lastName}` : 'Usuario';
   });
 
-  ngOnInit(): void {
+  // ===== Mensajes no leídos =====
+  unreadMessages = computed(() => this.webSocket.unreadCount());
+  unreadMessagesDisplay = computed(() =>
+    this.unreadMessages() > 99 ? '99+' : String(this.unreadMessages())
+  );
+
+    ngOnInit(): void {
     this.isDarkMode.set(this.themeService.isDarkMode());
     this.updateMenuItems();
   }
@@ -409,24 +432,13 @@ export class HeaderComponent implements OnInit {
     this.isDarkMode.set(this.themeService.isDarkMode());
   }
 
-  // ===== Search =====
-  onSearch(): void {
-    if (this.searchQuery().trim()) {
-      console.log('Buscando:', this.searchQuery());
-    }
-  }
-
-  clearSearch(): void {
-    this.searchQuery.set('');
-  }
-
   // ===== Navigation =====
-  onNotifications(): void {
-    this.router.navigate(['/notifications']);
+    onNotifications(): void {
+    void this.router.navigate(['/notifications']);
   }
 
-  onMessages(): void {
-    this.router.navigate(['/messages']);
+      onMessages(): void {
+    void this.router.navigate(['/messages']);
   }
 
   // ===== Login Modal =====
@@ -453,17 +465,7 @@ export class HeaderComponent implements OnInit {
           command: () => this.onProfile()
         },
         {
-          label: 'Administración',
-          icon: 'pi pi-cog',
-          command: () => this.onAdmin()
-        },
-        {
-          label: 'Mis Mascotas',
-          icon: 'pi pi-paw',
-          command: () => this.onPets()
-        },
-        {
-          label: 'Configuración',
+          label: 'Ajustes',
           icon: 'pi pi-cog',
           command: () => this.onSettings()
         },
@@ -495,34 +497,29 @@ export class HeaderComponent implements OnInit {
     }
   }
 
-  onLogin(): void {
-    this.router.navigate(['/auth/login']);
+    onLogin(): void {
+    void this.router.navigate(['/auth/login']);
   }
 
-  onRegister(): void {
-    this.router.navigate(['/auth/login']);
+    onRegister(): void {
+    void this.router.navigate(['/auth/login']);
   }
 
-  onProfile(): void {
-    this.router.navigate(['/profile']);
+    onProfile(): void {
+    void this.router.navigate(['/profile']);
   }
 
-  onAdmin(): void {
-    this.router.navigate(['/admin']);
+    onAdmin(): void {
+    void this.router.navigate(['/admin']);
   }
 
-  onPets(): void {
-    this.router.navigate(['/pets']);
+    onSettings(): void {
+    void this.router.navigate(['/settings']);
   }
 
-  onSettings(): void {
-    this.router.navigate(['/settings']);
-  }
-
-  onLogout(): void {
-    console.log('Cerrar sesión');
-    this.authService.logout();
+        onLogout(): void {
+    void this.authService.logout();
     this.updateMenuItems();
-    this.router.navigate(['/auth/login']);
+    void this.router.navigate(['/auth/login']);
   }
 }

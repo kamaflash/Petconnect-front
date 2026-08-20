@@ -11,6 +11,9 @@ import { SelectModule } from 'primeng/select';
 import { CheckboxModule } from 'primeng/checkbox';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { AvatarModule } from 'primeng/avatar';
+import { DividerModule } from 'primeng/divider';
+import { ChipModule } from 'primeng/chip';
 
 interface Achievement {
   id: string;
@@ -21,6 +24,10 @@ interface Achievement {
   unlocked: boolean;
   date?: string;
   category: 'social' | 'care' | 'exploration' | 'special';
+  progress?: {
+    current: number;
+    target: number;
+  };
 }
 
 interface UserStats {
@@ -48,531 +55,931 @@ interface UserStats {
     SelectModule,
     CheckboxModule,
     ToastModule,
+    AvatarModule,
+    DividerModule,
+    ChipModule,
   ],
   providers: [MessageService],
   template: `
-    <div class="gamification-page">
-      <!-- Header -->
-      <div class="gamification-header">
-        <div class="header-content">
-          <div class="header-left">
-            <h3>Logros y Niveles</h3>
-            <p>Tu progreso en la comunidad</p>
-          </div>
-          <div class="header-stats">
-            <div class="stat-item">
-              <span class="stat-value">{{ userStats().level }}</span>
-              <span class="stat-label">Nivel</span>
+    <div class="gamification-page-wrapper">
+      <div class="gamification-page-container">
+
+        <!-- ========================================================= -->
+        <!-- HEADER -->
+        <!-- ========================================================= -->
+
+        <div class="gamification-page-header">
+          <div class="gamification-page-header-content">
+            <div class="gamification-page-header-left">
+              <h2 class="gamification-page-header-title">Logros y Niveles</h2>
+              <p class="gamification-page-header-subtitle">Tu progreso en la comunidad</p>
             </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item">
-              <span class="stat-value">{{ userStats().totalXP.toLocaleString() }}</span>
-              <span class="stat-label">XP Total</span>
-            </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item">
-              <span class="stat-value">{{ userStats().achievementsUnlocked }}/{{ userStats().totalAchievements }}</span>
-              <span class="stat-label">Logros</span>
+            <div class="gamification-page-header-stats">
+              <div class="gamification-page-stat-item">
+                <span class="gamification-page-stat-value">{{ userStats().level }}</span>
+                <span class="gamification-page-stat-label">Nivel</span>
+              </div>
+              <div class="gamification-page-stat-divider"></div>
+              <div class="gamification-page-stat-item">
+                <span class="gamification-page-stat-value">{{ userStats().totalXP.toLocaleString() }}</span>
+                <span class="gamification-page-stat-label">XP Total</span>
+              </div>
+              <div class="gamification-page-stat-divider"></div>
+              <div class="gamification-page-stat-item">
+                <span class="gamification-page-stat-value">{{ userStats().achievementsUnlocked }}/{{ userStats().totalAchievements }}</span>
+                <span class="gamification-page-stat-label">Logros</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="gamification-container">
-        <!-- Sidebar Filters -->
-        <aside class="filters-sidebar">
-          <div class="filter-section">
-            <h3>Categoría</h3>
-            <div class="filter-options">
-              @for (category of categories; track category) {
-                <div class="filter-option">
-                  <p-checkbox
-                    [inputId]="category.value"
-                    [value]="category.value"
-                    [(ngModel)]="selectedCategories"
-                    (onChange)="applyFilters()"
-                  />
-                  <label [for]="category.value">{{ category.label }}</label>
+        <!-- ========================================================= -->
+        <!-- MAIN CONTENT -->
+        <!-- ========================================================= -->
+
+        <div class="gamification-page-main">
+
+          <!-- ======================================================= -->
+          <!-- SIDEBAR -->
+          <!-- ======================================================= -->
+
+          <aside class="gamification-page-sidebar">
+
+            <!-- Perfil -->
+            <div class="gamification-page-profile-card">
+              <div class="gamification-page-profile-avatar-wrapper">
+                <p-avatar
+                  image="https://i.pravatar.cc/150?img=1"
+                  shape="circle"
+                  size="xlarge"
+                  class="gamification-page-profile-avatar"
+                />
+                <div class="gamification-page-profile-level-badge">{{ userStats().level }}</div>
+              </div>
+              <div class="gamification-page-profile-info">
+                <h3 class="gamification-page-profile-name">Tony Herrera</h3>
+                <p class="gamification-page-profile-username">@tony_herrera</p>
+                <p class="gamification-page-profile-rank">{{ userStats().rank }}</p>
+              </div>
+              <div class="gamification-page-profile-xp">
+                <div class="gamification-page-profile-xp-header">
+                  <span class="gamification-page-profile-xp-label">Nivel {{ userStats().level }}</span>
+                  <span class="gamification-page-profile-xp-numbers">{{ userStats().currentXP.toLocaleString() }} / {{ userStats().nextLevelXP.toLocaleString() }} XP</span>
+                </div>
+                <p-progressBar
+                  [value]="levelProgress()"
+                  [style]="{'height': '6px'}"
+                  styleClass="gamification-page-xp-progress-bar"
+                />
+              </div>
+            </div>
+
+            <!-- Próximos Logros -->
+            <div class="gamification-page-upcoming-card">
+              <h4 class="gamification-page-upcoming-title">Próximos Logros</h4>
+              <div class="gamification-page-upcoming-list">
+                @for (achievement of upcomingAchievements(); track achievement.id) {
+                  <div class="gamification-page-upcoming-item">
+                    <div class="gamification-page-upcoming-icon">{{ achievement.icon }}</div>
+                    <div class="gamification-page-upcoming-info">
+                      <div class="gamification-page-upcoming-header">
+                        <span class="gamification-page-upcoming-name">{{ achievement.name }}</span>
+                        <span class="gamification-page-upcoming-xp">+{{ achievement.xp }} XP</span>
+                      </div>
+                      <span class="gamification-page-upcoming-desc">{{ achievement.description }}</span>
+                      <div class="gamification-page-upcoming-progress">
+                        <span class="gamification-page-upcoming-progress-text">
+                          {{ achievement.progress?.current || 0 }} / {{ achievement.progress?.target || 0 }}
+                        </span>
+                        <p-progressBar
+                          [value]="(achievement.progress?.current || 0) / (achievement.progress?.target || 1) * 100"
+                          [style]="{'height': '4px'}"
+                          styleClass="gamification-page-upcoming-progress-bar"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Quién seguir -->
+            <div class="gamification-page-follow-card">
+              <h4 class="gamification-page-follow-title">Quién seguir</h4>
+              <div class="gamification-page-follow-item">
+                <p-avatar
+                  image="https://i.pravatar.cc/150?img=2"
+                  shape="circle"
+                  size="normal"
+                  class="gamification-page-follow-avatar"
+                />
+                <div class="gamification-page-follow-info">
+                  <span class="gamification-page-follow-name">Antonio Herrera</span>
+                  <span class="gamification-page-follow-username">@antonio_herrera</span>
+                  <span class="gamification-page-follow-count">625 seguidores</span>
+                </div>
+                <button class="gamification-page-follow-btn">Seguir</button>
+              </div>
+            </div>
+
+            <!-- Tendencias -->
+            <div class="gamification-page-trending-card">
+              <h4 class="gamification-page-trending-title">Tendencias</h4>
+              <div class="gamification-page-trending-item">
+                <span class="gamification-page-trending-rank">#1 TENDENCIA</span>
+                <span class="gamification-page-trending-name">@Prueba</span>
+              </div>
+            </div>
+
+          </aside>
+
+          <!-- ======================================================= -->
+          <!-- MAIN - LISTA DE LOGROS -->
+          <!-- ======================================================= -->
+
+          <main class="gamification-page-achievements">
+
+            <!-- Filtros -->
+            <div class="gamification-page-filters-bar">
+              <div class="gamification-page-filter-group">
+                <span class="gamification-page-filter-label">Categoría:</span>
+                @for (category of categories; track category.value) {
+                  <button
+                    class="gamification-page-filter-chip"
+                    [class.gamification-page-filter-chip-active]="selectedCategories.includes(category.value)"
+                    (click)="toggleCategory(category.value)"
+                  >
+                    {{ category.label }}
+                  </button>
+                }
+              </div>
+              <div class="gamification-page-filter-group">
+                <span class="gamification-page-filter-label">Estado:</span>
+                <button
+                  class="gamification-page-filter-chip"
+                  [class.gamification-page-filter-chip-active]="filters.unlockedOnly"
+                  (click)="toggleUnlockedOnly()"
+                >
+                  Desbloqueados
+                </button>
+                <button
+                  class="gamification-page-filter-chip"
+                  [class.gamification-page-filter-chip-active]="filters.lockedOnly"
+                  (click)="toggleLockedOnly()"
+                >
+                  Bloqueados
+                </button>
+                <button
+                  class="gamification-page-filter-chip gamification-page-filter-chip-clear"
+                  (click)="clearFilters()"
+                >
+                  <i class="pi pi-times"></i> Limpiar
+                </button>
+              </div>
+            </div>
+
+            <!-- Resultados -->
+            <div class="gamification-page-results-header">
+              <span class="gamification-page-results-count">
+                {{ filteredAchievements().length }} logro{{ filteredAchievements().length !== 1 ? 's' : '' }}
+              </span>
+            </div>
+
+            <!-- Achievements Grid -->
+            <div class="gamification-page-achievements-grid">
+              @for (achievement of filteredAchievements(); track achievement.id) {
+                <div class="gamification-page-achievement-card" [class.gamification-page-achievement-card-unlocked]="achievement.unlocked">
+                  <div class="gamification-page-achievement-icon" [class.gamification-page-achievement-icon-unlocked]="achievement.unlocked">
+                    <span class="gamification-page-achievement-emoji">{{ achievement.icon }}</span>
+                    @if (achievement.unlocked) {
+                      <div class="gamification-page-achievement-badge">
+                        <i class="pi pi-check"></i>
+                      </div>
+                    }
+                  </div>
+                  <div class="gamification-page-achievement-content">
+                    <div class="gamification-page-achievement-title-row">
+                      <h3 class="gamification-page-achievement-name">{{ achievement.name }}</h3>
+                      <span class="gamification-page-achievement-xp">+{{ achievement.xp }} XP</span>
+                    </div>
+                    <p class="gamification-page-achievement-desc">{{ achievement.description }}</p>
+                    <div class="gamification-page-achievement-footer">
+                      <p-tag
+                        [value]="achievement.unlocked ? 'Desbloqueado' : 'Bloqueado'"
+                        [severity]="achievement.unlocked ? 'success' : 'secondary'"
+                      />
+                      @if (achievement.unlocked && achievement.date) {
+                        <span class="gamification-page-achievement-date">
+                          <i class="pi pi-calendar"></i>
+                          {{ achievement.date }}
+                        </span>
+                      }
+                    </div>
+                  </div>
                 </div>
               }
             </div>
-          </div>
 
-          <div class="filter-section">
-            <h3>Estado</h3>
-            <div class="filter-options">
-              <div class="filter-option">
-                <p-checkbox
-                  inputId="unlocked"
-                  [(ngModel)]="filters.unlockedOnly"
-                  (onChange)="applyFilters()"
-                />
-                <label for="unlocked">Solo desbloqueados</label>
-              </div>
-              <div class="filter-option">
-                <p-checkbox
-                  inputId="locked"
-                  [(ngModel)]="filters.lockedOnly"
-                  (onChange)="applyFilters()"
-                />
-                <label for="locked">Solo bloqueados</label>
-              </div>
-            </div>
-          </div>
-
-          <button class="clear-filters-btn" (click)="clearFilters()">
-            <i class="pi pi-times"></i>
-            Limpiar filtros
-          </button>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="achievements-main">
-          <!-- Level Progress Card -->
-          <div class="level-progress-card">
-            <div class="level-info">
-              <div class="level-badge">
-                <span class="level-number">{{ userStats().level }}</span>
-              </div>
-              <div class="level-details">
-                <h2>Nivel {{ userStats().level }} - {{ userStats().rank }}</h2>
-                <p class="xp-info">{{ userStats().currentXP.toLocaleString() }} / {{ userStats().nextLevelXP.toLocaleString() }} XP</p>
-                <p-progressBar [value]="levelProgress()" [style]="{'height': '12px'}" />
-              </div>
-            </div>
-            <div class="level-stats">
-              <div class="level-stat">
-                <span class="stat-label-small">XP para siguiente nivel</span>
-                <span class="stat-value-small">{{ xpToNextLevel() }} XP</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Results count -->
-          <div class="results-header">
-            <div class="results-count">
-              {{ filteredAchievements().length }} logro{{ filteredAchievements().length !== 1 ? 's' : '' }} encontrado{{ filteredAchievements().length !== 1 ? 's' : '' }}
-            </div>
-          </div>
-
-          <!-- Achievements Grid -->
-          <div class="achievements-grid">
-            @for (achievement of filteredAchievements(); track achievement.id) {
-              <div class="achievement-card" [class.unlocked]="achievement.unlocked">
-                <div class="achievement-icon" [class.unlocked]="achievement.unlocked">
-                  <span class="icon-emoji">{{ achievement.icon }}</span>
-                  @if (achievement.unlocked) {
-                    <div class="unlocked-badge">
-                      <i class="pi pi-check"></i>
-                    </div>
-                  }
-                </div>
-                <div class="achievement-content">
-                  <h3>{{ achievement.name }}</h3>
-                  <p class="achievement-description">{{ achievement.description }}</p>
-                  <div class="achievement-footer">
-                    <span class="xp-reward">+{{ achievement.xp }} XP</span>
-                    <p-tag
-                      [value]="achievement.unlocked ? 'Desbloqueado' : 'Bloqueado'"
-                      [severity]="achievement.unlocked ? 'success' : 'secondary'"
-                    />
-                  </div>
-                  @if (achievement.unlocked && achievement.date) {
-                    <span class="achievement-date">
-                      <i class="pi pi-calendar"></i>
-                      {{ achievement.date }}
-                    </span>
-                  }
-                </div>
+            @if (filteredAchievements().length === 0) {
+              <div class="gamification-page-empty-state">
+                <i class="pi pi-trophy"></i>
+                <p>No se encontraron logros con estos criterios</p>
+                <button class="gamification-page-empty-btn" (click)="clearFilters()">
+                  Limpiar filtros
+                </button>
               </div>
             }
-          </div>
 
-          @if (filteredAchievements().length === 0) {
-            <div class="no-achievements">
-              <i class="pi pi-trophy"></i>
-              <p>No se encontraron logros con estos criterios</p>
-              <button class="clear-filters-btn" (click)="clearFilters()">
-                Limpiar filtros
-              </button>
-            </div>
-          }
-        </main>
+          </main>
+        </div>
       </div>
     </div>
   `,
   styles: [`
-    .gamification-page {
+    /* ==============================================================
+       PAGE CONTAINER
+       ============================================================== */
+
+    .gamification-page-wrapper {
       min-height: 100vh;
-      background: var(--surface-bg);
+      padding: 1rem 0;
+      background: #f0f2f5;
     }
 
-    /* Header */
-    .gamification-header {
-      padding: 2rem 0;
-      margin-bottom: 2rem;
-    }
-
-    .header-content {
-      max-width: 1400px;
+    .gamification-page-container {
+      max-width: 1280px;
       margin: 0 auto;
-      padding: 0 2rem;
+      padding: 0 1.5rem;
+    }
+
+    /* ==============================================================
+       HEADER
+       ============================================================== */
+
+    .gamification-page-header {
+      margin-bottom: 1.5rem;
+    }
+
+    .gamification-page-header-content {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
       flex-wrap: wrap;
+    }
+
+    .gamification-page-header-left {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .gamification-page-header-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .gamification-page-header-subtitle {
+      margin: 0.125rem 0 0;
+      color: #6b7280;
+      font-size: 0.8125rem;
+    }
+
+    .gamification-page-header-stats {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      padding: 0.5rem 1rem;
+      background: #ffffff;
+      border-radius: 8px;
+    }
+
+    .gamification-page-stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 50px;
+    }
+
+    .gamification-page-stat-value {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .gamification-page-stat-label {
+      font-size: 0.625rem;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .gamification-page-stat-divider {
+      width: 1px;
+      height: 2rem;
+      background: #e5e7eb;
+    }
+
+    /* ==============================================================
+       MAIN LAYOUT
+       ============================================================== */
+
+    .gamification-page-main {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    /* ==============================================================
+       SIDEBAR
+       ============================================================== */
+
+    .gamification-page-sidebar {
+      display: flex;
+      flex-direction: column;
       gap: 1rem;
     }
 
-    .header-left h1 {
-      margin: 0;
-      font-size: 2rem;
-      font-weight: 700;
-      color: white;
-    }
-
-    .header-left p {
-      margin: 0.25rem 0 0;
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 1rem;
-    }
-
-    .header-stats {
-      display: flex;
-      align-items: center;
-      gap: 2rem;
-      background: rgba(255, 255, 255, 0.15);
-      padding: 1rem 2rem;
-      border-radius: var(--radius-md);
-      backdrop-filter: blur(10px);
-    }
-
-    .stat-item {
+    /* --- Profile Card --- */
+    .gamification-page-profile-card {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 1.25rem;
       text-align: center;
     }
 
-    .stat-value {
-      display: block;
-      font-size: 1.5rem;
-      font-weight: 400;
+    .gamification-page-profile-avatar-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .gamification-page-profile-level-badge {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 28px;
+      height: 28px;
+      background: #4f46e5;
       color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 2px solid #ffffff;
     }
 
-    .stat-label {
-      font-size: 0.875rem;
-      color: rgba(255, 255, 255, 0.9);
+    .gamification-page-profile-info {
+      margin-top: 0.75rem;
     }
 
-    .stat-divider {
-      width: 1px;
-      height: 3rem;
-      background: rgba(255, 255, 255, 0.3);
-    }
-
-    /* Container */
-    .gamification-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 2rem 2rem;
-      display: grid;
-      grid-template-columns: 280px 1fr;
-      gap: 2rem;
-    }
-
-    /* Filters Sidebar */
-    .filters-sidebar {
-      background: var(--surface-card);
-      border-radius: var(--radius-md);
-      padding: 1.5rem;
-      height: fit-content;
-      position: sticky;
-      top: 1rem;
-    }
-
-    .filter-section {
-      margin-bottom: 1.5rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 1px solid var(--surface-border);
-    }
-
-    .filter-section:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-
-    .filter-section h3 {
-      margin: 0 0 1rem;
-      font-size: 0.875rem;
+    .gamification-page-profile-name {
+      margin: 0;
+      font-size: 1rem;
       font-weight: 600;
-      color: var(--text-primary);
+      color: #1a1a2e;
     }
 
-    .filter-options {
+    .gamification-page-profile-username {
+      margin: 0.125rem 0;
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    .gamification-page-profile-rank {
+      margin: 0.125rem 0 0.75rem;
+      font-size: 0.8125rem;
+      color: #6b7280;
+    }
+
+    .gamification-page-profile-xp {
+      text-align: left;
+    }
+
+    .gamification-page-profile-xp-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.25rem;
+    }
+
+    .gamification-page-profile-xp-label {
+      font-size: 0.6875rem;
+      font-weight: 500;
+      color: #6b7280;
+    }
+
+    .gamification-page-profile-xp-numbers {
+      font-size: 0.6875rem;
+      color: #9ca3af;
+    }
+
+    :host ::ng-deep .gamification-page-xp-progress-bar {
+      height: 6px !important;
+      border-radius: 9999px !important;
+      background: #f3f4f6 !important;
+    }
+
+    :host ::ng-deep .gamification-page-xp-progress-bar .p-progressbar-value {
+      background: #4f46e5 !important;
+      border-radius: 9999px !important;
+    }
+
+    /* --- Upcoming Achievements --- */
+    .gamification-page-upcoming-card {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+    }
+
+    .gamification-page-upcoming-title {
+      margin: 0 0 0.75rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .gamification-page-upcoming-list {
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
     }
 
-    .filter-option {
+    .gamification-page-upcoming-item {
+      display: flex;
+      gap: 0.625rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .gamification-page-upcoming-item:last-child {
+      border-bottom: none;
+    }
+
+    .gamification-page-upcoming-icon {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      background: #f3f4f6;
+      border-radius: 4px;
+    }
+
+    .gamification-page-upcoming-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .gamification-page-upcoming-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .gamification-page-upcoming-name {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #1a1a2e;
+    }
+
+    .gamification-page-upcoming-xp {
+      font-size: 0.625rem;
+      color: #4f46e5;
+      font-weight: 500;
+    }
+
+    .gamification-page-upcoming-desc {
+      font-size: 0.6875rem;
+      color: #6b7280;
+      display: block;
+      margin: 0.125rem 0 0.25rem;
+    }
+
+    .gamification-page-upcoming-progress {
       display: flex;
       align-items: center;
       gap: 0.5rem;
     }
 
-    .filter-option label {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      cursor: pointer;
+    .gamification-page-upcoming-progress-text {
+      font-size: 0.625rem;
+      color: #9ca3af;
+      white-space: nowrap;
     }
 
-    .clear-filters-btn {
-      width: 100%;
-      padding: 0.75rem;
-      background: none;
-      border: 1px solid var(--surface-border);
-      border-radius: var(--radius-sm);
-      color: var(--text-secondary);
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
-    .clear-filters-btn:hover {
-      background: var(--surface-hover);
-      color: var(--text-primary);
-    }
-
-    /* Main Content */
-    .achievements-main {
-      min-height: 600px;
-    }
-
-    /* Level Progress Card */
-    .level-progress-card {
-      border-radius: var(--radius-md);
-      padding: 2rem;
-      margin-bottom: 2rem;
-      color: white;
-    }
-
-    .level-info {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-
-    .level-badge {
-      width: 80px;
-      height: 80px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 3px solid rgba(255, 255, 255, 0.3);
-    }
-
-    .level-number {
-      font-size: 2.5rem;
-      font-weight: 700;
-    }
-
-    .level-details {
+    :host ::ng-deep .gamification-page-upcoming-progress-bar {
+      height: 4px !important;
+      border-radius: 9999px !important;
+      background: #f3f4f6 !important;
       flex: 1;
     }
 
-    .level-details h2 {
-      margin: 0 0 0.5rem;
-      font-size: 1.5rem;
-      font-weight: 700;
+    :host ::ng-deep .gamification-page-upcoming-progress-bar .p-progressbar-value {
+      background: #4f46e5 !important;
+      border-radius: 9999px !important;
     }
 
-    .xp-info {
+    /* --- Who to follow --- */
+    .gamification-page-follow-card {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+    }
+
+    .gamification-page-follow-title {
       margin: 0 0 0.75rem;
-      font-size: 0.875rem;
-      opacity: 0.9;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #1a1a2e;
     }
 
-    .level-stats {
+    .gamification-page-follow-item {
       display: flex;
-      gap: 2rem;
+      align-items: center;
+      gap: 0.625rem;
     }
 
-    .level-stat {
+    .gamification-page-follow-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .gamification-page-follow-name {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #1a1a2e;
+    }
+
+    .gamification-page-follow-username {
+      font-size: 0.6875rem;
+      color: #6b7280;
+    }
+
+    .gamification-page-follow-count {
+      font-size: 0.625rem;
+      color: #9ca3af;
+    }
+
+    .gamification-page-follow-btn {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid #e5e7eb;
+      background: transparent;
+      color: #6b7280;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .gamification-page-follow-btn:hover {
+      background: #f3f4f6;
+      color: #1a1a2e;
+    }
+
+    /* --- Trending --- */
+    .gamification-page-trending-card {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+    }
+
+    .gamification-page-trending-title {
+      margin: 0 0 0.75rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .gamification-page-trending-item {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.125rem;
     }
 
-    .stat-label-small {
+    .gamification-page-trending-rank {
+      font-size: 0.625rem;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .gamification-page-trending-name {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #1a1a2e;
+    }
+
+    /* ==============================================================
+       ACHIEVEMENTS MAIN
+       ============================================================== */
+
+    .gamification-page-achievements {
+      min-width: 0;
+    }
+
+    /* --- Filters Bar --- */
+    .gamification-page-filters-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      padding: 0.5rem 0;
+    }
+
+    .gamification-page-filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      flex-wrap: wrap;
+    }
+
+    .gamification-page-filter-label {
       font-size: 0.75rem;
-      opacity: 0.8;
+      color: #9ca3af;
+      font-weight: 500;
+      margin-right: 0.25rem;
     }
 
-    .stat-value-small {
-      font-size: 1.25rem;
-      font-weight: 700;
+    .gamification-page-filter-chip {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      border: 1px solid #e5e7eb;
+      background: transparent;
+      color: #6b7280;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
     }
 
-    /* Results Header */
-    .results-header {
-      margin-bottom: 1.5rem;
+    .gamification-page-filter-chip:hover {
+      background: #f3f4f6;
+      color: #1a1a2e;
     }
 
-    .results-count {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
+    .gamification-page-filter-chip-active {
+      background: #4f46e5;
+      color: white;
+      border-color: #4f46e5;
     }
 
-    /* Achievements Grid */
-    .achievements-grid {
+    .gamification-page-filter-chip-active:hover {
+      background: #4338ca;
+      color: white;
+    }
+
+    .gamification-page-filter-chip-clear {
+      color: #9ca3af;
+    }
+
+    .gamification-page-filter-chip-clear:hover {
+      color: #1a1a2e;
+      background: #f3f4f6;
+    }
+
+    .gamification-page-filter-chip-clear i {
+      font-size: 0.625rem;
+    }
+
+    /* --- Results --- */
+    .gamification-page-results-header {
+      margin-bottom: 0.75rem;
+    }
+
+    .gamification-page-results-count {
+      font-size: 0.8125rem;
+      color: #6b7280;
+    }
+
+    /* --- Achievements Grid --- */
+    .gamification-page-achievements-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 1.5rem;
+      gap: 0.75rem;
     }
 
-    .achievement-card {
-      background: var(--surface-card);
-      border-radius: var(--radius-md);
-      padding: 1.5rem;
-      transition: all var(--transition-fast);
-      border: 2px solid transparent;
+    /* --- Achievement Card --- */
+    .gamification-page-achievement-card {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: #ffffff;
+      border-radius: 8px;
+      transition: all 0.2s ease;
     }
 
-    .achievement-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    .gamification-page-achievement-card:hover {
+      background: #f9fafb;
+      transform: translateY(-1px);
     }
 
-    .achievement-card.unlocked {
-      border-color: #10b981;
+    .gamification-page-achievement-card-unlocked {
+      background: #ffffff;
     }
 
-    .achievement-icon {
-      width: 64px;
-      height: 64px;
-      background: var(--surface-hover);
-      border-radius: var(--radius-md);
+    .gamification-page-achievement-icon {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-      position: relative;
+      border-radius: 6px;
+      background: #f3f4f6;
     }
 
-    .achievement-icon.unlocked {
+    .gamification-page-achievement-icon-unlocked {
       background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
     }
 
-    .unlocked-badge {
+    .gamification-page-achievement-emoji {
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    .gamification-page-achievement-badge {
       position: absolute;
-      bottom: -4px;
       right: -4px;
-      width: 24px;
-      height: 24px;
+      bottom: -4px;
+      width: 18px;
+      height: 18px;
       background: #10b981;
       color: white;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.875rem;
-      border: 2px solid var(--surface-card);
+      font-size: 0.5rem;
+      border: 2px solid #ffffff;
     }
 
-    .achievement-content h3 {
-      margin: 0 0 0.5rem;
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: var(--text-primary);
+    .gamification-page-achievement-content {
+      flex: 1;
+      min-width: 0;
     }
 
-    .achievement-description {
-      margin: 0 0 1rem;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      line-height: 1.5;
-    }
-
-    .achievement-footer {
+    .gamification-page-achievement-title-row {
       display: flex;
+      align-items: flex-start;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.5rem;
+      gap: 0.5rem;
+      margin-bottom: 0.125rem;
     }
 
-    .xp-reward {
-      font-weight: 600;
-      color: var(--primary-color);
+    .gamification-page-achievement-name {
+      margin: 0;
       font-size: 0.875rem;
+      font-weight: 600;
+      color: #1a1a2e;
     }
 
-    .achievement-date {
+    .gamification-page-achievement-xp {
+      flex-shrink: 0;
+      font-size: 0.625rem;
+      font-weight: 600;
+      color: #4f46e5;
+    }
+
+    .gamification-page-achievement-desc {
+      margin: 0 0 0.5rem;
+      font-size: 0.75rem;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    .gamification-page-achievement-footer {
       display: flex;
       align-items: center;
+      justify-content: space-between;
       gap: 0.5rem;
-      font-size: 0.75rem;
-      color: var(--text-tertiary);
     }
 
-    .achievement-date i {
-      font-size: 0.875rem;
+    .gamification-page-achievement-date {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.625rem;
+      color: #9ca3af;
     }
 
-    .no-achievements {
+    .gamification-page-achievement-date i {
+      font-size: 0.625rem;
+    }
+
+    :host ::ng-deep .gamification-page-achievement-footer .p-tag {
+      padding: 0.125rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.625rem;
+      font-weight: 500;
+    }
+
+    /* --- Empty State --- */
+    .gamification-page-empty-state {
       text-align: center;
-      padding: 4rem 2rem;
-      background: var(--surface-card);
-      border-radius: var(--radius-md);
+      padding: 3rem 2rem;
+      background: #ffffff;
+      border-radius: 8px;
     }
 
-    .no-achievements i {
-      font-size: 3rem;
-      color: var(--text-tertiary);
-      margin-bottom: 1rem;
+    .gamification-page-empty-state i {
+      font-size: 2.5rem;
+      color: #9ca3af;
+      margin-bottom: 0.75rem;
     }
 
-    .no-achievements p {
-      font-size: 1.125rem;
-      color: var(--text-secondary);
+    .gamification-page-empty-state p {
+      font-size: 0.875rem;
+      color: #6b7280;
       margin: 0 0 1rem;
     }
 
-    /* Responsive */
+    .gamification-page-empty-btn {
+      padding: 0.375rem 1rem;
+      border-radius: 9999px;
+      border: 1px solid #e5e7eb;
+      background: transparent;
+      color: #6b7280;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .gamification-page-empty-btn:hover {
+      background: #f3f4f6;
+      color: #1a1a2e;
+    }
+
+    /* ==============================================================
+       RESPONSIVE
+       ============================================================== */
+
     @media (max-width: 1024px) {
-      .gamification-container {
+      .gamification-page-main {
         grid-template-columns: 1fr;
       }
 
-      .filters-sidebar {
-        display: none;
+      .gamification-page-sidebar {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
       }
     }
 
     @media (max-width: 768px) {
-      .header-content {
+      .gamification-page-header-content {
         flex-direction: column;
         align-items: stretch;
       }
 
-      .header-stats {
-        width: 100%;
+      .gamification-page-header-stats {
         justify-content: center;
       }
 
-      .level-info {
-        flex-direction: column;
-        text-align: center;
+      .gamification-page-sidebar {
+        grid-template-columns: 1fr;
       }
 
-      .achievements-grid {
+      .gamification-page-filters-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .gamification-page-filter-group {
+        flex-wrap: wrap;
+      }
+
+      .gamification-page-achievements-grid {
         grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .gamification-page-container {
+        padding: 0 0.75rem;
+      }
+
+      .gamification-page-header-stats {
+        gap: 0.75rem;
+        padding: 0.5rem 0.75rem;
+      }
+
+      .gamification-page-stat-divider {
+        height: 1.5rem;
+      }
+
+      .gamification-page-achievement-card {
+        padding: 0.75rem;
       }
     }
   `]
@@ -580,20 +987,27 @@ interface UserStats {
 export class GamificationPageComponent {
   private messageService = inject(MessageService);
 
-  // Filters
+  // ============================================================
+  // FILTERS
+  // ============================================================
+
   categories = [
     { label: 'Social', value: 'social' },
     { label: 'Cuidado', value: 'care' },
     { label: 'Exploración', value: 'exploration' },
     { label: 'Especial', value: 'special' }
   ];
+
   selectedCategories: string[] = [];
   filters = {
     unlockedOnly: false,
     lockedOnly: false
   };
 
-  // User Stats
+  // ============================================================
+  // USER STATS
+  // ============================================================
+
   userStats = signal<UserStats>({
     level: 12,
     currentXP: 650,
@@ -604,26 +1018,37 @@ export class GamificationPageComponent {
     rank: 'Experto en Mascotas'
   });
 
-  // Computed
+  // ============================================================
+  // COMPUTED
+  // ============================================================
+
   levelProgress = computed(() => {
     const stats = this.userStats();
-    return (stats.currentXP / stats.nextLevelXP) * 100;
+    return Math.min(100, (stats.currentXP / stats.nextLevelXP) * 100);
   });
 
   xpToNextLevel = computed(() => {
     const stats = this.userStats();
-    return stats.nextLevelXP - stats.currentXP;
+    return Math.max(0, stats.nextLevelXP - stats.currentXP);
+  });
+
+  upcomingAchievements = computed(() => {
+    return this.achievements()
+      .filter(a => !a.unlocked)
+      .slice(0, 4)
+      .map(a => ({
+        ...a,
+        progress: a.progress || { current: 0, target: 10 }
+      }));
   });
 
   filteredAchievements = computed(() => {
     let result = [...this.achievements()];
 
-    // Category filter
     if (this.selectedCategories.length > 0) {
       result = result.filter(a => this.selectedCategories.includes(a.category));
     }
 
-    // Status filters
     if (this.filters.unlockedOnly) {
       result = result.filter(a => a.unlocked);
     }
@@ -634,7 +1059,10 @@ export class GamificationPageComponent {
     return result;
   });
 
-  // Achievements data
+  // ============================================================
+  // ACHIEVEMENTS
+  // ============================================================
+
   achievements = signal<Achievement[]>([
     {
       id: '1',
@@ -663,7 +1091,8 @@ export class GamificationPageComponent {
       icon: '💉',
       xp: 150,
       unlocked: false,
-      category: 'care'
+      category: 'care',
+      progress: { current: 3, target: 10 }
     },
     {
       id: '4',
@@ -672,7 +1101,8 @@ export class GamificationPageComponent {
       icon: '📱',
       xp: 200,
       unlocked: false,
-      category: 'social'
+      category: 'social',
+      progress: { current: 12, target: 50 }
     },
     {
       id: '5',
@@ -691,7 +1121,8 @@ export class GamificationPageComponent {
       icon: '🏆',
       xp: 300,
       unlocked: false,
-      category: 'special'
+      category: 'special',
+      progress: { current: 0, target: 1 }
     },
     {
       id: '7',
@@ -710,13 +1141,66 @@ export class GamificationPageComponent {
       icon: '💚',
       xp: 500,
       unlocked: false,
-      category: 'special'
+      category: 'special',
+      progress: { current: 0, target: 1 }
+    },
+    {
+      id: '9',
+      name: 'Nueva Voz',
+      description: 'Crea tu primera publicación',
+      icon: '🗣️',
+      xp: 50,
+      unlocked: false,
+      category: 'social',
+      progress: { current: 1, target: 1 }
+    },
+    {
+      id: '10',
+      name: 'Creador',
+      description: 'Crea 10 publicaciones',
+      icon: '✍️',
+      xp: 100,
+      unlocked: false,
+      category: 'social',
+      progress: { current: 1, target: 10 }
+    },
+    {
+      id: '11',
+      name: 'Corazón de la Comunidad',
+      description: 'Responde 10 comentarios',
+      icon: '💚',
+      xp: 150,
+      unlocked: false,
+      category: 'social',
+      progress: { current: 0, target: 10 }
     }
   ]);
 
-  // Methods
-  applyFilters() {
-    // Filters are applied automatically via computed property
+  // ============================================================
+  // METHODS
+  // ============================================================
+
+  toggleCategory(categoryValue: string) {
+    const index = this.selectedCategories.indexOf(categoryValue);
+    if (index > -1) {
+      this.selectedCategories.splice(index, 1);
+    } else {
+      this.selectedCategories.push(categoryValue);
+    }
+  }
+
+  toggleUnlockedOnly() {
+    this.filters.unlockedOnly = !this.filters.unlockedOnly;
+    if (this.filters.unlockedOnly) {
+      this.filters.lockedOnly = false;
+    }
+  }
+
+  toggleLockedOnly() {
+    this.filters.lockedOnly = !this.filters.lockedOnly;
+    if (this.filters.lockedOnly) {
+      this.filters.unlockedOnly = false;
+    }
   }
 
   clearFilters() {

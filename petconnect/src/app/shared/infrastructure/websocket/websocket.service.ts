@@ -2,6 +2,7 @@ import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Client, StompSubscription } from '@stomp/stompjs';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
+import { MessagesApiService } from '../../../messages/infrastructure/services/messages-api.service';
 import { environment } from '../../../../environments/environment';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Message, NotificationDTO } from '../../../messages/domain/entities/message.model';
@@ -11,6 +12,7 @@ import { Message, NotificationDTO } from '../../../messages/domain/entities/mess
 })
 export class WebSocketService {
   private readonly authService = inject(AuthService);
+  private readonly messagesApi = inject(MessagesApiService);
   private readonly http = inject(HttpClient);
   private readonly apiUrl = environment.apiUrl;
   private readonly wsUrl = environment.wsUrl;
@@ -76,6 +78,8 @@ export class WebSocketService {
       onConnect: () => {
         this._connected.set(true);
         this.subscribeToNotifications();
+        // Cargar el total de mensajes no leídos desde el servidor.
+        this.refreshUnreadCount();
         // Inicializar presencia con el snapshot actual y suscribir los topics
         // de conversaciones que quedaron pendientes antes de conectar.
         this.loadPresenceSnapshot();
@@ -109,7 +113,10 @@ export class WebSocketService {
     const subscription = this.client.subscribe('/user/queue/notifications', (message) => {
       const notification: NotificationDTO = JSON.parse(message.body);
       this.notificationSubject.next(notification);
-      this._unreadCount.update(count => count + 1);
+      // Solo contabilizamos los mensajes nuevos como "no leídos".
+      if (notification.type === 'NEW_MESSAGE') {
+        this._unreadCount.update(count => count + 1);
+      }
     });
 
     this.subscriptions.set('notifications', subscription);
@@ -199,6 +206,19 @@ export class WebSocketService {
 
   resetUnreadCount(): void {
     this._unreadCount.set(0);
+  }
+
+  /** Recarga el total de mensajes no leídos directamente desde el backend. */
+  refreshUnreadCount(): void {
+    this.messagesApi.getUnreadCount().subscribe({
+      next: (count) => this._unreadCount.set(count),
+      error: (err) => console.error('Error cargando contador de mensajes no leídos', err)
+    });
+  }
+
+  /** Resta `by` mensajes del contador global de no leídos (p. ej. al leer una conversación). */
+  decrementUnreadCount(by = 1): void {
+    this._unreadCount.update(count => Math.max(0, count - by));
   }
 
   // -------------------------------------------------------
