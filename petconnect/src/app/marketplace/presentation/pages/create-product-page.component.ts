@@ -208,7 +208,7 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
     }
 
     .create-product-container {
-      max-width: 800px;
+      max-width: var(--max-page-width);
       margin: 0 auto;
       padding: 0 1rem;
     }

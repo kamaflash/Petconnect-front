@@ -32,7 +32,7 @@ interface UserProfile {
     TagModule,
   ],
   template: `
-    <div class="p-4">
+    <div class="page-content">
       <div class="flex justify-between align-items-center mb-4">
         <h1 class="text-2xl font-bold m-0">Mi Perfil</h1>
         <p-button
@@ -115,7 +115,13 @@ interface UserProfile {
       </div>
     </div>
   `,
-  styles: [``],
+  styles: [`
+    .page-content {
+      max-width: var(--max-page-width);
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+  `],
 })
 export class UsersPageComponent {
   isEditing = false;

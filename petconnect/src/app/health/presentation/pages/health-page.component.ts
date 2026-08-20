@@ -45,7 +45,7 @@ interface Medication {
     TableComponent,
   ],
   template: `
-    <div class="p-4">
+    <div class="page-content">
       <h1 class="text-2xl font-bold mb-4">Salud de Família</h1>
 
       <div class="grid">
@@ -73,7 +73,13 @@ interface Medication {
       </div>
     </div>
   `,
-  styles: [``],
+  styles: [`
+    .page-content {
+      max-width: var(--max-page-width);
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+  `],
 })
 export class HealthPageComponent {
   vaccineColumns: TableColumn[] = [

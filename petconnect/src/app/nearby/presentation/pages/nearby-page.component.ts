@@ -206,7 +206,7 @@ interface NearbyService {
     }
 
     .nearby-container {
-      max-width: 1200px;
+      max-width: var(--max-page-width);
       margin: 0 auto;
       padding: 2rem;
     }

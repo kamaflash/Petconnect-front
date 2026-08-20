@@ -229,7 +229,7 @@ export interface FilterOptions {
     }
 
     /* Container */
-    .feed-container { max-width: 1400px; margin: 0 auto; padding: 0 2rem 2rem; display: grid; grid-template-columns: 280px 1fr; gap: 2rem; }
+    .feed-container { max-width: var(--max-page-width); margin: 0 auto; padding: 0 2rem 2rem; display: grid; grid-template-columns: 280px 1fr; gap: 2rem; }
 
     /* Filters Sidebar */
     .filters-sidebar {

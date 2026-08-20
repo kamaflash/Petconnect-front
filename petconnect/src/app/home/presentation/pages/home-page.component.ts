@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, inject, ChangeDetectorRef, signal, computed } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, signal, computed } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -473,7 +473,7 @@ import {
         margin: 0 auto;
         display: grid;
         grid-template-columns: 300px minmax(0, 1fr) 320px;
-        max-width: 1280px;
+        max-width: var(--max-page-width);
         gap: 1.5rem;
         padding: 0 1.5rem;
         width: 100%;

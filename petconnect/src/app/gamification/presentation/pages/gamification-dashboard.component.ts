@@ -296,7 +296,7 @@ import {
     .gamification-dashboard {
       min-height: 100vh;
       padding: 1rem;
-      max-width: 1280px;
+      max-width: var(--max-page-width);
       margin: 0 auto;
       background: var(--surface-ground);
     }

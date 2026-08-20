@@ -307,7 +307,7 @@ interface UserStats {
     }
 
     .gamification-page-container {
-      max-width: 1280px;
+      max-width: var(--max-page-width);
       margin: 0 auto;
       padding: 0 1.5rem;
     }

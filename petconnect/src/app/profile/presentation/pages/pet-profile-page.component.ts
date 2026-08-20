@@ -687,7 +687,7 @@ interface PetComment {
     }
 
     .pet-profile-container {
-      max-width: 935px;
+      max-width: var(--max-page-width);
       margin: 0 auto;
       padding: 0 20px 40px;
     }

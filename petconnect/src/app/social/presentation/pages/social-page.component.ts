@@ -575,7 +575,7 @@ interface Notification {
     }
 
     .social-container {
-      max-width: 1200px;
+      max-width: var(--max-page-width);
       margin: 0 auto;
       padding: 0 1rem 2rem;
     }

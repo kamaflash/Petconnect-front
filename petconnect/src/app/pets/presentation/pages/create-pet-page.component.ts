@@ -36,7 +36,7 @@ import { CreatePetRequest } from '../../domain/pet.model';
     }
 
     .create-pet-content {
-      max-width: 800px;
+      max-width: var(--max-page-width);
       margin: 0 auto;
     }
   `]

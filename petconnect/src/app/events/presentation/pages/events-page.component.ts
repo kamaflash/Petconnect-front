@@ -224,7 +224,7 @@ interface Event {
     }
 
     .header-content {
-      max-width: 1400px;
+      max-width: var(--max-page-width);
       margin: 0 auto;
       padding: 0 2rem;
       display: flex;

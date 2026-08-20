@@ -239,7 +239,7 @@ import { Subscription } from 'rxjs';
     .messages-container {
       display: flex;
       height: 100%;
-      max-width: 1400px;
+      max-width: var(--max-page-width);
       margin: 0 auto;
       background: var(--surface-card);
     }

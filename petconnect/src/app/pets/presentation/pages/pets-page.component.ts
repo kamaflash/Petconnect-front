@@ -42,7 +42,7 @@ interface Pet {
     ModalComponent,
   ],
   template: `
-    <div >
+    <div class="page-content">
         <app-table
           title="Família"
           [data]="pets()"
@@ -99,7 +99,13 @@ interface Pet {
       </app-modal>
     </div>
   `,
-  styles: [``],
+    styles: [`
+    .page-content {
+      max-width: var(--max-page-width);
+      margin: 0 auto;
+      padding: 1.5rem;
+    }
+  `],
 })
 export class PetsPageComponent implements OnInit {
   private router = inject(Router);

@@ -1,0 +1,157 @@
+pipeline {
+    agent any
+
+    triggers {
+        // Dispara el build cuando GitHub avisa de un push (webhook).
+        // Solo reacciona ante pushes a 'main' (regexpFilter sobre $ref).
+        // Requiere el plugin 'Generic Webhook Trigger' en Jenkins.
+        GenericTrigger(
+            token: 'petconnect-front-main-webhook',
+            printContributedVariables: true,
+            printPostContent: true,
+            regexpFilterText: '$ref',
+            regexpFilterExpression: 'refs/heads/main'
+        )
+    }
+
+    tools {
+        nodejs 'nodejs'   // Herramienta Node.js configurada en Jenkins (Manage Jenkins -> Tools).
+    }
+
+    environment {
+        IMAGE_NAME = 'petconnect-frontend'
+        IMAGE_TAG  = "${env.GIT_COMMIT?.take(7) ?: 'latest'}"
+        REGISTRY   = ''  // Déjalo vacío si no subes a DockerHub
+        // SonarQube (OPCIONAL / deshabilitado). Actívalo cuando configures servidor + plugin.
+        RUN_SONAR   = 'false'
+        // Credencial (token) de SonarQube, p.ej. 'sonar-token'. Se usa en la etapa SonarQube.
+        SONAR_TOKEN_URL = ''
+    }
+
+    stages {
+        // El checkout del código ya lo hace Jenkins automáticamente al cargar
+        // el pipeline (Pipeline script from SCM). Sin stage manual redundante.
+
+        // 1. Instalar dependencias.
+        stage('Install Dependencies') {
+            steps {
+                dir('petconnect') {
+                    sh 'npm ci'
+                }
+            }
+            post {
+                success { echo '✅ Dependencias instaladas' }
+                failure { error '❌ Falló la instalación de dependencias' }
+            }
+        }
+
+        // 2. Lint (ESLint) - falla ante cualquier warning.
+        stage('Lint') {
+            steps {
+                dir('petconnect') {
+                    sh 'npm run lint'
+                }
+            }
+            post {
+                success { echo '✅ Lint correcto' }
+                failure { echo '❌ Falló el lint' }
+            }
+        }
+
+        // 3. Test (vitest headless via @angular/build:unit-test).
+        stage('Test') {
+            steps {
+                dir('petconnect') {
+                    sh 'npx ng test --watch=false'
+                }
+            }
+            post {
+                success { echo '✅ Tests correctos' }
+                failure { echo '❌ Fallaron los tests' }
+            }
+        }
+
+        // 4. SonarQube (OPCIONAL / deshabilitado): análisis estático.
+        //    Se salta a menos que RUN_SONAR sea 'true' y exista SONAR_TOKEN_URL.
+        //    Requiere: servidor SonarQube + plugin 'SonarQube Scanner' + credencial token.
+        stage('SonarQube') {
+            when {
+                allOf {
+                    expression { (env.RUN_SONAR ?: 'false') == 'true' }
+                    expression { (env.SONAR_TOKEN_URL ?: '').toString().trim() != '' }
+                }
+            }
+            steps {
+                dir('petconnect') {
+                    withSonarQubeEnv('SonarQube') {
+                        sh 'npm run sonar'
+                        timeout(time: 10, unit: 'MINUTES') {
+                            waitForQualityGate abortPipeline: true
+                        }
+                    }
+                }
+            }
+        }
+
+        // 5. Build (producción Angular).
+        stage('Build') {
+            steps {
+                dir('petconnect') {
+                    sh 'npm run build -- --configuration=production'
+                }
+            }
+            post {
+                success { echo '✅ Build correcto' }
+                failure { echo '❌ Falló el build' }
+            }
+        }
+
+        // 6. Build de la imagen Docker.
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    dir('petconnect') {
+                        docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
+                        docker.build("${IMAGE_NAME}:latest")
+                    }
+                }
+            }
+        }
+
+        // 7. (Opcional) Push a DockerHub. Solo corre cuando REGISTRY tenga un valor.
+        stage('Push to DockerHub') {
+            when {
+                expression {
+                    def reg = (env.REGISTRY ?: '').toString().trim()
+                    return reg != ''
+                }
+            }
+            steps {
+                script {
+                    def reg = (env.REGISTRY ?: 'https://registry.hub.docker.com').toString()
+                    docker.withRegistry(reg, 'dockerhub-creds') {
+                        docker.image("${IMAGE_NAME}:${IMAGE_TAG}").push()
+                        docker.image("${IMAGE_NAME}:latest").push()
+                    }
+                }
+            }
+        }
+
+        // 8. Deploy con docker-compose. Solo en la rama 'main'.
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                script {
+                    dir('petconnect') {
+                        sh '''
+                            docker compose down
+                            docker compose up -d --build
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}

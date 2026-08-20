@@ -135,7 +135,7 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
     }
 
     .settings-container {
-      max-width: 720px;
+      max-width: var(--max-page-width);
       margin: 0 auto;
     }
 
