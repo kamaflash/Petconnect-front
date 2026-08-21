@@ -169,21 +169,30 @@ pipeline {
             }
         }
 
-        // 8. Deploy con docker-compose. Solo en la rama "main".
-        // Esta etapa usa el agente del host (Docker del host) para docker compose.
+        // 8. Deploy con docker-compose. Deja el contenedor levantado en el host (-d).
+        // NOTA: no usamos "when { branch }" porque este job es un pipeline normal
+        // (no multibranch) y BRANCH_NAME no existe, lo que hacia que el stage se
+        // saltara siempre. El trigger ya filtra solo pushes a "main".
         stage("Deploy") {
-            when {
-                branch "main"
-            }
             steps {
                 dir("petconnect") {
                     script {
-                        sh """
-                            docker compose down
-                            docker compose up -d --build
-                        """
+                        sh '''
+                            if docker compose version >/dev/null 2>&1; then
+                                DC="docker compose"
+                            else
+                                DC="docker-compose"
+                            fi
+                            $DC down || true
+                            $DC up -d --build
+                            $DC ps
+                        '''
                     }
                 }
+            }
+            post {
+                success { echo "Deploy completado: contenedor levantado con docker compose" }
+                failure { error "Fallo el deploy con docker compose" }
             }
         }
     }
