@@ -1,7 +1,9 @@
+name: petconnect-front
+
 services:
   frontend:
     image: petconnect-frontend:latest
-    container_name: petconnect-frontend
+    container_name: petconnect-front
     build:
       context: .
       dockerfile: Dockerfile

@@ -13,8 +13,9 @@ RUN npm run build -- --configuration=production
 
 FROM nginx:alpine
 
-# Copy build output from Angular
-COPY --from=build /app/dist/petconnect /usr/share/nginx/html
+# Copy build output from Angular.
+# NOTE: the new @angular/build:application builder outputs to dist/petconnect/browser/
+COPY --from=build /app/dist/petconnect/browser /usr/share/nginx/html
 
 EXPOSE 80
 
