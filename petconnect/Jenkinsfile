@@ -13,14 +13,13 @@
 pipeline {
     agent any
 
-    triggers {
+                triggers {
         // Dispara el build cuando GitHub avisa de un push (webhook).
-        // Solo reacciona ante pushes a "main" (regexpFilter sobre $ref).
+        // Solo reacciona ante pushes a "main" (regexpFilter sobre ref).
         GenericTrigger(
             token: "petconnect-front-main-webhook",
             printContributedVariables: true,
             printPostContent: true,
-            regexpFilterText: "$ref",
             regexpFilterExpression: "refs/heads/main"
         )
     }
