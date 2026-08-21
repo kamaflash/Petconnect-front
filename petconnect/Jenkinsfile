@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Jenkinsfile para Petconnect Front (Angular).
  *
  * NOTA SOBRE Node.js: El plugin "NodeJS" no esta instalado en este Jenkins,
