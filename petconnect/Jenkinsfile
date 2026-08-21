@@ -126,7 +126,7 @@ pipeline {
             }
             steps {
                 dir("petconnect") {
-                    sh "npm run build -- --configuration=production"
+                    sh "npm run build -- --configuration=local"
                 }
             }
             post {
