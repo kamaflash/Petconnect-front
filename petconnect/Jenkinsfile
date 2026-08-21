@@ -1,102 +1,134 @@
+/*
+ * Jenkinsfile para Petconnect Front (Angular).
+ *
+ * NOTA SOBRE Node.js: El plugin "NodeJS" no esta instalado en este Jenkins,
+ * por lo que el bloque "tools { nodejs ... }" no es valido (error: Invalid
+ * tool type "nodejs"). En su lugar usamos imagenes Docker oficiales
+ * "node:24-alpine" para las etapas que requieren npm/node, y el agente del
+ * host (Docker instalado) para las etapas que construyen imagenes.
+ *
+ * Alternativa: instalar el plugin NodeJS en Jenkins y restaurar:
+ *   tools { nodejs "nodejs" }
+ */
 pipeline {
     agent any
 
     triggers {
         // Dispara el build cuando GitHub avisa de un push (webhook).
-        // Solo reacciona ante pushes a 'main' (regexpFilter sobre $ref).
-        // Requiere el plugin 'Generic Webhook Trigger' en Jenkins.
+        // Solo reacciona ante pushes a "main" (regexpFilter sobre $ref).
         GenericTrigger(
-            token: 'petconnect-front-main-webhook',
+            token: "petconnect-front-main-webhook",
             printContributedVariables: true,
             printPostContent: true,
-            regexpFilterText: '$ref',
-            regexpFilterExpression: 'refs/heads/main'
+            regexpFilterText: "$ref",
+            regexpFilterExpression: "refs/heads/main"
         )
     }
 
-    tools {
-        nodejs 'nodejs'   // Herramienta Node.js configurada en Jenkins (Manage Jenkins -> Tools).
-    }
-
     environment {
-        IMAGE_NAME = 'petconnect-frontend'
-        IMAGE_TAG  = "${env.GIT_COMMIT?.take(7) ?: 'latest'}"
-        REGISTRY   = ''  // Déjalo vacío si no subes a DockerHub
+        IMAGE_NAME = "petconnect-frontend"
+        IMAGE_TAG  = "${env.GIT_COMMIT?.take(7) ?: "latest"}"
+        REGISTRY   = ""  // Déjalo vacío si no subes a DockerHub
         // SonarQube (OPCIONAL / deshabilitado). Actívalo cuando configures servidor + plugin.
-        RUN_SONAR   = 'false'
-        SONAR_TOKEN_URL = ''  // Credencial (token) de SonarQube, p.ej. 'sonar-token'.
+        RUN_SONAR   = "false"
+        SONAR_TOKEN_URL = ""  // Credencial (token) de SonarQube, p.ej. "sonar-token".
     }
 
     stages {
-        // El checkout del código ya lo hace Jenkins al cargar el pipeline (SCM).
-        // El proyecto Angular está en la RAÍZ del repo (package.json en raíz).
+        // El checkout del código lo hace Jenkins al cargar el pipeline (SCM).
+        // El proyecto Angular esta en la RAÍZ del repo (package.json en raíz).
 
         // 1. Instalar dependencias.
-        stage('Install Dependencies') {
+        stage("Install Dependencies") {
+            agent {
+                docker {
+                    image "node:24-alpine"
+                    args "-u root:root"
+                }
+            }
             steps {
-                sh 'npm ci'
+                sh "npm ci"
             }
             post {
-                success { echo '✅ Dependencias instaladas' }
-                failure { error '❌ Falló la instalación de dependencias' }
+                success { echo "Dependencias instaladas" }
+                failure { error "Fallo la instalacion de dependencias" }
             }
         }
 
         // 2. Lint (ESLint) - falla ante cualquier warning.
-        stage('Lint') {
-            steps {
-                sh 'npm run lint'
-            }
-            post {
-                success { echo '✅ Lint correcto' }
-                failure { echo '❌ Falló el lint' }
-            }
-        }
-
-        // 3. Test (vitest headless vía @angular/build:unit-test).
-        stage('Test') {
-            steps {
-                sh 'npx ng test --watch=false'
-            }
-            post {
-                success { echo '✅ Tests correctos' }
-                failure { echo '❌ Fallaron los tests' }
-            }
-        }
-
-        // 4. SonarQube (OPCIONAL / deshabilitado): análisis estático.
-        //    Se salta a menos que RUN_SONAR='true' y exista SONAR_TOKEN_URL.
-        //    Requiere: servidor SonarQube + plugin 'SonarQube Scanner' + credencial token.
-        stage('SonarQube') {
-            when {
-                allOf {
-                    expression { (env.RUN_SONAR ?: 'false') == 'true' }
-                    expression { (env.SONAR_TOKEN_URL ?: '').toString().trim() != '' }
+        stage("Lint") {
+            agent {
+                docker {
+                    image "node:24-alpine"
+                    args "-u root:root"
                 }
             }
             steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh 'npm run sonar'
-                    timeout(time: 10, unit: 'MINUTES') {
+                sh "npm run lint"
+            }
+            post {
+                success { echo "Lint correcto" }
+                failure { echo "Fallo el lint" }
+            }
+        }
+
+        // 3. Test (Vitest headless via @angular/build:unit-test).
+        stage("Test") {
+            agent {
+                docker {
+                    image "node:24-alpine"
+                    args "-u root:root"
+                }
+            }
+            steps {
+                sh "npx ng test --watch=false"
+            }
+            post {
+                success { echo "Tests correctos" }
+                failure { echo "Fallaron los tests" }
+            }
+        }
+
+        // 4. SonarQube (OPCIONAL / deshabilitado): analisis estatico.
+        //    Se salta a menos que RUN_SONAR=true y exista SONAR_TOKEN_URL.
+        //    Requiere: servidor SonarQube + plugin SonarQube Scanner + credencial token.
+        stage("SonarQube") {
+            when {
+                allOf {
+                    expression { (env.RUN_SONAR ?: "false") == "true" }
+                    expression { (env.SONAR_TOKEN_URL ?: "").toString().trim() != "" }
+                }
+            }
+            steps {
+                withSonarQubeEnv("SonarQube") {
+                    sh "npm run sonar"
+                    timeout(time: 10, unit: "MINUTES") {
                         waitForQualityGate abortPipeline: true
                     }
                 }
             }
         }
 
-        // 5. Build (producción Angular).
-        stage('Build') {
+        // 5. Build (produccion Angular).
+        stage("Build") {
+            agent {
+                docker {
+                    image "node:24-alpine"
+                    args "-u root:root"
+                }
+            }
             steps {
-                sh 'npm run build -- --configuration=production'
+                sh "npm run build -- --configuration=production"
             }
             post {
-                success { echo '✅ Build correcto' }
-                failure { echo '❌ Falló el build' }
+                success { echo "Build correcto" }
+                failure { echo "Fallo el build" }
             }
         }
 
         // 6. Build de la imagen Docker.
-        stage('Build Docker Image') {
+        // Esta etapa usa el agente del host (Docker del host) para docker.build().
+        stage("Build Docker Image") {
             steps {
                 script {
                     docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
@@ -106,17 +138,17 @@ pipeline {
         }
 
         // 7. (Opcional) Push a DockerHub. Solo corre cuando REGISTRY tenga un valor.
-        stage('Push to DockerHub') {
+        stage("Push to DockerHub") {
             when {
                 expression {
-                    def reg = (env.REGISTRY ?: '').toString().trim()
-                    return reg != ''
+                    def reg = (env.REGISTRY ?: "").toString().trim()
+                    return reg != ""
                 }
             }
             steps {
                 script {
-                    def reg = (env.REGISTRY ?: 'https://registry.hub.docker.com').toString()
-                    docker.withRegistry(reg, 'dockerhub-creds') {
+                    def reg = (env.REGISTRY ?: "https://registry.hub.docker.com").toString()
+                    docker.withRegistry(reg, "dockerhub-creds") {
                         docker.image("${IMAGE_NAME}:${IMAGE_TAG}").push()
                         docker.image("${IMAGE_NAME}:latest").push()
                     }
@@ -124,17 +156,18 @@ pipeline {
             }
         }
 
-        // 8. Deploy con docker-compose. Solo en la rama 'main'.
-        stage('Deploy') {
+        // 8. Deploy con docker-compose. Solo en la rama "main".
+        // Esta etapa usa el agente del host (Docker del host) para docker compose.
+        stage("Deploy") {
             when {
-                branch 'main'
+                branch "main"
             }
             steps {
                 script {
-                    sh '''
+                    sh """
                         docker compose down
                         docker compose up -d --build
-                    '''
+                    """
                 }
             }
         }
