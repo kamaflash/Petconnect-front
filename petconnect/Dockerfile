@@ -9,7 +9,7 @@ RUN rm -f package-lock.json && npm install --legacy-peer-deps
 
 # Copy sources and build
 COPY . .
-RUN npm run build -- --configuration=production
+RUN npm run build -- --configuration=local
 
 FROM nginx:alpine
 
