@@ -448,7 +448,7 @@ export class PetFeedGridComponent<T = any> implements OnInit, OnChanges {
     Object.values(this.localFilters).forEach(value => {
       if (Array.isArray(value)) {
         count += value.length;
-      } else if (!!value) {
+      } else if (value) {
         count++;
       }
     });

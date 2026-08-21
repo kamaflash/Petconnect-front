@@ -318,7 +318,7 @@ export class AdoptionHistoryComponent implements OnInit, OnDestroy {
   private readonly subscriptions = new Subscription();
 
   ngOnInit(): void {
-    // Reacciona a cambios del historial local (en sesiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n) para actualizar la vista
+    // Reacciona a cambios del historial local (en sesiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n) para actualizar la vista
     this.subscriptions.add(
       this.adoptionService.adoptionHistory$.subscribe(() => this.buildItems()),
     );
@@ -370,14 +370,14 @@ export class AdoptionHistoryComponent implements OnInit, OnDestroy {
         fromName: change.previousOwnerName || change.previousOwnerId,
         toName: change.newOwnerName || change.newOwnerId,
         detail: change.adoptionRequestId
-          ? `VÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­a solicitud ${change.adoptionRequestId}`
+          ? `VÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­a solicitud ${change.adoptionRequestId}`
           : 'Cambio registrado',
       });
     });
 
     result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     this.items.set(result);
-    // Refrescar la cronologÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­a de propietarios con los datos locales mÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡s recientes
+    // Refrescar la cronologÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­a de propietarios con los datos locales mÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡s recientes
     this.owners.set(history.owners ?? []);
   }
 
@@ -387,7 +387,7 @@ export class AdoptionHistoryComponent implements OnInit, OnDestroy {
       return '';
     }
     const map: Record<string, string> = {
-      ADOPTION_COMPLETED: 'AdopciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n completada',
+      ADOPTION_COMPLETED: 'AdopciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n completada',
       RETURNED: 'Devuelta',
       TRANSFERRED: 'Transferida',
       OTHER: 'Otro',
@@ -425,7 +425,7 @@ export class AdoptionHistoryComponent implements OnInit, OnDestroy {
 
   reasonLabel(reason: OwnershipChangeReason): string {
     const map: Record<OwnershipChangeReason, string> = {
-      adoption_completed: 'Por adopciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n completada',
+      adoption_completed: 'Por adopciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n completada',
       returned: 'Mascota devuelta',
       transferred: 'Transferencia entre usuarios',
       other: 'Otro motivo',
