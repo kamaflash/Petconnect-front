@@ -27,16 +27,16 @@ pipeline {
 
     environment {
         IMAGE_NAME = "petconnect-frontend"
-        IMAGE_TAG  = "${env.GIT_COMMIT?.take(7) ?: "latest"}"
-        REGISTRY   = ""  // Déjalo vacío si no subes a DockerHub
-        // SonarQube (OPCIONAL / deshabilitado). Actívalo cuando configures servidor + plugin.
+        IMAGE_TAG  = "${env.GIT_COMMIT?.take(7) ?: 'latest'}"
+        REGISTRY   = ""  // DÃ©jalo vacÃ­o si no subes a DockerHub
+        // SonarQube (OPCIONAL / deshabilitado). ActÃ­valo cuando configures servidor + plugin.
         RUN_SONAR   = "false"
         SONAR_TOKEN_URL = ""  // Credencial (token) de SonarQube, p.ej. "sonar-token".
     }
 
     stages {
-        // El checkout del código lo hace Jenkins al cargar el pipeline (SCM).
-        // El proyecto Angular esta en la RAÍZ del repo (package.json en raíz).
+        // El checkout del cÃ³digo lo hace Jenkins al cargar el pipeline (SCM).
+        // El proyecto Angular esta en la RAÃZ del repo (package.json en raÃ­z).
 
         // 1. Instalar dependencias.
         stage("Install Dependencies") {
