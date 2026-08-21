@@ -183,8 +183,12 @@ pipeline {
                             else
                                 DC="docker-compose"
                             fi
-                            $DC down || true
-                            $DC up -d --build
+                            $DC down --remove-orphans || true
+                            docker rm -f petconnect-frontend 2>/dev/null || true
+                            # La imagen ya fue construida en el stage anterior
+                            # (Build Docker Image); aqui solo levantamos el contenedor.
+                            # No usamos --build porque requiere buildx reciente.
+                            $DC up -d --no-build
                             $DC ps
                         '''
                     }
