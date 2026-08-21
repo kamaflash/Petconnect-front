@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Jenkinsfile para Petconnect Front (Angular).
  *
  * NOTA SOBRE Node.js: El plugin "NodeJS" no esta instalado en este Jenkins,
@@ -13,7 +13,7 @@
 pipeline {
     agent any
 
-                triggers {
+    triggers {
         // Dispara el build cuando GitHub avisa de un push (webhook).
         // Solo reacciona ante pushes a "main" (regexpFilter sobre ref).
         GenericTrigger(
@@ -46,7 +46,7 @@ pipeline {
                 }
             }
             steps {
-                sh "npm ci"
+                sh "npm install --no-fund --no-audit"
             }
             post {
                 success { echo "Dependencias instaladas" }
@@ -172,3 +172,5 @@ pipeline {
         }
     }
 }
+
+
