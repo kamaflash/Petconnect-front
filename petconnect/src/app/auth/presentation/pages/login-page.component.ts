@@ -1342,14 +1342,19 @@ export class LoginPageComponent {
     }
 
     try {
-      await this.authService.loginWithGoogle(response.credential);
+      const user = await this.authService.loginWithGoogle(response.credential);
+
+      // Si el perfil está incompleto (primer acceso con Google), ir al perfil
+      // para completar los datos faltantes.
+      const needsProfileCompletion =
+        !user.phone || !user.bio || !user.dateOfBirth || !user.location;
 
       if (this.inModal()) {
         this.loginSuccess.emit();
         this.closeModal.emit();
-      } else {
-        this.router.navigate(['/']);
       }
+
+      void this.router.navigate([needsProfileCompletion ? '/profile' : '/']);
     } catch (err) {
       this.error.set('Error al iniciar sesión con Google. Por favor, intenta de nuevo.');
     } finally {
@@ -1390,7 +1395,9 @@ export class LoginPageComponent {
 
     try {
       await this.authService.register(this.registerData);
-      this.router.navigate(['/']);
+
+      // Tras el registro, llevar al perfil para completar los datos faltantes
+      void this.router.navigate(['/profile']);
     } catch (err) {
       this.error.set('Error al registrarse. Por favor, intenta de nuevo.');
     } finally {

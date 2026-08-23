@@ -313,9 +313,7 @@ interface Pet {
               [items]="userPets()"
               [showSearch]="true"
               [filteredItems]="filteredPetItems()"
-              [editable]="isOwnProfile()"
               [loading]="loading()"
-              (onAdd)="showAddPetDialog()"
               (searchChange)="onPetSearch($event)"
             >
               <ng-template card-actions let-item>
@@ -341,24 +339,8 @@ interface Pet {
               [config]="profileFormConfig()"
               [formData]="profileFormData()"
               (onSubmitClick)="onProfileSubmit($event)"
+              (onLocationPicked)="onLocationConfirmed($event)"
             />
-
-            <!-- Location Picker Section -->
-            <div class="location-picker-section">
-              <h3 class="section-title">
-                <i class="pi pi-map-marker"></i>
-                Ubicación
-              </h3>
-              <p class="section-subtitle">
-                Selecciona tu ubicación para que otros usuarios puedan encontrarte
-              </p>
-
-              <app-location-picker
-                [initialAddress]="userProfile()?.location"
-                (locationConfirmed)="onLocationConfirmed($event)"
-                (locationCancelled)="onLocationCancelled()"
-              />
-            </div>
           </div>
 
           <!-- Conóceme - Información (otros perfiles) - TODOS LOS DATOS -->
@@ -1909,7 +1891,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           coverImage: profile.coverImageUrl || '',
           bio: profile.bio || '',
           location: profile.location || '',
-          website: '',
+          website: profile.website || '',
           joinDate: new Date(),
           isFollowing: false,
           type: normalizedProfileType,
@@ -1921,6 +1903,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
             loadedProfile = {
               ...baseProfile,
               type: 'shelter',
+              charityNumber: (profile as any).charityNumber || null,
               stats: { pets: 0, followers: 0, adoptions: 0, reviews: 0 },
             } as ShelterProfile;
             break;
@@ -1928,7 +1911,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
             loadedProfile = {
               ...baseProfile,
               type: 'vet',
-              specialty: 'Veterinaria General',
+              specialty: (profile as any).specialty || 'Veterinaria General',
+              licenseNumber: (profile as any).licenseNumber || null,
               rating: 4.5,
               reviews: 0,
               stats: { patients: 0, followers: 0, posts: 0, likes: 0 },
@@ -1938,6 +1922,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
             loadedProfile = {
               ...baseProfile,
               type: 'seller',
+              storeName: (profile as any).storeName || null,
               stats: { products: 0, followers: 0, sales: 0, reviews: 0 },
             } as SellerProfile;
             break;
@@ -1945,7 +1930,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
             loadedProfile = {
               ...baseProfile,
               type: 'trainer',
-              specialty: 'Adiestramiento canino',
+              specialty: (profile as any).specialty || 'Adiestramiento canino',
               rating: 0,
               reviews: 0,
               stats: { clients: 0, followers: 0, posts: 0, likes: 0 },
@@ -2658,10 +2643,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
   onPetSearch(query: string) {
     this.petSearchQuery.set(query);
-  }
-
-  showAddPetDialog() {
-    this.router.navigate(['/pets/create']);
   }
 
   toggleFollow(): void {

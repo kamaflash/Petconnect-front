@@ -52,17 +52,11 @@ interface Pet {
           (onEdit)="onEdit($event)"
           (onDelete)="onDelete($event)"
         >
-          <p-button
-            icon="pi pi-plus"
-            [text]="true"
-            (onClick)="showAddDialog()"
-            table-actions
-          />
         </app-table>
 
       <app-modal
         [visible]="dialogVisible"
-        header="Nueva Mascota"
+        header="Editar Mascota"
         size="medium"
         (onHide)="dialogVisible = false"
         (onCancel)="dialogVisible = false"
@@ -193,11 +187,6 @@ export class PetsPageComponent implements OnInit {
     };
   }
 
-  showAddDialog() {
-    this.newPet = {};
-    this.dialogVisible = true;
-  }
-
   editPet(pet: Pet) {
     this.newPet = { ...pet };
     this.dialogVisible = true;
@@ -264,10 +253,6 @@ export class PetsPageComponent implements OnInit {
           });
         }
       });
-    } else {
-      // Create new pet - navigate to the create page
-      this.router.navigate(['/pets/create']);
-      this.dialogVisible = false;
     }
   }
 }

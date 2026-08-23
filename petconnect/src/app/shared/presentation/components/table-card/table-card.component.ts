@@ -420,7 +420,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
     .caption-username { font-weight: 600; color: var(--bitbucket-text-primary); margin-right: 0.375rem; }
     .caption-text { color: var(--bitbucket-text-primary); }
     .post-tags { padding: 0.25rem 1rem; display: flex; flex-wrap: wrap; gap: 0.25rem; }
-    .post-tag { font-size: 0.8125rem; color: var(--primary-color, #94c748); cursor: pointer; }
+    .post-tag { font-size: 0.8125rem; color: var(--primary-color, #f97316); cursor: pointer; }
     .post-tag:hover { text-decoration: underline; }
     .post-comments-link { padding: 0.25rem 1rem; }
     .post-comments-link span { font-size: 0.8125rem; color: var(--bitbucket-text-secondary); cursor: pointer; }
@@ -578,7 +578,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
       transition: transform 0.2s;
     }
     .story-ring.unseen {
-      background: conic-gradient(var(--primary-color, #94c748) 0deg 360deg, transparent 360deg);
+      background: conic-gradient(var(--primary-color, #f97316) 0deg 360deg, transparent 360deg);
       padding: 3px;
     }
     .story-ring.unseen:hover { transform: scale(1.05); }

@@ -50,18 +50,6 @@ import { Subscription, debounceTime, distinctUntilChanged, switchMap, catchError
               </div>
             </ng-template>
           </p-autoComplete>
-
-          <div class="search-actions">
-            <button
-              pButton
-              icon="pi pi-crosshair"
-              class="p-button-outlined p-button-sm"
-              (click)="useCurrentLocation()"
-              [disabled]="loading()"
-              pTooltip="Usar mi ubicación actual"
-            >
-            </button>
-          </div>
         </div>
 
         <!-- Información de la ubicación seleccionada -->
@@ -468,22 +456,63 @@ export class LocationPickerComponent implements OnInit, OnChanges, OnDestroy {
 
   /**
    * Maneja la selección de una dirección del autocompletado
+   * Al seleccionar, se ejecuta la misma funcionalidad que hacía el botón de
+   * ubicación actual: se geocodifica (por coordenadas) la dirección elegida,
+   * se muestra en el input, se posiciona el mapa y se confirma automáticamente.
    */
   onAddressSelect(suggestion: any): void {
     this.loading.set(true);
+    this.error.set(null);
 
-    // Asegurar que el input muestre el nombre de la dirección, no el objeto
-    const displayName = typeof suggestion === 'string' ? suggestion : (suggestion.displayName || '');
+    // `onSelect` de PrimeNG autoComplete emite { originalEvent, value: item }
+    const item = suggestion?.value ?? suggestion;
+
+    // Obtener el nombre y las coordenadas de la sugerencia seleccionada
+    const displayName = typeof item === 'string' ? item : (item?.displayName || '');
+    const lat = typeof item === 'object' ? item?.lat : undefined;
+    const lon = typeof item === 'object' ? item?.lon : undefined;
+
+    // Mostrar la dirección en el input de inmediato
     this.searchQuery.set(displayName);
     this.searchQueryValue = displayName;
 
-    // Obtener detalles completos de la dirección
+    // Las sugerencias del autocompletado ya traen coordenadas
+    // Si la sugerencia trae coordenadas, usar geocodificación inversa
+    // (igual que hacía el botón de ubicación actual)
+    if (typeof item === 'object' && lat !== undefined && lon !== undefined) {
+      this.geolocationService.reverseGeocode(lat, lon).subscribe({
+        next: (result: GeocodingResult) => {
+          this.selectedLocation.set(result);
+          // Rellenar el input con la dirección canónica
+          this.searchQuery.set(result.displayName);
+          this.searchQueryValue = result.displayName;
+          this.updateMapPosition(result.lat, result.lon);
+          this.loading.set(false);
+          // Confirmar la ubicación automáticamente (se guarda con "Guardar cambios")
+          this.locationConfirmed.emit(result);
+        },
+        error: (err: any) => {
+          console.error('Error en geocodificación inversa al seleccionar:', err);
+          // Si falla la inversa, geocodificar la dirección escrita
+          this.geocodeSelectedAddress(displayName);
+        }
+      });
+      return;
+    }
+
+    // Sin coordenadas, geocodificar la dirección
+    this.geocodeSelectedAddress(displayName);
+  }
+
+  /**
+   * Geocodifica una dirección para obtener sus coordenadas (fallback)
+   */
+  private geocodeSelectedAddress(displayName: string): void {
     this.geolocationService.geocodeAddress(displayName).subscribe({
       next: (result: GeocodingResult) => {
         this.selectedLocation.set(result);
         this.updateMapPosition(result.lat, result.lon);
         this.loading.set(false);
-        // Emitir directamente la ubicación confirmada (sin botón adicional)
         this.locationConfirmed.emit(result);
       },
       error: (err: any) => {
@@ -491,7 +520,7 @@ export class LocationPickerComponent implements OnInit, OnChanges, OnDestroy {
         this.error.set('Error al cargar la dirección seleccionada');
         this.loading.set(false);
         setTimeout(() => this.error.set(null), 3000);
-      }
+      },
     });
   }
 

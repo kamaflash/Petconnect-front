@@ -15,6 +15,7 @@ import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/present
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { SocialService, PostResponse, EventResponse, GroupResponse, StoryResponse } from '../../../social/infrastructure/services/social.service';
 import { PetResponse } from '../../../pets/domain/pet.model';
+import { SPECIES_BREEDS } from '../../../pets/domain/species-breeds.model';
 import { PetService } from '../../../pets/infrastructure/services/pet.service';
 import { HomeService, VetServiceResponse } from '../../../home/infrastructure/services/home.service';
 import { MarketplaceService, CreateProductRequest } from '../../../marketplace/infrastructure/services/marketplace.service';
@@ -786,6 +787,7 @@ export class AdminPageComponent implements OnInit {
     title: 'Crear Nueva Mascota',
     submitLabel: 'Crear Mascota',
     showCancel: true,
+    resolveOptions: (_field, sourceValue) => SPECIES_BREEDS[sourceValue] ?? [],
     fields: [
       {
         key: 'name',
@@ -812,8 +814,9 @@ export class AdminPageComponent implements OnInit {
       {
         key: 'breed',
         label: 'Raza',
-        type: 'input',
-        placeholder: 'Raza de la mascota',
+        type: 'select',
+        dependsOn: 'species',
+        placeholder: 'Seleccione una raza',
         validation: { maxLength: 100 }
       },
       {

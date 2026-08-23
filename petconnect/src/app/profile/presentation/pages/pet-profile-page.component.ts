@@ -17,6 +17,7 @@ import { InfoItemComponent } from '../../../shared/presentation/components/info-
 import { StatCardComponent } from '../../../shared/presentation/components/stat-card/stat-card.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { ProfileService, PetResponse } from '../../infrastructure/services/profile.service';
+import { SPECIES_BREEDS } from '../../../pets/domain/species-breeds.model';
 import { AdoptionService } from '../../../adoptions/infrastructure/services/adoption.service';
 import { CreateAdoptionRequest } from '../../../adoptions/infrastructure/services/adoption.service';
 import { MessageService } from 'primeng/api';
@@ -243,6 +244,11 @@ interface PetComment {
                     <span class="info-icon"><i class="pi pi-weight"></i></span>
                     <span class="info-label">Peso</span>
                     <span class="info-value">{{ pet()?.weight ? pet()!.weight + ' ' + (pet()?.weightUnit || 'kg') : '—' }}</span>
+                  </div>
+                  <div class="info-row full-width">
+                    <span class="info-icon"><i class="pi pi-map-marker"></i></span>
+                    <span class="info-label">Dirección</span>
+                    <span class="info-value">{{ pet()?.lastKnownLocation || '—' }}</span>
                   </div>
                 </div>
               </div>
@@ -2407,6 +2413,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     title: 'Editar Información',
     submitLabel: 'Guardar Cambios',
     showCancel: true,
+    resolveOptions: (_field, sourceValue) => SPECIES_BREEDS[sourceValue] ?? [],
     fields: [
       {
         key: 'name',
@@ -2433,8 +2440,9 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       {
         key: 'breed',
         label: 'Raza',
-        type: 'input',
-        placeholder: 'Raza de la mascota',
+        type: 'select',
+        dependsOn: 'species',
+        placeholder: 'Seleccione una raza',
         validation: { maxLength: 100 }
       },
       {

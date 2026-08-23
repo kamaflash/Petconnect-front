@@ -251,18 +251,21 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
       border-color: var(--text-tertiary);
     }
 
-    .color-option-active {
+        .color-option-active {
       border-color: var(--text-primary) !important;
       box-shadow: 0 0 0 3px var(--surface-card), 0 0 0 5px var(--text-primary);
+      /* Suavizar el color del theme para que se vea tenue (no saturado/verdoso) */
+      filter: brightness(0.55) saturate(0.35);
     }
   `]
 })
 export class SettingsPageComponent implements OnInit {
   private readonly themeService = inject(ThemeService);
 
-  selectedColor = signal('#94c748');
+  selectedColor = signal('#f97316');
 
   themeColors: ThemeColor[] = [
+    { name: 'Naranja', value: '#f97316' },
     { name: 'Verde', value: '#94c748' },
     { name: 'Azul', value: '#3b82f6' },
     { name: 'Púrpura', value: '#8b5cf6' },
@@ -278,7 +281,9 @@ export class SettingsPageComponent implements OnInit {
   ngOnInit(): void {
     const saved = localStorage.getItem('theme-color');
     if (saved) {
-      this.selectedColor.set(saved);
+      // Si es el verde antiguo, tratarlo como naranja (nuevo color por defecto)
+      const color = saved === '#94c748' ? '#f97316' : saved;
+      this.selectedColor.set(color);
     }
   }
 

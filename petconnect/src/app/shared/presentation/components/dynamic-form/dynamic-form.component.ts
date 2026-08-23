@@ -1,5 +1,6 @@
-import { Component, input, output, signal, model, OnInit } from '@angular/core';
+import { Component, input, output, signal, model, OnInit, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, ValidatorFn, AbstractControl, Validators } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -60,6 +61,8 @@ export interface DynamicFormField {
   type: FormFieldType;
   placeholder?: string;
   options?: FormFieldOption[];
+  /** Clave del campo del que dependen las opciones (p.ej. la raza depende de la especie). */
+  dependsOn?: string;
   validation?: FormFieldValidation;
   defaultValue?: any;
   showClear?: boolean;
@@ -78,6 +81,8 @@ export interface DynamicFormField {
 // Interfaz para configuración del formulario
 export interface DynamicFormConfig {
   fields: DynamicFormField[];
+  /** Resuelve las opciones de campos con `dependsOn` a partir del valor del campo fuente. */
+  resolveOptions?: (field: DynamicFormField, sourceValue: any) => FormFieldOption[];
   title?: string;
   submitLabel?: string;
   cancelLabel?: string;
@@ -182,7 +187,7 @@ export interface DynamicFormConfig {
                   <p-select
                     [id]="field.key"
                     [formControlName]="field.key"
-                    [options]="field.options || []"
+                    [options]="getFieldOptions(field)"
                     [placeholder]="field.placeholder || 'Seleccionar'"
                     [disabled]="field.disabled || false"
                     [showClear]="field.showClear ?? true"
@@ -316,9 +321,10 @@ export interface DynamicFormConfig {
                   </p-fileUpload>
                 }
                 @case ('location') {
-<app-location-picker
-
-              />
+                  <app-location-picker
+                    [initialAddress]="formData()[field.key]"
+                    (locationConfirmed)="onLocationPickedInternal($event, field)"
+                  />
                 }
               }
 
@@ -637,7 +643,7 @@ export interface DynamicFormConfig {
     }
   `]
 })
-export class DynamicFormComponent implements OnInit {
+export class DynamicFormComponent implements OnInit, OnChanges, OnDestroy {
   // Input para la configuración del formulario
   config = input<DynamicFormConfig>({ fields: [] });
 
@@ -647,9 +653,17 @@ export class DynamicFormComponent implements OnInit {
   // Outputs
   onSubmitClick = output<any>();
   onCancel = output<void>();
+  // Emitido cuando se confirma una ubicación desde el picker dentro del formulario
+  onLocationPicked = output<any>();
 
   // Señal para el formulario reactivo
   form = signal<FormGroup>(new FormGroup({}));
+
+  // Opciones de campos dependientes, resueltas en tiempo de ejecución
+  dynamicFieldOptions = signal<Record<string, FormFieldOption[]>>({});
+
+  // Suscripciones a cambios de campos dependientes
+  private dependencySubscriptions: Subscription[] = [];
 
   // Señal para archivos subidos
   uploadedFiles = signal<Record<string, UploadedFile[]>>({});
@@ -664,6 +678,25 @@ export class DynamicFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.buildForm();
+  }
+
+  // Guarda la dirección en el control del formulario y notifica hacia arriba
+  onLocationPickedInternal(location: any, field: DynamicFormField): void {
+    const control = this.form().get(field.key);
+    if (control) {
+      control.setValue(location.displayName || '');
+      control.markAsDirty();
+    }
+    this.onLocationPicked.emit(location);
+  }
+
+  // Reconstruye el formulario si la configuración o los datos cambian
+  // (p.ej. cuando el tipo de perfil se carga de forma asíncrona y aparecen
+  // campos específicos como licenseNumber)
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['config'] && !changes['config'].firstChange) {
+      this.buildForm();
+    }
   }
 
   // Método para el botón choose
@@ -710,6 +743,60 @@ export class DynamicFormComponent implements OnInit {
     });
 
     this.form.set(this.fb.group(formControls));
+
+    this.setupDependencies();
+  }
+
+  // Resuelve las opciones de un campo: si es dependiente usa el resolver del config
+  getFieldOptions(field: DynamicFormField): FormFieldOption[] {
+    if (field.dependsOn) {
+      return this.dynamicFieldOptions()[field.key] ?? [];
+    }
+    return field.options || [];
+  }
+
+  // Configura suscripciones para campos cuyas opciones dependen de otro campo
+  private setupDependencies(): void {
+    this.unsubscribeDependencies();
+    const resolver = this.config().resolveOptions;
+
+    if (!resolver) return;
+
+    this.config().fields.forEach((field: DynamicFormField) => {
+      if (!field.dependsOn) return;
+
+      const sourceControl = this.form().get(field.dependsOn);
+      if (!sourceControl) return;
+
+      // Inicializar las opciones según el valor actual del campo fuente
+      this.dynamicFieldOptions.update(opts => ({
+        ...opts,
+        [field.key]: resolver(field, sourceControl.value)
+      }));
+
+      // Actualizar opciones al cambiar el valor del campo fuente
+      this.dependencySubscriptions.push(
+        sourceControl.valueChanges.subscribe((sourceValue: any) => {
+          const target = this.form().get(field.key);
+          if (target && target.value !== '') {
+            target.setValue('');
+          }
+          this.dynamicFieldOptions.update(opts => ({
+            ...opts,
+            [field.key]: resolver(field, sourceValue)
+          }));
+        })
+      );
+    });
+  }
+
+  private unsubscribeDependencies(): void {
+    this.dependencySubscriptions.forEach(sub => sub.unsubscribe());
+    this.dependencySubscriptions = [];
+  }
+
+  ngOnDestroy(): void {
+    this.unsubscribeDependencies();
   }
 
   // Obtiene el valor por defecto según el tipo de campo
