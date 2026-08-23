@@ -45,13 +45,13 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
                 <span class="settings-item-label">Color del tema</span>
                 <span class="settings-item-description">Selecciona el color principal de la aplicación</span>
               </div>
-            </div>
+                                      </div>
             <div class="color-palette">
               @for (color of themeColors; track color.value) {
                 <button
                   class="color-option"
                   [class.color-option-active]="selectedColor() === color.value"
-                  [style.background-color]="color.value"
+                  [style.background-color]="selectedColor() === color.value ? null : color.value"
                   (click)="selectColor(color)"
                   [pTooltip]="color.name"
                   tooltipPosition="top"
@@ -233,17 +233,19 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
       flex-wrap: wrap;
     }
 
-    .color-option {
+                    .color-option {
       width: 40px;
       height: 40px;
       border-radius: var(--radius-full);
       border: 2px solid transparent;
       cursor: pointer;
-      transition: all var(--transition-fast);
+      transition: all var(--transition-normal);
       box-shadow: var(--shadow-sm);
       display: flex;
       align-items: center;
       justify-content: center;
+      /* Suavizar o color de todos os botons para que usen o color do tema mais ténue */
+      filter: brightness(0.55) saturate(0.35);
     }
 
     .color-option:hover {
@@ -251,11 +253,13 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
       border-color: var(--text-tertiary);
     }
 
-        .color-option-active {
+                    .color-option-active {
       border-color: var(--text-primary) !important;
       box-shadow: 0 0 0 3px var(--surface-card), 0 0 0 5px var(--text-primary);
-      /* Suavizar el color del theme para que se vea tenue (no saturado/verdoso) */
-      filter: brightness(0.55) saturate(0.35);
+      /* Forzar o fondo coa variable do theme actual coa maior prioridade posible */
+      background: var(--p-primary-color, var(--primary-color, #f97316)) !important;
+      /* O activo veuse coa máxima suavidade */
+      filter: brightness(0.65) saturate(0.25);
     }
   `]
 })

@@ -18,6 +18,7 @@ import { StatCardComponent } from '../../../shared/presentation/components/stat-
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { ProfileService, PetResponse } from '../../infrastructure/services/profile.service';
 import { SPECIES_BREEDS } from '../../../pets/domain/species-breeds.model';
+import { PET_COLOR_OPTIONS } from '../../../pets/domain/pet-colors.model';
 import { AdoptionService } from '../../../adoptions/infrastructure/services/adoption.service';
 import { CreateAdoptionRequest } from '../../../adoptions/infrastructure/services/adoption.service';
 import { MessageService } from 'primeng/api';
@@ -2463,13 +2464,14 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
           { label: 'Hembra', value: 'female' },
           { label: 'Desconocido', value: 'unknown' }
         ]
-      },
+          },
       {
         key: 'color',
         label: 'Color',
-        type: 'input',
-        placeholder: 'Color de la mascota',
-        validation: { maxLength: 100 }
+        type: 'select',
+        placeholder: 'Seleccionar color',
+        showClear: true,
+        options: PET_COLOR_OPTIONS
       },
       {
         key: 'microchipId',

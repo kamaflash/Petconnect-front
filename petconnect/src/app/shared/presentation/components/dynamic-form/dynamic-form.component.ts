@@ -169,18 +169,19 @@ export interface DynamicFormConfig {
                     [max]="field.validation?.max"
                   />
                 }
-                @case ('date') {
+                                @case ('date') {
                   <p-datepicker
                     [id]="field.key"
                     [formControlName]="field.key"
                     [placeholder]="field.placeholder || ''"
                     [disabled]="field.disabled || false"
                     [showIcon]="field.showIcon ?? true"
-                    [dateFormat]="field.dateFormat || 'dd/mm/yy'"
+                                        [dateFormat]="field.dateFormat || 'dd/mm/yy'"
                     [selectionMode]="field.mode || 'single'"
                     styleClass="w-full"
                     [class.ng-invalid]="isFieldInvalid(field.key)"
                     [class.ng-dirty]="isFieldDirty(field.key)"
+                    appendTo="body"
                   />
                 }
                 @case ('select') {
@@ -570,8 +571,21 @@ export interface DynamicFormConfig {
       width: 100%;
     }
 
-    :host ::ng-deep .p-fileupload-content {
+        :host ::ng-deep .p-fileupload-content {
       padding: 0;
+    }
+
+        /* DatePicker panel: asegurar z-index e posición correcta para que non se vea cortado */
+    :host ::ng-deep .p-datepicker-panel {
+      z-index: 9999 !important;
+    }
+
+        /* Forzar bordes naranjas nos inputs e selects SOLO cando se enfocan */
+    :host ::ng-deep .p-inputtext:focus,
+    :host ::ng-deep .p-inputtext.ng-focus,
+    :host ::ng-deep .p-select:focus-within {
+      border-color: #f97316 !important;
+      box-shadow: 0 0 0 1px #f97316 !important;
     }
 
     .submit-btn {

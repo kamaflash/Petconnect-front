@@ -16,6 +16,7 @@ import { AuthService } from '../../../auth/infrastructure/services/auth.service'
 import { SocialService, PostResponse, EventResponse, GroupResponse, StoryResponse } from '../../../social/infrastructure/services/social.service';
 import { PetResponse } from '../../../pets/domain/pet.model';
 import { SPECIES_BREEDS } from '../../../pets/domain/species-breeds.model';
+import { PET_COLOR_OPTIONS } from '../../../pets/domain/pet-colors.model';
 import { PetService } from '../../../pets/infrastructure/services/pet.service';
 import { HomeService, VetServiceResponse } from '../../../home/infrastructure/services/home.service';
 import { MarketplaceService, CreateProductRequest } from '../../../marketplace/infrastructure/services/marketplace.service';
@@ -837,13 +838,14 @@ export class AdminPageComponent implements OnInit {
           { label: 'Hembra', value: 'female' },
           { label: 'Desconocido', value: 'unknown' }
         ]
-      },
+            },
       {
         key: 'color',
         label: 'Color',
-        type: 'input',
-        placeholder: 'Color de la mascota',
-        validation: { maxLength: 100 }
+        type: 'select',
+        placeholder: 'Seleccionar color',
+        showClear: true,
+        options: PET_COLOR_OPTIONS
       },
       {
         key: 'weight',

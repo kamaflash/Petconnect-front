@@ -107,8 +107,28 @@
   --transition-normal: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* Layout */
+    /* Layout */
   --max-page-width: 1280px;
+}
+
+/* ===== PRIME NG PRIMARY COLOR OVERRIDE (forzar cor do theme) ===== */
+:root {
+  --primary-color: #f97316 !important;
+  --primary-color-hover: #ea580c !important;
+  --primary-color-active: #c2410c !important;
+  --p-primary-color: #f97316 !important;
+  --p-primary-hover-color: #ea580c !important;
+  --p-primary-active-color: #c2410c !important;
+  --p-primary-contrast-color: #ffffff !important;
+}
+
+/* ===== PRIME NG INPUT/SELECT FOCUS BORDER (naranxa SOLO en focus) ===== */
+.p-inputtext:focus,
+.p-select:focus-within .p-select-toggle-icon,
+.p-input:focus {
+  outline: var(--primary-color) solid 1px !important;
+  box-shadow: 0 0 0 1px var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
 }
 
 /* ===== DARK MODE ===== */
