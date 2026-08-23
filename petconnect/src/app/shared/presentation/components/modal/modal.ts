@@ -117,7 +117,7 @@ export interface ModalButton {
     styles: [`
       /* ===== MODAL WRAPPER - Instagram/Facebook Modern Style ===== */
       :host ::ng-deep .p-dialog {
-        border-radius: 24px;
+        border-radius: 16px;
         overflow: hidden;
         background: var(--surface-card);
         box-shadow:
@@ -306,7 +306,7 @@ export interface ModalButton {
 
       /* ===== BUTTONS - Instagram/Facebook Style ===== */
       :host ::ng-deep .p-button {
-        border-radius: 10px !important;
+        border-radius: 999px !important;
         font-weight: 600 !important;
         font-size: 0.95rem !important;
         padding: 0.5rem 1.25rem !important;

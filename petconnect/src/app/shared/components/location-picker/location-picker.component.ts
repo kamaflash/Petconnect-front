@@ -64,6 +64,15 @@ import { Subscription, debounceTime, distinctUntilChanged, switchMap, catchError
           </div>
         </div>
 
+        <!-- Información de la ubicación seleccionada -->
+        <div class="location-info" *ngIf="selectedLocation() as selected">
+          <div class="info-header">
+            <i class="pi pi-map-marker"></i>
+            <span class="info-title">Ubicación seleccionada</span>
+          </div>
+          <p class="address-text">{{ selected.displayName }}</p>
+        </div>
+
     </div>
   `,
   styles: [`
@@ -420,6 +429,8 @@ export class LocationPickerComponent implements OnInit, OnChanges, OnDestroy {
         this.searchQuery.set(result.displayName);
         this.searchQueryValue = result.displayName;
         this.loading.set(false);
+        // Emitir directamente la ubicación confirmada (sin botón adicional)
+        this.locationConfirmed.emit(result);
       },
       error: (err: any) => {
         console.error('Error en geocodificación inversa:', err);
@@ -472,6 +483,8 @@ export class LocationPickerComponent implements OnInit, OnChanges, OnDestroy {
         this.selectedLocation.set(result);
         this.updateMapPosition(result.lat, result.lon);
         this.loading.set(false);
+        // Emitir directamente la ubicación confirmada (sin botón adicional)
+        this.locationConfirmed.emit(result);
       },
       error: (err: any) => {
         console.error('Error al seleccionar dirección:', err);

@@ -29,6 +29,7 @@ import { LocationPickerComponent } from '../../../shared/components/location-pic
 import { GeocodingResult } from '../../../shared/services/geolocation.service';
 import { DialogModule } from 'primeng/dialog';
 import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
+import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 
 type ProfileType = 'user' | 'shelter' | 'seller' | 'vet' | 'pet' | 'trainer';
 
@@ -154,7 +155,8 @@ interface Pet {
     MenuModule,
     LocationPickerComponent,
     DialogModule,
-    PostFeedComponent
+    PostFeedComponent,
+    ModalComponent
   ],
   providers: [MessageService],
   template: `
@@ -334,7 +336,7 @@ interface Pet {
           </div>
 
           <!-- Conóceme - Edición (propio perfil) -->
-          <div class="tab-panel" *ngIf="activeTab() === 'knowme' && isOwnProfile() && !loading()">
+          <div class="tab-panel" *ngIf="activeTab() === 'knowme' && isOwnProfile() && !loading() && renderForm()">
             <app-dynamic-form
               [config]="profileFormConfig()"
               [formData]="profileFormData()"
@@ -637,6 +639,30 @@ interface Pet {
           </app-post-feed>
         </ng-container>
       </p-dialog>
+<!-- Modal de Confirmación de cambios de perfil -->
+      <app-modal
+        [visible]="showConfirmDialog()"
+        [showHeader]="false"
+        size="auto"
+        confirmLabel="Sí, guardar"
+        cancelLabel="Cancelar"
+        [cancelText]="true"
+        buttonPosition="center"
+        [dismissableMask]="false"
+        (onCancel)="cancelSaveProfile()"
+        (onHide)="cancelSaveProfile()"
+        (onConfirm)="confirmSaveProfile()"
+      >
+        <div class="confirm-profile-body">
+          <div class="confirm-profile-icon">
+            <i class="pi pi-check"></i>
+          </div>
+          <h3 class="confirm-profile-title">¿Guardar cambios?</h3>
+          <p class="confirm-profile-message">
+            ¿Deseas guardar los cambios realizados en tu perfil?
+          </p>
+        </div>
+      </app-modal>
     </div>
   `,
   styles: [`
@@ -676,6 +702,51 @@ interface Pet {
 
     :host ::ng-deep .loading-overlay .p-progressbar-value {
       background: var(--primary-color);
+    }
+
+    /* ============================================
+       CONFIRM PROFILE MODAL - Minimal IG/FB
+    ============================================ */
+    .confirm-profile-body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.75rem;
+      padding: 0.5rem 0.75rem 0.25rem;
+    }
+
+    .confirm-profile-icon {
+      width: 3.25rem;
+      height: 3.25rem;
+      border-radius: 50%;
+      background: var(--primary-color-light);
+      color: var(--primary-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .dark .confirm-profile-icon {
+      background: color-mix(in srgb, var(--primary-color) 22%, transparent);
+    }
+
+    .confirm-profile-title {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+    }
+
+    .confirm-profile-message {
+      margin: 0;
+      max-width: 300px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
     }
 
     /* ============================================
@@ -1495,9 +1566,11 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   userLatitude = signal<number | null>(null);
   userLongitude = signal<number | null>(null);
   locationConfirmed = signal(false);
+  // Dirección (texto) confirmada desde el location picker
+  newAddress = signal<string | null>(null);
 
   // Perfil del usuario logueado
-  ownProfile: AnyProfile = {
+  ownProfile = signal<AnyProfile>({
     id: '',
     type: 'user',
     name: '',
@@ -1515,10 +1588,17 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       following: 0,
       posts: 0,
     },
-  };
+  });
 
   // Perfiles cargados desde backend
   loadedProfiles = signal<Record<string, AnyProfile>>({});
+
+  // Controla la recreación del formulario de edición tras guardar cambios
+  renderForm = signal(true);
+
+  // Modal de confirmación de cambios de perfil
+  showConfirmDialog = signal(false);
+  pendingProfileData = signal<any>(null);
 
   // Mascotas cargadas desde backend
   userPets = signal<Pet[]>([]);
@@ -1569,7 +1649,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       : (this.profileId() || '');
 
     const authorProfile = isOwn
-      ? this.ownProfile
+      ? this.ownProfile()
       : this.loadedProfiles()[this.profileId() || ''];
 
     const authorName = authorProfile?.name || 'Usuario';
@@ -1632,58 +1712,95 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
       const user = this.authService.user();
       if (user) {
-        const userType = (user.profileType?.toLowerCase() as ProfileType) || 'user';
-        const baseProfile: BaseProfile = {
-          id: user.id,
-          name: user.firstName + ' ' + user.lastName,
-          avatar: user.avatarUrl || '',
-          coverImage: user.coverImageUrl || '',
-          bio: user.bio || '',
-          location: user.location || '',
-          website: '',
-          joinDate: user.createdAt || new Date(),
-          isFollowing: false,
-          type: userType,
-        };
-
-        switch (userType) {
-          case 'shelter':
-            this.ownProfile = {
-              ...baseProfile,
-              type: 'shelter',
-              stats: { pets: 0, followers: 0, adoptions: 0, reviews: 0 },
-            } as ShelterProfile;
-            break;
-          case 'vet':
-            this.ownProfile = {
-              ...baseProfile,
-              type: 'vet',
-              specialty: 'Veterinaria General',
-              rating: 4.5,
-              reviews: 0,
-              stats: { patients: 0, followers: 0, posts: 0, likes: 0 },
-            } as VetProfile;
-            break;
-          case 'seller':
-            this.ownProfile = {
-              ...baseProfile,
-              type: 'seller',
-              stats: { products: 0, followers: 0, sales: 0, reviews: 0 },
-            } as SellerProfile;
-            break;
-          default:
-            this.ownProfile = {
-              ...baseProfile,
-              type: 'user',
-              username: user.firstName.toLowerCase() + '.' + user.lastName.toLowerCase(),
-              stats: { pets: 0, followers: 0, following: 0, posts: 0 },
-            } as UserProfile;
-        }
+        this.buildOwnProfile(user);
       }
 
       this.loadProfileData();
       this.initializeProfileMenu();
     });
+  }
+/**
+   * Construye el perfil propio a partir del usuario autenticado y, si se
+   * proporcionan, los datos devueltos por el backend al actualizar el perfil.
+   * Además del tipo, puede recibir campos específicos (specialty, licenseNumber,
+   * storeName, charityNumber, etc.).
+   */
+  private buildOwnProfile(user: User, profileData?: any): void {
+    const rawType = profileData?.profileType || user.profileType || 'user';
+    const userType = String(rawType).toLowerCase() as ProfileType;
+
+    // Inicializar coordenadas actuales del usuario (evita enviar null y borrarlas)
+    this.userLatitude.set(user.latitude ?? null);
+    this.userLongitude.set(user.longitude ?? null);
+
+    const typeSpecific: Record<string, any> = {};
+    if (profileData) {
+      if (profileData.specialty) typeSpecific['specialty'] = profileData.specialty;
+      if (profileData.licenseNumber) typeSpecific['licenseNumber'] = profileData.licenseNumber;
+      if (profileData.storeName) typeSpecific['storeName'] = profileData.storeName;
+      if (profileData.charityNumber) typeSpecific['charityNumber'] = profileData.charityNumber;
+      if (profileData.website) typeSpecific['website'] = profileData.website;
+    }
+
+    const baseProfile: BaseProfile = {
+      id: user.id,
+      name: user.firstName + ' ' + user.lastName,
+      avatar: user.avatarUrl || '',
+      coverImage: user.coverImageUrl || '',
+      bio: user.bio || '',
+      location: user.location || '',
+      website: typeSpecific['website'] || '',
+      joinDate: user.createdAt || new Date(),
+      isFollowing: false,
+      type: userType,
+    };
+
+    switch (userType) {
+      case 'shelter':
+        this.ownProfile.set({
+          ...baseProfile,
+          type: 'shelter',
+          charityNumber: typeSpecific['charityNumber'] || null,
+          stats: { pets: 0, followers: 0, adoptions: 0, reviews: 0 },
+        } as ShelterProfile);
+        break;
+      case 'vet':
+        this.ownProfile.set({
+          ...baseProfile,
+          type: 'vet',
+          specialty: typeSpecific['specialty'] || (this.ownProfile() as any)?.specialty || 'Veterinaria General',
+          licenseNumber: typeSpecific['licenseNumber'] || (this.ownProfile() as any)?.licenseNumber || null,
+          rating: 4.5,
+          reviews: 0,
+          stats: { patients: 0, followers: 0, posts: 0, likes: 0 },
+        } as VetProfile);
+        break;
+      case 'trainer':
+        this.ownProfile.set({
+          ...baseProfile,
+          type: 'trainer',
+          specialty: typeSpecific['specialty'] || (this.ownProfile() as any)?.specialty || '',
+          rating: 0,
+          reviews: 0,
+          stats: { clients: 0, followers: 0, posts: 0, likes: 0 },
+        } as TrainerProfile);
+        break;
+      case 'seller':
+        this.ownProfile.set({
+          ...baseProfile,
+          type: 'seller',
+          storeName: typeSpecific['storeName'] || (this.ownProfile() as any)?.storeName || null,
+          stats: { products: 0, followers: 0, sales: 0, reviews: 0 },
+        } as SellerProfile);
+        break;
+      default:
+        this.ownProfile.set({
+          ...baseProfile,
+          type: 'user',
+          username: user.firstName.toLowerCase() + '.' + user.lastName.toLowerCase(),
+          stats: { pets: 0, followers: 0, following: 0, posts: 0 },
+        } as UserProfile);
+    }
   }
 
   private detectDarkMode(): void {
@@ -1824,6 +1941,16 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
               stats: { products: 0, followers: 0, sales: 0, reviews: 0 },
             } as SellerProfile;
             break;
+          case 'trainer':
+            loadedProfile = {
+              ...baseProfile,
+              type: 'trainer',
+              specialty: 'Adiestramiento canino',
+              rating: 0,
+              reviews: 0,
+              stats: { clients: 0, followers: 0, posts: 0, likes: 0 },
+            } as TrainerProfile;
+            break;
           default:
             loadedProfile = {
               ...baseProfile,
@@ -1833,7 +1960,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
             } as UserProfile;
         }
 
-        this.ownProfile = loadedProfile;
+        this.ownProfile.set(loadedProfile);
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -2036,8 +2163,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
   userProfile = computed(() => {
     const id = this.profileId();
-    if (!id) return this.ownProfile;
-    return this.loadedProfiles()[id] || this.ownProfile;
+    if (!id) return this.ownProfile();
+    return this.loadedProfiles()[id] || this.ownProfile();
   });
 
   userAvatar = computed(() => {
@@ -2325,6 +2452,20 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
     const baseFields = [
       {
+        key: 'profileType',
+        label: 'Tipo de perfil',
+        type: 'select' as const,
+        placeholder: 'Selecciona tu tipo de perfil',
+        validation: { required: true },
+        options: [
+          { label: 'Usuario', value: 'user' },
+          { label: 'Veterinario', value: 'vet' },
+          { label: 'Protectora', value: 'shelter' },
+          { label: 'Vendedor', value: 'seller' },
+          { label: 'Adiestrador', value: 'trainer' },
+        ],
+      },
+      {
         key: 'firstName',
         label: 'Nombre',
         type: 'input' as const,
@@ -2423,6 +2564,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     const profileType = profile?.type || 'user';
 
     const baseData: any = {
+      profileType: ((profile as any)?.type || user?.profileType || 'user').toLowerCase(),
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
       phone: user?.phone || '',
@@ -2472,6 +2614,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   onLocationConfirmed(location: GeocodingResult): void {
     this.userLatitude.set(location.lat);
     this.userLongitude.set(location.lon);
+    this.newAddress.set(location.displayName || null);
     this.locationConfirmed.set(true);
 
     this.messageService.add({
@@ -2483,6 +2626,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
   onLocationCancelled(): void {
     this.locationConfirmed.set(false);
+    this.newAddress.set(null);
   }
 
   // ============================================
@@ -2615,21 +2759,56 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   //  PROFILE UPDATE
   // ============================================
 
-  async onProfileSubmit(data: any): Promise<void> {
+  // Al enviar el formulario, preparamos los datos y mostramos el modal de confirmación
+  onProfileSubmit(data: any): void {
     console.log('Profile form submitted:', data);
+    this.pendingProfileData.set(data);
+    this.showConfirmDialog.set(true);
+    this.cdr.detectChanges();
+  }
 
+  // Confirmación del modal: realiza el guardado real
+  confirmSaveProfile(): void {
+    const data = this.pendingProfileData();
+    if (!data) return;
+
+    this.showConfirmDialog.set(false);
+    this.cdr.detectChanges();
+    this.saveProfile(data);
+  }
+
+  cancelSaveProfile(): void {
+    this.showConfirmDialog.set(false);
+    this.pendingProfileData.set(null);
+    this.cdr.detectChanges();
+  }
+
+  private saveProfile(data: any): void {
     this.loading.set(true);
 
     const formData = new FormData();
-    const profileType = this.userProfile()?.type || 'user';
+    const profileType = (data.profileType || this.userProfile()?.type || 'user') as ProfileType;
+    // Dirección efectiva: la nueva confirmada en el picker, o la del formulario
+    const effectiveLocation = this.locationConfirmed() && this.newAddress()
+      ? this.newAddress()!
+      : (data.location || this.userProfile()?.location || '');
+    // Coordenadas: solo las nuevas si se confirmó ubicación; si no, mantener las actuales
+    const authUser = this.authService.user();
+    const effectiveLat = this.locationConfirmed()
+      ? this.userLatitude()
+      : (authUser?.latitude ?? null);
+    const effectiveLng = this.locationConfirmed()
+      ? this.userLongitude()
+      : (authUser?.longitude ?? null);
     const payload: any = {
+      profileType,
       firstName: data.firstName,
       lastName: data.lastName,
       phone: data.phone,
       bio: data.bio,
-      location: this.locationConfirmed() ? (this.userProfile()?.location || data.location) : data.location,
-      latitude: this.userLatitude(),
-      longitude: this.userLongitude(),
+      location: effectiveLocation,
+      latitude: effectiveLat,
+      longitude: effectiveLng,
       website: data.website
     };
 
@@ -2666,6 +2845,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     this.profileService.updateProfile(formData).subscribe({
       next: (response: any) => {
         console.log('Profile updated successfully:', response);
+        this.pendingProfileData.set(null);
         this.updateOwnProfileFromResponse(response);
         this.messageService.add({
           severity: 'success',
@@ -2702,24 +2882,27 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         avatarUrl: response.avatarUrl ? `${response.avatarUrl}?t=${timestamp}` : currentUser.avatarUrl,
         coverImageUrl: response.coverImageUrl ? `${response.coverImageUrl}?t=${timestamp}` : currentUser.coverImageUrl,
         location: response.location || currentUser.location,
+        profileType: (response.profileType || currentUser.profileType || 'user').toUpperCase() === 'ADMIN'
+          ? currentUser.profileType
+          : (response.profileType || currentUser.profileType || 'user'),
+        dateOfBirth: response.dateOfBirth || currentUser.dateOfBirth,
+        latitude: response.latitude ?? currentUser.latitude,
+        longitude: response.longitude ?? currentUser.longitude,
       };
       this.authService.updateUser(updatedUser);
+      this.buildOwnProfile(updatedUser, response);
     }
-
-    const currentProfile = this.ownProfile;
-    this.ownProfile = {
-      ...currentProfile,
-      name: response.firstName + ' ' + response.lastName,
-      avatar: response.avatarUrl ? `${response.avatarUrl}?t=${timestamp}` : currentProfile.avatar,
-      coverImage: response.coverImageUrl ? `${response.coverImageUrl}?t=${timestamp}` : currentProfile.coverImage,
-      bio: response.bio || currentProfile.bio,
-      location: response.location || currentProfile.location,
-    } as AnyProfile;
 
     // Resetear estado de ubicación
     this.locationConfirmed.set(false);
-    this.userLatitude.set(response.latitude || null);
-    this.userLongitude.set(response.longitude || null);
+    this.newAddress.set(null);
+    this.userLatitude.set(response.latitude ?? currentUser?.latitude ?? null);
+    this.userLongitude.set(response.longitude ?? currentUser?.longitude ?? null);
+
+    // Recrear el formulario de edición para reflejar el nuevo perfil/tipo
+    this.renderForm.set(false);
+    this.cdr.detectChanges();
+    this.renderForm.set(true);
 
     this.cdr.detectChanges();
 
@@ -2768,12 +2951,15 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
       const user = this.authService.user();
       formData.append('data', new Blob([JSON.stringify({
+        profileType: user?.profileType || 'user',
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
         phone: user?.phone || '',
         bio: user?.bio || '',
-        location: user?.location || '',
-        website: ''
+        location: this.newAddress() || user?.location || '',
+        latitude: user?.latitude ?? null,
+        longitude: user?.longitude ?? null,
+        website: (this.ownProfile() as any)?.website || ''
       })], { type: 'application/json' }));
 
       formData.append('avatar', file);
@@ -2810,12 +2996,15 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
       const user = this.authService.user();
       formData.append('data', new Blob([JSON.stringify({
+        profileType: user?.profileType || 'user',
         firstName: user?.firstName || '',
         lastName: user?.lastName || '',
         phone: user?.phone || '',
         bio: user?.bio || '',
-        location: user?.location || '',
-        website: ''
+        location: this.newAddress() || user?.location || '',
+        latitude: user?.latitude ?? null,
+        longitude: user?.longitude ?? null,
+        website: (this.ownProfile() as any)?.website || ''
       })], { type: 'application/json' }));
 
       formData.append('coverImage', file);
