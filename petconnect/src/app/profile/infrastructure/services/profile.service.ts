@@ -122,7 +122,7 @@ export class ProfileService {
     return this.http.patch<PetResponse>(`${this.apiUrl}/pets/${petId}/adoption-status?availableForAdoption=${availableForAdoption}`, {});
   }
 
-  updatePet(petId: string, request: Partial<CreatePetRequest>): Observable<PetResponse> {
+  updatePet(petId: string, request: Partial<CreatePetRequest> & { imageUrls?: string[] }): Observable<PetResponse> {
     return this.http.put<PetResponse>(`${this.apiUrl}/pets/${petId}`, request);
   }
 }

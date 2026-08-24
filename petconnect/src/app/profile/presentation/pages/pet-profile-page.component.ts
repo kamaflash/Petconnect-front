@@ -32,6 +32,7 @@ import {
   getTrainingLevelLabel,
   getColorLabel
 } from '../../../shared/utils/pet-label.utils';
+import { CloudinaryService } from '../../../shared/infrastructure/services/cloudinary.service';
 
 interface PetComment {
   id: string;
@@ -442,7 +443,23 @@ interface PetComment {
 
           <!-- Photos Tab -->
           <div class="tab-panel" *ngIf="activeTab() === 'photos'">
+            <!-- Solo el propietario puede añadir nuevas fotos -->
+            <div class="gallery-header" *ngIf="isOwner()">
+              <p class="gallery-hint">Añade una nueva foto a la galería de {{ pet()?.name }}</p>
+            </div>
             <div class="gallery-grid">
+              <!-- Tile para añadir nueva foto (solo propietario) -->
+              <div class="gallery-item add-photo-item" *ngIf="isOwner()" (click)="!uploadingPhoto() && photoInput.click()">
+                <i class="pi" [class.pi-plus]="!uploadingPhoto()" [class.pi-spin]="uploadingPhoto()" [class.pi-spinner]="uploadingPhoto()"></i>
+                <span>{{ uploadingPhoto() ? 'Subiendo...' : 'Añadir foto' }}</span>
+              </div>
+              <input
+                #photoInput
+                type="file"
+                accept="image/*"
+                class="photo-input-hidden"
+                (change)="onNewPhotoSelected($event)"
+              />
               <div
                 class="gallery-item"
                 *ngFor="let image of petImages(); let i = index"
@@ -1315,6 +1332,52 @@ interface PetComment {
       font-size: 14px;
     }
 
+    /* Header y tile para añadir nuevas fotos (solo propietario) */
+    .gallery-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .gallery-hint {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .add-photo-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      background: var(--surface-hover);
+      border: 2px dashed var(--primary-color);
+      color: var(--primary-color);
+      aspect-ratio: 1;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-align: center;
+      padding: 0.5rem;
+    }
+
+    .add-photo-item i {
+      font-size: 32px;
+    }
+
+    .add-photo-item:hover {
+      background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+      transform: translateY(-2px);
+    }
+
+    .photo-input-hidden {
+      display: none;
+    }
+
     /* ============================================
        COMMENTS FEED
     ============================================ */
@@ -2083,7 +2146,11 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   private readonly adoptionService = inject(AdoptionService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly petOwnershipEvent = inject(PetOwnershipEventService);
+  private readonly cloudinaryService = inject(CloudinaryService);
   private paramSubscription?: Subscription;
+
+  // Controla si hay una foto subiéndose en este momento
+  uploadingPhoto = signal(false);
 
   // Loading state
   loading = signal(true);
@@ -2938,6 +3005,77 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     if (!this.canRequestAdoption()) return;
     this.adoptionRequestFormData.set({});
     this.showAdoptionDialog = true;
+  }
+
+  // ============================================
+  //  FOTOS: AÑADIR NUEVA FOTO (solo propietario)
+  // ============================================
+
+  onNewPhotoSelected(event: any): void {
+    const file = event?.target?.files?.[0];
+    if (!file) return;
+    // Reiniciar el input para permitir seleccionar el mismo archivo de nuevo
+    if (event.target) event.target.value = '';
+
+    this.uploadingPhoto.set(true);
+    this.cdr.detectChanges();
+
+    // 1) Subir a Cloudinary y obtener la URL pública
+    this.cloudinaryService.uploadImage(file).subscribe({
+      next: (response) => {
+        const imageUrl = response?.secure_url || response?.url;
+        if (!imageUrl) {
+          this.uploadingPhoto.set(false);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudo obtener la URL de la foto'
+          });
+          return;
+        }
+        this.persistNewPetPhoto(imageUrl);
+      },
+      error: () => {
+        this.uploadingPhoto.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo subir la foto'
+        });
+      }
+    });
+  }
+
+  private persistNewPetPhoto(imageUrl: string): void {
+    const pet = this.pet();
+    if (!pet) {
+      this.uploadingPhoto.set(false);
+      return;
+    }
+
+    // Enviar únicamente la URL nueva. El backend la añade a imageUrls (con dedupe)
+    // y preserva el resto de campos de la mascota (update parcial).
+    this.profileService.updatePet(pet.id, { imageUrls: [imageUrl] }).subscribe({
+      next: (updated) => {
+        this.uploadingPhoto.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Foto añadida',
+          detail: 'La nueva foto se ha añadido a la galería'
+        });
+        // Refrescar la mascota para mostrar la nueva foto
+        this.loadPetData(pet.id);
+      },
+      error: () => {
+        this.uploadingPhoto.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo añadir la foto a la mascota'
+        });
+      }
+    });
+    this.cdr.detectChanges();
   }
 
   submitAdoptionRequest(data: any): void {
