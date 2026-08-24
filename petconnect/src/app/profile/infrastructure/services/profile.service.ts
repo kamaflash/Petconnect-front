@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { Observable } from 'rxjs';
+import { CreatePetRequest } from '../../../pets/domain/pet.model';
 
 export interface UserProfileResponse {
   id: string;
@@ -119,5 +120,9 @@ export class ProfileService {
 
   toggleAdoptionStatus(petId: string, availableForAdoption: boolean): Observable<PetResponse> {
     return this.http.patch<PetResponse>(`${this.apiUrl}/pets/${petId}/adoption-status?availableForAdoption=${availableForAdoption}`, {});
+  }
+
+  updatePet(petId: string, request: Partial<CreatePetRequest>): Observable<PetResponse> {
+    return this.http.put<PetResponse>(`${this.apiUrl}/pets/${petId}`, request);
   }
 }

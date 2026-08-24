@@ -45,6 +45,28 @@ export const TRAINING_LEVEL_LABELS: Record<string, string> = {
   'advanced': 'Avanzado'
 } as const;
 
+// Pet color labels (mapeo de valores internos a etiquetas en español)
+export const COLOR_LABELS: Record<string, string> = {
+  'black': 'Negro',
+  'white': 'Blanco',
+  'brown': 'Marrón',
+  'cream': 'Cremoso',
+  'gray': 'Gris',
+  'spotted': 'Manchas / Atigrado',
+  'golden': 'Rubio',
+  'light_brown': 'Marrón claro',
+  'black_white': 'Negro con blanco',
+  'other': 'Outro'
+} as const;
+
+/**
+ * Get color label from value (e.g. 'black' -> 'Negro')
+ * Se o valor non está no mapeo, devolve o valor orixinal.
+ */
+export function getColorLabel(color: string | null | undefined): string {
+  return color ? (COLOR_LABELS[color] || color) : '—';
+}
+
 /**
  * Get species label from value
  */

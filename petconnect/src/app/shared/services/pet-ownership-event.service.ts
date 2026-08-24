@@ -10,7 +10,7 @@ export type OwnershipChangeReason =
 /**
  * Servicio global (singleton) para notificar que la propiedad de una
  * mascota cambió (p. ej. al finalizar una adopción). Cualquier componente
- * que muestre al dueño de una mascota (como el perfil de animal) se suscribe
+ * que muestre al Familia de una mascota (como el perfil de animal) se suscribe
  * mediante una `effect` y refresca la información del propietario.
  */
 @Injectable({ providedIn: 'root' })

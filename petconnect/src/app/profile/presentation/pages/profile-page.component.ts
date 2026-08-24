@@ -564,7 +564,7 @@ interface Pet {
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-user"></i></span>
-                    <span class="knowme-label">Dueño</span>
+                    <span class="knowme-label">Familia</span>
                     <span class="knowme-value">{{ petOwnerName() }}</span>
                   </div>
                   <div class="knowme-item">

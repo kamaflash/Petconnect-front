@@ -12,7 +12,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { MenuModule } from 'primeng/menu';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
-import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { DynamicFormComponent, DynamicFormConfig, DynamicFormField } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { InfoItemComponent } from '../../../shared/presentation/components/info-item/info-item.component';
 import { StatCardComponent } from '../../../shared/presentation/components/stat-card/stat-card.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
@@ -29,7 +29,8 @@ import {
   getGenderLabel,
   getTemperamentLabel,
   getEnergyLevelLabel,
-  getTrainingLevelLabel
+  getTrainingLevelLabel,
+  getColorLabel
 } from '../../../shared/utils/pet-label.utils';
 
 interface PetComment {
@@ -110,10 +111,10 @@ interface PetComment {
                   </div>
                 </div>
                 <div class="user-badges">
-                  <span class="badge" [class.badge-success]="pet()?.availableForAdoption" [class.badge-secondary]="!pet()?.availableForAdoption">
-                    {{ pet()?.availableForAdoption ? '🐾 En adopción' : '🏠 Adoptado' }}
-                  </span>
-                  <span class="badge badge-info" *ngIf="isOwner()">Dueño</span>
+                  <!-- Solo se muestra cuando la mascota está en adopción.
+                       No se muestra el estado "Adoptado" cuando no lo está. -->
+                  <span class="badge badge-success" *ngIf="pet()?.availableForAdoption">🐾 En adopción</span>
+                  <span class="badge badge-info" *ngIf="isOwner()">Familia</span>
                 </div>
               </div>
 
@@ -201,9 +202,20 @@ interface PetComment {
 
         <!-- Tab Content -->
         <div class="tab-content" *ngIf="!loading() && pet()">
-          <!-- Info Tab - TODOS LOS DATOS -->
+                    <!-- Info Tab - TODOS LOS DATOS -->
           <div class="tab-panel" *ngIf="activeTab() === 'info'">
-            <div class="info-sections">
+            <!-- Modo edición (se activa desde el botón Editar del header): formulario dinámico en línea -->
+            <div *ngIf="isEditing()" class="edit-form-wrapper">
+              <app-dynamic-form
+                [config]="currentEditFormConfig()"
+                [formData]="editPetFormData()"
+                (onSubmitClick)="onEditPetSubmit($event)"
+                (onCancel)="cancelEditing()"
+              />
+            </div>
+
+            <!-- Modo visualización: información estática -->
+            <div class="info-sections" *ngIf="!isEditing()">
               <!-- Información Básica -->
               <div class="info-section">
                 <h3 class="section-title">
@@ -232,9 +244,9 @@ interface PetComment {
                     <span class="info-value">{{ getGenderLabelWrapper(pet()?.gender) }}</span>
                   </div>
                   <div class="info-row">
-                    <span class="info-icon"><i class="pi pi-palette"></i></span>
+                                        <span class="info-icon"><i class="pi pi-palette"></i></span>
                     <span class="info-label">Color</span>
-                    <span class="info-value">{{ pet()?.color || '—' }}</span>
+                    <span class="info-value">{{ getColorLabelWrapper(pet()?.color) }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-icon"><i class="pi pi-qrcode"></i></span>
@@ -613,26 +625,7 @@ interface PetComment {
             </div>
           </div>
         </div>
-      </p-dialog>
-
-      <!-- Edit Pet Dialog -->
-      <p-dialog
-        [visible]="showEditDialog"
-        [modal]="true"
-        [style]="{ width: '90vw', maxWidth: '800px' }"
-        [closable]="true"
-        (onHide)="showEditDialog = false"
-        [dismissableMask]="true"
-        styleClass="edit-dialog"
-        [header]="getCurrentFormConfig().title || 'Editar Mascota'"
-      >
-        <app-dynamic-form
-          [config]="getCurrentFormConfig()"
-          [formData]="editPetFormData"
-          (onSubmitClick)="onEditPetSubmit($event)"
-          (onCancel)="showEditDialog = false"
-        />
-      </p-dialog>
+            </p-dialog>
 
       <!-- Adoption Request Dialog -->
       <p-dialog
@@ -1144,6 +1137,13 @@ interface PetComment {
 
     .dark .info-section {
       background: var(--surface-ground-dark);
+    }
+
+    .edit-form-wrapper {
+      background-color: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
+      padding: 1rem;
     }
 
     .section-title {
@@ -2096,7 +2096,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   hasPendingRequest = signal(false);
   currentImageIndex = signal(0);
 
-  // UI state
+    // UI state
   activeTab = signal('info');
   lightboxVisible = false;
   showEditDialog = false;
@@ -2104,6 +2104,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   showAdoptionDialog = false;
   postModalVisible = false;
   currentPostIndex = signal(0);
+  isEditing = signal(false);
 
   // Pet data
   petPosts = signal<any[]>([]);
@@ -2196,7 +2197,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       if (id) this.loadPetData(id);
     });
 
-    // Refrescar el nombre/avatar del dueño cuando la mascota cambia de propietario
+    // Refrescar el nombre/avatar del Familia cuando la mascota cambia de propietario
     // (p. ej. al finalizar una adopción desde la administración).
     effect(() => {
       const changedId = this.petOwnershipEvent.changedPetId();
@@ -2291,11 +2292,14 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   private initEditFormData(pet: PetResponse): void {
     this.editPetFormData.set({
       name: pet.name,
-      species: pet.species,
+      // La API guarda la especie en MAYÚSCULAS (p. ej. "DOG"), pero las opciones
+      // del select y las claves de SPECIES_BREEDS están en minúsculas. Se normaliza
+      // para que el select muestre el valor actual y las razas se resuelvan bien.
+      species: (pet.species || '').toLowerCase(),
       breed: pet.breed || '',
-      dateOfBirth: pet.dateOfBirth || '',
+      dateOfBirth: this.toDate(pet.dateOfBirth),
       gender: pet.gender || '',
-      weight: pet.weight || '',
+      weight: pet.weight ?? null,
       weightUnit: pet.weightUnit || 'kg',
       color: pet.color || '',
       microchipId: pet.microchipId || '',
@@ -2306,20 +2310,20 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       vetName: pet.vetName || '',
       vetPhone: pet.vetPhone || '',
       vetAddress: pet.vetAddress || '',
-      lastVaccinationDate: pet.lastVaccinationDate || '',
-      nextVaccinationDate: pet.nextVaccinationDate || '',
-      lastVetVisit: pet.lastVetVisit || '',
+      lastVaccinationDate: this.toDate(pet.lastVaccinationDate),
+      nextVaccinationDate: this.toDate(pet.nextVaccinationDate),
+      lastVetVisit: this.toDate(pet.lastVetVisit),
       insuranceProvider: pet.insuranceProvider || '',
       insurancePolicyNumber: pet.insurancePolicyNumber || '',
       emergencyContact: pet.emergencyContact || '',
       emergencyPhone: pet.emergencyPhone || '',
-      adoptionDate: pet.adoptionDate || '',
+      adoptionDate: this.toDate(pet.adoptionDate),
       adoptionCenter: pet.adoptionCenter || '',
       registrationNumber: pet.registrationNumber || '',
       licenseNumber: pet.licenseNumber || '',
-      licenseExpiryDate: pet.licenseExpiryDate || '',
-      spayedNeutered: pet.spayedNeutered || false,
-      spayedNeuteredDate: pet.spayedNeuteredDate || '',
+      licenseExpiryDate: this.toDate(pet.licenseExpiryDate),
+      spayedNeutered: !!pet.spayedNeutered,
+      spayedNeuteredDate: this.toDate(pet.spayedNeuteredDate),
       temperament: pet.temperament || '',
       energyLevel: pet.energyLevel || '',
       trainingLevel: pet.trainingLevel || '',
@@ -2327,6 +2331,26 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       favoriteFood: pet.favoriteFood || '',
       specialNeeds: pet.specialNeeds || ''
     });
+  }
+
+  /**
+   * Convierte una fecha en formato string (p. ej. "2020-01-15") en un objeto Date
+   * para que los campos de tipo 'date' del formulario puedan mostrarla.
+   */
+  private toDate(value: string | null | undefined): Date | null {
+    if (!value) return null;
+    const date = new Date(value);
+    return isNaN(date.getTime()) ? null : date;
+  }
+
+  /**
+   * Convierte un valor de fecha del formulario en formato ISO (yyyy-MM-dd) para el backend.
+   */
+  private toIsoDate(value: any): string | null {
+    if (!value) return null;
+    const date = value instanceof Date ? value : new Date(value);
+    if (isNaN(date.getTime())) return null;
+    return date.toISOString().split('T')[0];
   }
 
   private loadPetStats(petId: string): void {
@@ -2394,7 +2418,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       {
         label: 'Editar Perfil',
         icon: 'pi pi-pencil',
-        command: () => this.openEditDialog('basic')
+        command: () => this.startEditing()
       },
       {
         label: pet?.availableForAdoption ? 'Quitar de adopción' : 'Poner en adopción',
@@ -2741,15 +2765,27 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
 
   currentEditCategory: 'basic' | 'medical' | 'additional' | 'behavior' = 'basic';
 
-  getCurrentFormConfig(): DynamicFormConfig {
-    switch (this.currentEditCategory) {
-      case 'basic': return this.editPetFormConfig;
-      case 'medical': return this.medicalFormConfig;
-      case 'additional': return this.additionalFormConfig;
-      case 'behavior': return this.behaviorFormConfig;
-      default: return this.editPetFormConfig;
-    }
-  }
+  /**
+   * Config combinada con TODOS los campos editables del animal
+   * (todos los que se muestran en la vista excepto la ubicación).
+   *
+   * Se expone como un `computed` para que mantenga una referencia estable entre
+   * renders. Si se generara un objeto nuevo en cada detección de cambios, el
+   * DynamicFormComponent reconstruiría el formulario continuamente y "borraría"
+   * la edición del usuario (campos que parecen no editables).
+   */
+  currentEditFormConfig = computed<DynamicFormConfig>(() => ({
+    title: 'Editar Información',
+    submitLabel: 'Guardar Cambios',
+    showCancel: true,
+    resolveOptions: (_field: DynamicFormField, sourceValue: any) => SPECIES_BREEDS[sourceValue] ?? [],
+    fields: [
+      ...this.editPetFormConfig.fields,
+      ...this.medicalFormConfig.fields,
+      ...this.additionalFormConfig.fields,
+      ...this.behaviorFormConfig.fields
+    ]
+  }));
 
   // ============================================
   //  ACTIONS
@@ -2770,18 +2806,94 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     }
   }
 
-  openEditDialog(category: 'basic' | 'medical' | 'additional' | 'behavior'): void {
+    openEditDialog(category: 'basic' | 'medical' | 'additional' | 'behavior'): void {
     this.currentEditCategory = category;
     this.showEditDialog = true;
   }
 
-  onEditPetSubmit(data: any): void {
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Éxito',
-      detail: 'Mascota actualizada correctamente'
+  startEditing(): void {
+    const pet = this.pet();
+    if (!pet) return;
+    this.currentEditCategory = 'basic';
+    this.isEditing.set(true);
+    // Cargar los datos del animal en el formulario de edición
+    this.initEditFormData(pet as PetResponse);
+  }
+
+  cancelEditing(): void {
+    this.isEditing.set(false);
+  }
+
+    onEditPetSubmit(data: any): void {
+    const pet = this.pet();
+    if (!pet) return;
+
+    // Construcción del payload para el backend. Se excluyen deliberadamente los
+    // campos de ubicación (lastKnownLocation/lost) porque la ubicación no se edita.
+    const request: any = {
+      name: data?.name || '',
+      species: (data?.species || ''),
+      breed: data?.breed || null,
+      dateOfBirth: this.toIsoDate(data?.dateOfBirth),
+      gender: data?.gender || null,
+      color: data?.color || null,
+      microchipId: data?.microchipId || null,
+      weight: data?.weight != null && data?.weight !== '' ? Number(data.weight) : null,
+      weightUnit: data?.weightUnit || 'kg',
+      bio: data?.bio || null
+    };
+
+    // Información médica y de salud
+    request.bloodType = data?.bloodType || null;
+    request.allergies = data?.allergies || null;
+    request.medicalConditions = data?.medicalConditions || null;
+    request.vetName = data?.vetName || null;
+    request.vetPhone = data?.vetPhone || null;
+    request.vetAddress = data?.vetAddress || null;
+    request.lastVaccinationDate = this.toIsoDate(data?.lastVaccinationDate);
+    request.nextVaccinationDate = this.toIsoDate(data?.nextVaccinationDate);
+    request.lastVetVisit = this.toIsoDate(data?.lastVetVisit);
+    request.insuranceProvider = data?.insuranceProvider || null;
+    request.insurancePolicyNumber = data?.insurancePolicyNumber || null;
+
+    // Información adicional
+    request.emergencyContact = data?.emergencyContact || null;
+    request.emergencyPhone = data?.emergencyPhone || null;
+    request.adoptionDate = this.toIsoDate(data?.adoptionDate);
+    request.adoptionCenter = data?.adoptionCenter || null;
+    request.registrationNumber = data?.registrationNumber || null;
+    request.licenseNumber = data?.licenseNumber || null;
+    request.licenseExpiryDate = this.toIsoDate(data?.licenseExpiryDate);
+    request.spayedNeutered = !!data?.spayedNeutered;
+    request.spayedNeuteredDate = this.toIsoDate(data?.spayedNeuteredDate);
+
+    // Comportamiento y características
+    request.temperament = data?.temperament || null;
+    request.energyLevel = data?.energyLevel || null;
+    request.trainingLevel = data?.trainingLevel || null;
+    request.favoriteActivities = data?.favoriteActivities || null;
+    request.favoriteFood = data?.favoriteFood || null;
+    request.specialNeeds = data?.specialNeeds || null;
+
+    this.profileService.updatePet(pet.id, request).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Mascota actualizada correctamente'
+        });
+        this.isEditing.set(false);
+        // Recargar la mascota para reflejar los cambios
+        this.loadPetData(pet.id);
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo actualizar la mascota'
+        });
+      }
     });
-    this.showEditDialog = false;
   }
 
   confirmDelete(): void {
@@ -2930,6 +3042,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   getSpeciesLabelWrapper = getSpeciesLabel;
   getGenderLabelWrapper = getGenderLabel;
   getTemperamentLabelWrapper = getTemperamentLabel;
+  getColorLabelWrapper = getColorLabel;
   getEnergyLevelLabelWrapper = getEnergyLevelLabel;
   getTrainingLevelLabelWrapper = getTrainingLevelLabel;
 }
