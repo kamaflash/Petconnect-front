@@ -6,11 +6,13 @@ import { providePrimeNG } from 'primeng/config';
 import Aura from '@primeuix/themes/aura';
 import { routes } from './app.routes';
 import { authInterceptor } from './shared/infrastructure/interceptors/auth.interceptor';
+import { LANGUAGE_PROVIDER } from './shared/infrastructure/i18n/language.provider';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideZonelessChangeDetection(),
+    ...LANGUAGE_PROVIDER,
     provideRouter(
       routes,
       withComponentInputBinding(),

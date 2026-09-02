@@ -13,6 +13,7 @@ import { AvatarModule } from 'primeng/avatar';
 import { AuthService } from '../../../../auth/infrastructure/services/auth.service';
 import { WebSocketService } from '../../../infrastructure/websocket/websocket.service';
 import { RippleModule } from 'primeng/ripple';
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 /* eslint-enable import/order */
 
 @Component({
@@ -27,6 +28,7 @@ import { RippleModule } from 'primeng/ripple';
     LoginPageComponent,
     AvatarModule,
     RippleModule,
+    TranslocoModule,
   ],
   template: `
     <header class="app-header">
@@ -49,7 +51,7 @@ import { RippleModule } from 'primeng/ripple';
                 [icon]="isDarkMode() ? 'pi pi-sun' : 'pi pi-moon'"
                 class="p-button-text p-button-sm header-btn"
                 (click)="toggleTheme()"
-                pTooltip="Cambiar tema"
+                pTooltip="{{ 'header.tooltipToggleTheme' | transloco }}"
                 tooltipPosition="bottom"
               ></button>
 
@@ -58,7 +60,7 @@ import { RippleModule } from 'primeng/ripple';
                 pButton
                 icon="pi pi-bell"
                 class="p-button-text p-button-sm header-btn"
-                pTooltip="Notificaciones"
+                pTooltip="{{ 'header.tooltipNotifications' | transloco }}"
                 tooltipPosition="bottom"
                 (click)="onNotifications()"
               >
@@ -70,7 +72,7 @@ import { RippleModule } from 'primeng/ripple';
                 pButton
                 icon="pi pi-envelope"
                 class="p-button-text p-button-sm header-btn"
-                pTooltip="Mensajes"
+                pTooltip="{{ 'header.tooltipMessages' | transloco }}"
                 tooltipPosition="bottom"
                 (click)="onMessages()"
               >
@@ -84,7 +86,7 @@ import { RippleModule } from 'primeng/ripple';
                 pButton
                 icon="pi pi-shield"
                 class="p-button-text p-button-sm header-btn"
-                pTooltip="Administración"
+                pTooltip="{{ 'header.tooltipAdmin' | transloco }}"
                 tooltipPosition="bottom"
                 (click)="onAdmin()"
               ></button>
@@ -95,7 +97,7 @@ import { RippleModule } from 'primeng/ripple';
                   pButton
                   class="p-button-text p-button-sm header-btn user-btn"
                   (click)="menu.toggle($event)"
-                  pTooltip="Menú"
+                  pTooltip="{{ 'header.tooltipMenu' | transloco }}"
                   tooltipPosition="bottom"
                 >
                   @if (isLoggedIn()) {
@@ -137,14 +139,14 @@ import { RippleModule } from 'primeng/ripple';
                 [icon]="isDarkMode() ? 'pi pi-sun' : 'pi pi-moon'"
                 class="p-button-text p-button-sm header-btn"
                 (click)="toggleTheme()"
-                pTooltip="Cambiar tema"
+                pTooltip="{{ 'header.tooltipToggleTheme' | transloco }}"
                 tooltipPosition="bottom"
               ></button>
               <button
                 pButton
                 icon="pi pi-envelope"
                 class="p-button-text p-button-sm header-btn"
-                pTooltip="Mensajes"
+                pTooltip="{{ 'header.tooltipMessages' | transloco }}"
                 tooltipPosition="bottom"
                 (click)="onMessages()"
               >
@@ -156,7 +158,7 @@ import { RippleModule } from 'primeng/ripple';
                 pButton
                 icon="pi pi-bell"
                 class="p-button-text p-button-sm header-btn"
-                pTooltip="Notificaciones"
+                pTooltip="{{ 'header.tooltipNotifications' | transloco }}"
                 tooltipPosition="bottom"
                 (click)="onNotifications()"
               >
@@ -166,7 +168,7 @@ import { RippleModule } from 'primeng/ripple';
                 pButton
                 icon="pi pi-cog"
                 class="p-button-text p-button-sm header-btn"
-                pTooltip="Configuración"
+                pTooltip="{{ 'header.tooltipSettings' | transloco }}"
                 tooltipPosition="bottom"
                 (click)="onSettings()"
               ></button>
@@ -174,7 +176,7 @@ import { RippleModule } from 'primeng/ripple';
                 pButton
                 icon="pi pi-plus"
                 class="p-button-text p-button-sm header-btn"
-                pTooltip="Administración"
+                pTooltip="{{ 'header.tooltipAdmin' | transloco }}"
                 tooltipPosition="bottom"
                 (click)="onAdmin()"
               ></button>
@@ -182,7 +184,7 @@ import { RippleModule } from 'primeng/ripple';
                 pButton
                 icon="pi pi-user"
                 class="p-button-text p-button-sm header-btn"
-                pTooltip="Mi Perfil"
+                pTooltip="{{ 'header.tooltipProfile' | transloco }}"
                 tooltipPosition="bottom"
                 (click)="onProfile()"
               ></button>
@@ -193,7 +195,7 @@ import { RippleModule } from 'primeng/ripple';
               icon="pi pi-user"
               class="p-button-text p-button-sm header-btn"
               (click)="onLogin()"
-              pTooltip="Acceder"
+              pTooltip="{{ 'header.tooltipLogin' | transloco }}"
               tooltipPosition="bottom"
             ></button>
           }
@@ -399,6 +401,7 @@ export class HeaderComponent implements OnInit {
     private readonly authService = inject(AuthService);
   private readonly webSocket = inject(WebSocketService);
   private readonly router = inject(Router);
+  private readonly transloco = inject(TranslocoService);
 
   // ===== Estados =====
   isLoggedIn = computed(() => this.authService.isAuthenticated());
@@ -412,7 +415,7 @@ export class HeaderComponent implements OnInit {
   userEmail = computed(() => this.authService.user()?.email || '');
   userName = computed(() => {
     const user = this.authService.user();
-    return user ? `${user.firstName} ${user.lastName}` : 'Usuario';
+    return user ? `${user.firstName} ${user.lastName}` : this.transloco.translate('header.userPlaceholder');
   });
 
   // ===== Mensajes no leídos =====
@@ -424,6 +427,8 @@ export class HeaderComponent implements OnInit {
     ngOnInit(): void {
     this.isDarkMode.set(this.themeService.isDarkMode());
     this.updateMenuItems();
+    // Reconstruir el menú cuando cambie el idioma (rustle de texts TS).
+    this.transloco.langChanges$.subscribe(() => this.updateMenuItems());
   }
 
   // ===== Theme =====
@@ -460,18 +465,18 @@ export class HeaderComponent implements OnInit {
     if (this.isLoggedIn()) {
       this.menuItems = [
         {
-          label: 'Mi Perfil',
+          label: this.transloco.translate('header.myProfile'),
           icon: 'pi pi-user',
           command: () => this.onProfile()
         },
         {
-          label: 'Ajustes',
+          label: this.transloco.translate('header.settings'),
           icon: 'pi pi-cog',
           command: () => this.onSettings()
         },
         { separator: true },
         {
-          label: 'Cerrar Sesión',
+          label: this.transloco.translate('header.logout'),
           icon: 'pi pi-sign-out',
           command: () => this.onLogout()
         }
@@ -479,15 +484,15 @@ export class HeaderComponent implements OnInit {
     } else {
       this.menuItems = [
         {
-          label: 'Acceso',
+          label: this.transloco.translate('header.access'),
           items: [
             {
-              label: 'Iniciar Sesión',
+              label: this.transloco.translate('header.login'),
               icon: 'pi pi-sign-in',
               command: () => this.onLogin()
             },
             {
-              label: 'Registrarse',
+              label: this.transloco.translate('header.register'),
               icon: 'pi pi-user-plus',
               command: () => this.onRegister()
             }

@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit, effect } from '@angular/core';
+﻿import { Component, signal, computed, inject, OnInit, effect, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -19,11 +19,12 @@ import { MenuModule } from 'primeng/menu';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { CloudinaryService, CloudinaryUploadResponse } from '../../../shared/infrastructure/services/cloudinary.service';
-import { SocialService, PostResponse, EventResponse, GroupResponse, NotificationResponse, TrendingTopicResponse, FollowResponse, UserProfileResponse } from '../../infrastructure/services/social.service';
+import { SocialService, PostResponse, EventResponse, GroupResponse, NotificationResponse, TrendingTopicResponse, FollowResponse, UserProfileResponse, PageResponse } from '../../infrastructure/services/social.service';
 import { LikeService } from '../../../shared/infrastructure/services/like.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -175,6 +176,7 @@ interface Notification {
     ProgressBarModule,
     TabsComponent,
     ModalComponent,
+    TranslocoModule,
   ],
   providers: [MessageService],
   template: `
@@ -188,7 +190,7 @@ interface Notification {
         />
 
         <!-- Loading Progress Bar -->
-        @if (loading()) {
+        @if (loading() || loadingMore()) {
           <div class="loading-overlay">
             <p-progressBar mode="indeterminate" [style]="{'height': '4px'}" />
           </div>
@@ -202,7 +204,7 @@ interface Notification {
               <p-avatar [image]="currentUserAvatar()" shape="circle" size="normal"></p-avatar>
               <input
                 type="text"
-                placeholder="¿Qué estás pensando?"
+                placeholder="{{ 'social.whatsOnYourMind' | transloco }}"
                 class="post-input-field"
                 readonly
               />
@@ -223,30 +225,33 @@ interface Notification {
 
             <div class="load-more-container">
               <p-button
-                label="Cargar más publicaciones"
+                label="{{ 'social.loadMore' | transloco }}"
                 icon="pi pi-spin pi-spinner"
                 styleClass="p-button-outlined"
                 (onClick)="loadMorePosts()"
                 [loading]="loadingMore()"
               />
             </div>
+
+            <!-- Infinite scroll sentinel: triggers loadMorePosts on scroll -->
+            <div #feedAnchor class="feed-sentinel"></div>
           </div>
 
           <div class="feed-sidebar">
             <div class="sidebar-card">
               <div class="sidebar-header">
-                <h3>Tendencias</h3>
+                <h3>{{ 'social.trending' | transloco }}</h3>
               </div>
               <div class="trend-item" *ngFor="let trend of trendingTopics()">
-                <span class="trend-category">#{{ trend.rank }} Tendencia</span>
+                <span class="trend-category">#{{ trend.rank }} {{ 'social.trend' | transloco }}</span>
                 <span class="trend-name">{{ trend.name }}</span>
-                <span class="trend-posts">{{ trend.posts }} publicaciones</span>
+                <span class="trend-posts">{{ trend.posts }} {{ 'social.posts' | transloco }}</span>
               </div>
             </div>
 
             <div class="sidebar-card">
               <div class="sidebar-header">
-                <h3>Família populares</h3>
+                <h3>{{ 'social.popularFamily' | transloco }}</h3>
               </div>
               <div class="popular-pet" *ngFor="let pet of popularPets()">
                 <p-avatar [image]="pet.avatar" shape="circle"></p-avatar>
@@ -255,7 +260,7 @@ interface Notification {
                   <span class="pet-breed">{{ pet.breed }}</span>
                 </div>
                 <p-button
-                  [label]="pet.isFollowing ? 'Siguiendo' : 'Seguir'"
+                  [label]="pet.isFollowing ? ('social.following' | transloco) : ('social.follow' | transloco)"
                   [icon]="pet.isFollowing ? 'pi pi-user-minus' : 'pi pi-user-plus'"
                   styleClass="p-button-sm  p-button-outlined"
                   [ngClass]="pet.isFollowing ? 'p-button-sm  p-button-outlined' : 'p-button-sm p-button-outlined' "
@@ -266,7 +271,7 @@ interface Notification {
 
             <div class="sidebar-card">
               <div class="sidebar-header">
-                <h3>Próximos eventos</h3>
+                <h3>{{ 'social.upcomingEvents' | transloco }}</h3>
               </div>
               <div class="upcoming-event" *ngFor="let event of upcomingEvents()">
                 <div class="event-date">
@@ -275,10 +280,10 @@ interface Notification {
                 </div>
                 <div class="event-info">
                   <span class="event-title">{{ event.title }}</span>
-                  <span class="event-attendees">{{ event.attendees }} asistentes</span>
+                  <span class="event-attendees">{{ event.attendees }} {{ 'social.attendees' | transloco }}</span>
                 </div>
                 <p-button
-                  [label]="event.isAttending ? 'Asistiendo' : 'Asir'"
+                  [label]="event.isAttending ? ('social.attending' | transloco) : ('social.attend' | transloco)"
                   [icon]="event.isAttending ? 'pi pi-check' : 'pi pi-plus'"
                   styleClass="p-button-sm  p-button-outlined"
                   (onClick)="toggleEventAttendance(event)"
@@ -293,7 +298,7 @@ interface Notification {
           <div class="following-grid">
             <div class="following-card">
               <div class="following-header">
-                <h3>Família que sigo ({{ followingPets().length }})</h3>
+                <h3>{{ 'social.familyIFollow' | transloco }} ({{ followingPets().length }})</h3>
               </div>
               <div class="following-list">
                 <div class="following-item" *ngFor="let pet of followingPets()">
@@ -301,7 +306,7 @@ interface Notification {
                   <div class="following-info">
                     <a [routerLink]="'/profile/pet/' + pet.id" class="following-name">{{ pet.name }}</a>
                     <p class="following-detail">{{ pet.species }} · {{ pet.breed }}</p>
-                    <p class="following-detail">{{ pet.age }} · {{ pet.posts }} publicaciones</p>
+                    <p class="following-detail">{{ pet.age }} · {{ pet.posts }} {{ 'social.posts' | transloco }}</p>
                   </div>
                   <div class="following-actions">
                     <button
@@ -309,7 +314,7 @@ interface Notification {
                       (click)="toggleFollowPet(pet)"
                     >
                       <i class="pi pi-check"></i>
-                      Siguiendo
+                      {{ 'social.following' | transloco }}
                     </button>
                   </div>
                 </div>
@@ -318,7 +323,7 @@ interface Notification {
 
             <div class="following-card">
               <div class="following-header">
-                <h3>Usuarios que sigo ({{ followingUsers().length }})</h3>
+                <h3>{{ 'social.usersIFollow' | transloco }} ({{ followingUsers().length }})</h3>
               </div>
               <div class="following-list">
                 <div class="following-item" *ngFor="let user of followingUsers()">
@@ -329,7 +334,7 @@ interface Notification {
                       <i *ngIf="user.isVerified" class="pi pi-check-circle verified-icon"></i>
                     </div>
                     <a [routerLink]="'/profile/' + user.userId" class="following-detail">{{ user.username }}</a>
-                    <p class="following-detail">{{ user.pets }} mascotas · {{ user.followers }} seguidores</p>
+                    <p class="following-detail">{{ user.pets }} {{ 'social.pets' | transloco }} · {{ user.followers }} {{ 'social.followers' | transloco }}</p>
                   </div>
                   <div class="following-actions">
                     <button
@@ -337,7 +342,7 @@ interface Notification {
                       (click)="toggleFollow(user)"
                     >
                       <i class="pi pi-check"></i>
-                      Siguiendo
+                      {{ 'social.following' | transloco }}
                     </button>
                   </div>
                 </div>
@@ -346,7 +351,7 @@ interface Notification {
 
             <div class="following-card">
               <div class="following-header">
-                <h3>Te siguen ({{ followersUsers().length }})</h3>
+                <h3>{{ 'social.followersYou' | transloco }} ({{ followersUsers().length }})</h3>
               </div>
               <div class="following-list">
                 <div class="following-item" *ngFor="let user of followersUsers()">
@@ -357,7 +362,7 @@ interface Notification {
                       <i *ngIf="user.isVerified" class="pi pi-check-circle verified-icon"></i>
                     </div>
                     <a [routerLink]="'/profile/' + user.userId" class="following-detail">{{ user.username }}</a>
-                    <p class="following-detail">{{ user.pets }} mascotas · {{ user.followers }} seguidores</p>
+                    <p class="following-detail">{{ user.pets }} {{ 'social.pets' | transloco }} · {{ user.followers }} {{ 'social.followers' | transloco }}</p>
                   </div>
                   <div class="following-actions">
                     <button
@@ -366,7 +371,7 @@ interface Notification {
                       (click)="toggleFollow(user)"
                     >
                       <i [class]="user.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"></i>
-                      {{ user.isFollowing ? 'Siguiendo' : 'Seguir' }}
+                      {{ user.isFollowing ? ('social.following' | transloco) : ('social.follow' | transloco) }}
                     </button>
                   </div>
                 </div>
@@ -378,10 +383,10 @@ interface Notification {
         <!-- Eventos -->
         <div class="events-layout" *ngIf="activeTab() === 'events'">
           <div class="events-header">
-            <h2>Eventos de la comunidad</h2>
+            <h2>{{ 'social.communityEvents' | transloco }}</h2>
             <p-button
               icon="pi pi-plus"
-              label="Crear evento"
+              label="{{ 'social.createEvent' | transloco }}"
               styleClass="p-button-primary"
               (onClick)="showCreateEventDialog()"
             />
@@ -409,12 +414,12 @@ interface Notification {
                     <p-avatarGroup>
                       <p-avatar *ngFor="let attendee of event.attendeesList" [image]="attendee" shape="circle" size="normal"></p-avatar>
                     </p-avatarGroup>
-                    <span>{{ event.attendees }} asistentes</span>
+                    <span>{{ event.attendees }} {{ 'social.attendees' | transloco }}</span>
                   </div>
                 </div>
                 <div class="event-actions">
                   <p-button
-                    [label]="event.isAttending ? 'Cancelar asistencia' : 'Asistir'"
+                    [label]="event.isAttending ? ('social.cancelAttendance' | transloco) : ('social.attend' | transloco)"
                     [icon]="event.isAttending ? 'pi pi-times' : 'pi pi-check'"
                     [ngClass]="event.isAttending ? 'p-button-sm  p-button-outlined' : 'p-button-sm  p-button-outlined'"
                     (onClick)="toggleEventAttendance(event)"
@@ -433,10 +438,10 @@ interface Notification {
         <!-- Grupos -->
         <div class="groups-layout" *ngIf="activeTab() === 'groups'">
           <div class="groups-header">
-            <h2>Grupos de interés</h2>
+            <h2>{{ 'social.interestGroups' | transloco }}</h2>
             <p-button
               icon="pi pi-plus"
-              label="Crear grupo"
+              label="{{ 'social.createGroup' | transloco }}"
               styleClass="p-button-primary"
               (onClick)="showCreateGroupDialog()"
             />
@@ -448,14 +453,14 @@ interface Notification {
                 <h3>{{ group.name }}</h3>
                 <p>{{ group.description }}</p>
                 <div class="group-meta">
-                  <span><i class="pi pi-users"></i> {{ group.members }} miembros</span>
+                  <span><i class="pi pi-users"></i> {{ group.members }} {{ 'social.members' | transloco }}</span>
                   <span><i class="pi pi-tag"></i> {{ group.category }}</span>
                   <span><i class="pi pi-clock"></i> {{ getTimeAgo(group.lastActive) }}</span>
                 </div>
               </div>
               <div class="group-actions">
                 <p-button
-                  [label]="group.isMember ? 'Unido' : 'Unirse'"
+                  [label]="group.isMember ? ('social.joined' | transloco) : ('social.join' | transloco)"
                   [icon]="group.isMember ? 'pi pi-check' : 'pi pi-users'"
                   [ngClass]="group.isMember ? 'p-button-sm p-button-outlined' : 'p-button-sm p-button-outlined'"
                   (onClick)="toggleGroupMembership(group)"
@@ -468,9 +473,9 @@ interface Notification {
         <!-- Notificaciones -->
         <div class="notifications-layout" *ngIf="activeTab() === 'notifications'">
           <div class="notifications-header">
-            <h2>Notificaciones</h2>
+            <h2>{{ 'social.notifications' | transloco }}</h2>
             <p-button
-              label="Marcar todas como leídas"
+              label="{{ 'social.markAllRead' | transloco }}"
               icon="pi pi-check-circle"
               styleClass="p-button-sm p-button-outlined"
               (onClick)="markAllNotificationsAsRead()"
@@ -494,7 +499,7 @@ interface Notification {
                 </div>
                 <div class="notification-actions" *ngIf="!notification.read">
                   <p-button
-                    label="Marcar como leída"
+                    label="{{ 'social.markRead' | transloco }}"
                     icon="pi pi-check"
                     styleClass="p-button-sm p-button-outlined"
                     (onClick)="markNotificationAsRead(notification)"
@@ -522,7 +527,7 @@ interface Notification {
       styleClass="create-post-dialog-container"
     >
       <div class="dialog-header-minimal">
-        <h3 class="dialog-title-minimal">Crear publicación</h3>
+        <h3 class="dialog-title-minimal">{{ 'social.createPost' | transloco }}</h3>
         <button class="dialog-close-minimal" (click)="closeCreatePostDialog()">
           <i class="pi pi-times"></i>
         </button>
@@ -538,7 +543,7 @@ interface Notification {
 
     <!-- Visor de imágenes -->
     <p-dialog
-      header="Visor de imágenes"
+      header="{{ 'social.imageViewer' | transloco }}"
       [(visible)]="imageViewerVisible"
       [modal]="true"
       [style]="{width: '90vw', 'max-width': '1200px'}"
@@ -600,6 +605,12 @@ interface Notification {
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
+    }
+
+    /* Infinite scroll sentinel */
+    .feed-sentinel {
+      height: 1px;
+      width: 100%;
     }
 
     /* Create Post Input */
@@ -1623,8 +1634,9 @@ interface Notification {
     }
   `]
 })
-export class SocialPageComponent implements OnInit {
+export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
   private messageService = inject(MessageService);
+  private transloco = inject(TranslocoService);
   private authService = inject(AuthService);
   private cloudinaryService = inject(CloudinaryService);
   private socialService = inject(SocialService);
@@ -1636,6 +1648,16 @@ export class SocialPageComponent implements OnInit {
   // Loading state
   loading = signal(false);
   loadingMore = signal(false);
+
+  // Pagination state (client-side: the feed endpoint returns a plain array)
+  private readonly pageSize = 10;
+  private appendMode = false;
+  currentPage = signal(0);
+  isLastPage = signal(false);
+
+  // Infinite scroll sentinel (see template #feedAnchor)
+  @ViewChild('feedAnchor') feedAnchor!: ElementRef<HTMLElement>;
+  private intersectionObserver: IntersectionObserver | null = null;
 
   // Current user data
   currentUserId = signal('');
@@ -1652,41 +1674,43 @@ export class SocialPageComponent implements OnInit {
   newPostContent = '';
   newPostTags = '';
 
-  // Form config for creating posts
-  postFormConfig: DynamicFormConfig = {
-    submitLabel: 'Publicar',
-    cancelLabel: 'Cancelar',
-    showCancel: false,
-    fields: [
-      {
-        key: 'images',
-        label: 'Imágenes',
-        type: 'file',
-        placeholder: 'Arrastra imágenes aquí para subir',
-        accept: 'image/*',
-        multiple: true,
-        maxFileSize: 5000000
-      },
-      {
-        key: 'content',
-        label: 'Contenido',
-        type: 'textarea',
-        placeholder: '¿Qué estás pensando?',
-        validation: { required: true, minLength: 1, maxLength: 500 },
-        rows: 4
-      },
-      {
-        key: 'tags',
-        label: 'Etiquetas',
-        type: 'input',
-        placeholder: 'Añade etiquetas (ej: #perro, @usuario, #gato)',
-        validation: {
-          pattern: '^([#@][a-zA-Z0-9_]+)(\\s*,\\s*[#@][a-zA-Z0-9_]+)*$',
-          customMessage: 'Las etiquetas deben empezar por # o @ y separarse por comas'
+  // Form config for creating posts (getter para reflejar el idioma activo)
+  get postFormConfig(): DynamicFormConfig {
+    return {
+      submitLabel: this.transloco.translate('social.form.submit'),
+      cancelLabel: this.transloco.translate('social.form.cancel'),
+      showCancel: false,
+      fields: [
+        {
+          key: 'images',
+          label: this.transloco.translate('social.form.images'),
+          type: 'file',
+          placeholder: this.transloco.translate('social.form.imagesPlaceholder'),
+          accept: 'image/*',
+          multiple: true,
+          maxFileSize: 5000000
+        },
+        {
+          key: 'content',
+          label: this.transloco.translate('social.form.content'),
+          type: 'textarea',
+          placeholder: this.transloco.translate('social.whatsOnYourMind'),
+          validation: { required: true, minLength: 1, maxLength: 500 },
+          rows: 4
+        },
+        {
+          key: 'tags',
+          label: this.transloco.translate('social.form.tags'),
+          type: 'input',
+          placeholder: this.transloco.translate('social.form.tagsPlaceholder'),
+          validation: {
+            pattern: '^([#@][a-zA-Z0-9_]+)(\\s*,\\s*[#@][a-zA-Z0-9_]+)*$',
+            customMessage: this.transloco.translate('social.form.tagsMessage')
+          }
         }
-      }
-    ]
-  };
+      ]
+    };
+  }
 
   // Comments
   newComment = '';
@@ -1902,9 +1926,25 @@ export class SocialPageComponent implements OnInit {
     });
   }
 
-  private loadPosts(): void {
-    this.socialService.getPublicFeed().subscribe({
-      next: (posts) => {
+  private loadPosts(append: boolean = false): void {
+    this.appendMode = append;
+    if (append) {
+      this.loadingMore.set(true);
+    } else {
+      this.loading.set(true);
+    }
+
+    const page = append ? this.currentPage() : 0;
+
+    this.socialService.getPublicFeed(page, this.pageSize).subscribe({
+      next: (rawResponse) => {
+        // El backend puede devolver un Page JSON ({content, last, totalElements})
+        // o un array plano si la versión en ejecución no pagina. Normalizamos:
+        const pageResponse: PageResponse<PostResponse> = Array.isArray(rawResponse)
+          ? { content: rawResponse, totalElements: rawResponse.length, totalPages: 1, page: 0, size: rawResponse.length, last: true }
+          : rawResponse;
+        const posts = pageResponse.content ?? [];
+
         // Load all profiles to map author data
         this.socialService.getAllProfiles().subscribe({
           next: (profiles) => {
@@ -1952,44 +1992,98 @@ export class SocialPageComponent implements OnInit {
                           .filter((url): url is string => !!url)
                           .slice(0, 3);
                       });
-                      this.communityPosts.set(mappedPosts);
-                      this.totalPosts = posts.length;
+                      this.applyPosts(mappedPosts, pageResponse);
                     },
                     error: () => {
                       // If avatars fail, continue without them
-                      this.communityPosts.set(mappedPosts);
-                      this.totalPosts = posts.length;
+                      this.applyPosts(mappedPosts, pageResponse);
                     }
                   });
                 },
                 error: () => {
                   // If like status fails, use default values
-                  this.communityPosts.set(mappedPosts);
-                  this.totalPosts = posts.length;
+                  this.applyPosts(mappedPosts, pageResponse);
                 }
               });
             } else {
-              this.communityPosts.set(mappedPosts);
-              this.totalPosts = posts.length;
+              this.applyPosts(mappedPosts, pageResponse);
             }
           },
           error: () => {
             // If profiles fail to load, use default mapping
-            const mappedPosts = posts.map(post => this.mapPostToCommunityPost(post, new Map()));
-            this.communityPosts.set(mappedPosts);
-            this.totalPosts = posts.length;
+            const mappedPosts = posts.map(post =>
+              this.mapPostToCommunityPost(post, new Map())
+            );
+            this.applyPosts(mappedPosts, pageResponse);
           }
         });
       },
       error: (error) => {
         console.error('Error loading posts:', error);
+        this.loading.set(false);
+        this.loadingMore.set(false);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudieron cargar las publicaciones'
+          summary: this.transloco.translate('social.toasts.error'),
+          detail: this.transloco.translate('social.toasts.postsLoadError')
         });
       }
     });
+  }
+
+  /**
+   * Stores the page of posts returned by the backend.
+   * The backend paginates the feed (?page=&size=), so "Cargar más" /
+   * infinite scroll triggers a new request for the next page.
+   */
+  private applyPosts(mappedPosts: CommunityPost[], pageResponse: PageResponse<PostResponse>): void {
+    if (this.appendMode) {
+      this.communityPosts.update(current => [...current, ...mappedPosts]);
+    } else {
+      this.communityPosts.set(mappedPosts);
+    }
+    this.currentPage.set(this.appendMode ? this.currentPage() + 1 : 1);
+    this.isLastPage.set(pageResponse.last);
+    this.totalPosts = pageResponse.totalElements;
+    this.loading.set(false);
+    this.loadingMore.set(false);
+  }
+
+  ngAfterViewInit(): void {
+    this.setupInfiniteScroll();
+  }
+
+  ngOnDestroy(): void {
+    this.intersectionObserver?.disconnect();
+  }
+
+  /**
+   * Wires up an IntersectionObserver on a sentinel rendered at the bottom of
+   * the feed. When the sentinel comes into view the next page is loaded and
+   * concatenated (infinite scroll).
+   */
+  private setupInfiniteScroll(): void {
+    if (typeof IntersectionObserver === 'undefined') {
+      return;
+    }
+    // Reconnect in case the view was (re)rendered (e.g. after switching tabs)
+    this.intersectionObserver?.disconnect();
+    if (!this.feedAnchor) {
+      return;
+    }
+    this.intersectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (
+          entry.isIntersecting &&
+          this.activeTab() === 'feed' &&
+          !this.isLastPage() &&
+          !this.loadingMore()
+        ) {
+          this.loadMorePosts();
+        }
+      });
+    }, { root: null, rootMargin: '200px', threshold: 0 });
+    this.intersectionObserver.observe(this.feedAnchor.nativeElement);
   }
 
   private loadEvents(): void {
@@ -2003,8 +2097,8 @@ export class SocialPageComponent implements OnInit {
         console.error('Error loading events:', error);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudieron cargar los eventos'
+          summary: this.transloco.translate('social.toasts.error'),
+          detail: this.transloco.translate('social.toasts.eventsLoadError')
         });
       }
     });
@@ -2019,8 +2113,8 @@ export class SocialPageComponent implements OnInit {
         console.error('Error loading groups:', error);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudieron cargar los grupos'
+          summary: this.transloco.translate('social.toasts.error'),
+          detail: this.transloco.translate('social.toasts.groupsLoadError')
         });
       }
     });
@@ -2073,7 +2167,7 @@ export class SocialPageComponent implements OnInit {
     return {
       id: post.id,
       user: {
-        name: profile ? `${profile.firstName} ${profile.lastName}` : 'Usuario',
+        name: profile ? `${profile.firstName} ${profile.lastName}` : this.transloco.translate('social.defaultUser'),
         username: profile ? `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}` : '@usuario',
         avatar: profile?.avatarUrl || 'https://i.pravatar.cc/150?img=1',
         userId: post.authorId,
@@ -2098,7 +2192,7 @@ export class SocialPageComponent implements OnInit {
       description: event.description,
       date: new Date(event.eventDate),
       location: event.location,
-      organizer: 'Organizador',
+      organizer: this.transloco.translate('social.organizer'),
       attendees: event.attendeesCount,
       image: event.imageUrl,
       isAttending: false,
@@ -2125,7 +2219,7 @@ export class SocialPageComponent implements OnInit {
       id: notification.id,
       type: notification.type as 'like' | 'comment' | 'follow' | 'mention' | 'achievement',
       user: {
-        name: 'Usuario',
+        name: this.transloco.translate('social.defaultUser'),
         avatar: 'https://i.pravatar.cc/150?img=1',
         username: '@usuario',
         userId: notification.actorId
@@ -2152,10 +2246,10 @@ export class SocialPageComponent implements OnInit {
     const days = Math.floor(hours / 24);
 
     if (days > 7) return date.toLocaleDateString();
-    if (days > 0) return `hace ${days} día${days > 1 ? 's' : ''}`;
-    if (hours > 0) return `hace ${hours} hora${hours > 1 ? 's' : ''}`;
-    if (minutes > 0) return `hace ${minutes} minuto${minutes > 1 ? 's' : ''}`;
-    return 'hace un momento';
+    if (days > 0) return this.transloco.translate(days > 1 ? 'social.time.days' : 'social.time.day', { n: days });
+    if (hours > 0) return this.transloco.translate(hours > 1 ? 'social.time.hours' : 'social.time.hour', { n: hours });
+    if (minutes > 0) return this.transloco.translate(minutes > 1 ? 'social.time.minutes' : 'social.time.minute', { n: minutes });
+    return this.transloco.translate('social.time.moments');
   }
 
   getNotificationIcon(type: string): string {
@@ -2179,17 +2273,22 @@ export class SocialPageComponent implements OnInit {
 
   // Tabs configuration
   socialTabs = computed((): Tab[] => {
+    const t = (key: string) => this.transloco.translate(key);
     return [
-      { id: 'feed', label: 'Mi Tablón', icon: 'home', badge: this.unreadNotifications },
-      { id: 'following', label: 'Siguiendo', icon: 'person' },
-      { id: 'events', label: 'Eventos', icon: 'event' },
-      { id: 'groups', label: 'Grupos', icon: 'groups' },
-      { id: 'notifications', label: 'Notificaciones', icon: 'notifications', badge: this.unreadNotifications },
+      { id: 'feed', label: t('social.tabs.feed'), icon: 'home', badge: this.unreadNotifications },
+      { id: 'following', label: t('social.following'), icon: 'person' },
+      { id: 'events', label: t('social.tabs.events'), icon: 'event' },
+      { id: 'groups', label: t('social.tabs.groups'), icon: 'groups' },
+      { id: 'notifications', label: t('social.notifications'), icon: 'notifications', badge: this.unreadNotifications },
     ];
   });
 
   onTabChange(tabId: string) {
     this.setActiveTab(tabId);
+    if (tabId === 'feed') {
+      // The feed view (and its scroll sentinel) is (re)rendered after a tab switch
+      setTimeout(() => this.setupInfiniteScroll(), 0);
+    }
   }
 
   setActiveTab(tab: string) {
@@ -2235,8 +2334,8 @@ export class SocialPageComponent implements OnInit {
         next: () => {
           this.messageService.add({
             severity: 'success',
-            summary: 'Me gusta',
-            detail: 'Te gusta esta publicación'
+            summary: this.transloco.translate('social.toasts.liked'),
+            detail: this.transloco.translate('social.toasts.likedDetail')
           });
         },
         error: () => {
@@ -2250,8 +2349,8 @@ export class SocialPageComponent implements OnInit {
         next: () => {
           this.messageService.add({
             severity: 'info',
-            summary: 'Actualizado',
-            detail: 'Ya no te gusta esta publicación'
+            summary: this.transloco.translate('social.toasts.updated'),
+            detail: this.transloco.translate('social.toasts.unlikedDetail')
           });
         },
         error: () => {
@@ -2267,8 +2366,8 @@ export class SocialPageComponent implements OnInit {
     post.saved = !post.saved;
     this.messageService.add({
       severity: 'info',
-      summary: post.saved ? 'Guardado' : 'Eliminado',
-      detail: post.saved ? 'Publicación guardada en tu biblioteca' : 'Publicación eliminada de tu biblioteca'
+      summary: this.transloco.translate(post.saved ? 'social.toasts.saved' : 'social.toasts.removed'),
+      detail: this.transloco.translate(post.saved ? 'social.toasts.savedDetail' : 'social.toasts.removedDetail')
     });
   }
 
@@ -2279,8 +2378,8 @@ export class SocialPageComponent implements OnInit {
     if (!currentUserId) {
       this.messageService.add({
         severity: 'error',
-        summary: 'Error',
-        detail: 'Debes estar logueado para seguir usuarios'
+        summary: this.transloco.translate('social.toasts.error'),
+        detail: this.transloco.translate('social.toasts.loginRequiredFollow')
       });
       return;
     }
@@ -2293,8 +2392,8 @@ export class SocialPageComponent implements OnInit {
         next: () => {
           this.messageService.add({
             severity: 'success',
-            summary: 'Siguiendo',
-            detail: `Ahora sigues a ${user.name}`
+            summary: this.transloco.translate('social.toasts.following'),
+            detail: this.transloco.translate('social.toasts.followingDetail').replace('{name}', user.name)
           });
         },
         error: () => {
@@ -2302,8 +2401,8 @@ export class SocialPageComponent implements OnInit {
           user.isFollowing = wasFollowing;
           this.messageService.add({
             severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo seguir al usuario'
+            summary: this.transloco.translate('social.toasts.error'),
+            detail: this.transloco.translate('social.toasts.errorFollow')
           });
         }
       });
@@ -2313,8 +2412,8 @@ export class SocialPageComponent implements OnInit {
         next: () => {
           this.messageService.add({
             severity: 'info',
-            summary: 'Dejaste de seguir',
-            detail: `Ya no sigues a ${user.name}`
+            summary: this.transloco.translate('social.toasts.unfollowed'),
+            detail: this.transloco.translate('social.toasts.unfollowedDetail').replace('{name}', user.name)
           });
         },
         error: () => {
@@ -2322,8 +2421,8 @@ export class SocialPageComponent implements OnInit {
           user.isFollowing = wasFollowing;
           this.messageService.add({
             severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo dejar de seguir al usuario'
+            summary: this.transloco.translate('social.toasts.error'),
+            detail: this.transloco.translate('social.toasts.errorUnfollow')
           });
         }
       });
@@ -2336,8 +2435,8 @@ export class SocialPageComponent implements OnInit {
     pet.isFollowing = !pet.isFollowing;
     this.messageService.add({
       severity: 'info',
-      summary: 'Funcionalidad en desarrollo',
-      detail: 'El seguimiento de mascotas será implementado próximamente'
+      summary: this.transloco.translate('social.toasts.inDevelopment'),
+      detail: this.transloco.translate('social.toasts.petFollowComingSoon')
     });
   }
 
@@ -2346,8 +2445,8 @@ export class SocialPageComponent implements OnInit {
     event.attendees += event.isAttending ? 1 : -1;
     this.messageService.add({
       severity: 'success',
-      summary: event.isAttending ? 'Asistirás' : 'Cancelado',
-      detail: event.isAttending ? `Te has inscrito a ${event.title}` : `Has cancelado tu asistencia a ${event.title}`
+      summary: this.transloco.translate(event.isAttending ? 'social.toasts.attending' : 'social.toasts.attendanceCancelled'),
+      detail: this.transloco.translate(event.isAttending ? 'social.toasts.attendingDetail' : 'social.toasts.attendanceCancelledDetail').replace('{name}', event.title)
     });
   }
 
@@ -2356,16 +2455,16 @@ export class SocialPageComponent implements OnInit {
     group.members += group.isMember ? 1 : -1;
     this.messageService.add({
       severity: 'success',
-      summary: group.isMember ? 'Unido' : 'Saliste',
-      detail: group.isMember ? `Te has unido a ${group.name}` : `Has salido de ${group.name}`
+      summary: this.transloco.translate(group.isMember ? 'social.toasts.joined' : 'social.toasts.left'),
+      detail: this.transloco.translate(group.isMember ? 'social.toasts.joinedDetail' : 'social.toasts.leftDetail').replace('{name}', group.name)
     });
   }
 
   shareEvent(event: Event) {
     this.messageService.add({
       severity: 'info',
-      summary: 'Compartido',
-      detail: `Evento ${event.title} compartido`
+      summary: this.transloco.translate('social.toasts.shared'),
+      detail: this.transloco.translate('social.toasts.sharedDetail').replace('{name}', event.title)
     });
   }
 
@@ -2382,16 +2481,16 @@ export class SocialPageComponent implements OnInit {
   showCreateEventDialog() {
     this.messageService.add({
       severity: 'info',
-      summary: 'En desarrollo',
-      detail: 'La creación de eventos estará disponible próximamente'
+      summary: this.transloco.translate('social.toasts.inDevelopment'),
+      detail: this.transloco.translate('social.toasts.eventCreationComingSoon')
     });
   }
 
   showCreateGroupDialog() {
     this.messageService.add({
       severity: 'info',
-      summary: 'En desarrollo',
-      detail: 'La creación de grupos estará disponible próximamente'
+      summary: this.transloco.translate('social.toasts.inDevelopment'),
+      detail: this.transloco.translate('social.toasts.groupCreationComingSoon')
     });
   }
 
@@ -2404,8 +2503,8 @@ export class SocialPageComponent implements OnInit {
     if (!content.trim()) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Contenido vacío',
-        detail: 'Por favor escribe algo para publicar'
+        summary: this.transloco.translate('social.toasts.emptyContent'),
+        detail: this.transloco.translate('social.toasts.emptyContentDetail')
       });
       return;
     }
@@ -2415,8 +2514,8 @@ export class SocialPageComponent implements OnInit {
     if (!currentUser) {
       this.messageService.add({
         severity: 'error',
-        summary: 'Error',
-        detail: 'Debes estar logueado para publicar'
+        summary: this.transloco.translate('social.toasts.error'),
+        detail: this.transloco.translate('social.toasts.loginRequiredPost')
       });
       return;
     }
@@ -2463,8 +2562,8 @@ export class SocialPageComponent implements OnInit {
 
           this.messageService.add({
             severity: 'success',
-            summary: 'Publicado',
-            detail: 'Tu publicación ha sido compartida con la comunidad'
+            summary: this.transloco.translate('social.toasts.published'),
+            detail: this.transloco.translate('social.toasts.publishedDetail')
           });
         },
         error: () => {
@@ -2494,8 +2593,8 @@ export class SocialPageComponent implements OnInit {
 
           this.messageService.add({
             severity: 'success',
-            summary: 'Publicado (offline)',
-            detail: 'Tu publicación se ha guardado localmente'
+            summary: this.transloco.translate('social.toasts.publishedOffline'),
+            detail: this.transloco.translate('social.toasts.publishedOfflineDetail')
           });
         }
       });
@@ -2519,17 +2618,12 @@ export class SocialPageComponent implements OnInit {
     }
   }
 
-  loadMorePosts() {
-    this.loadingMore.set(true);
-    // For now, just add mock data - in real app would call pagination API
-    setTimeout(() => {
-      this.loadingMore.set(false);
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Cargado',
-        detail: 'Nuevas publicaciones añadidas al feed'
-      });
-    }, 1000);
+  loadMorePosts(): void {
+    // Avoid overlapping requests or loading past the last page
+    if (this.isLastPage() || this.loadingMore() || this.loading()) {
+      return;
+    }
+    this.loadPosts(true);
   }
 
   markAllNotificationsAsRead() {
@@ -2541,15 +2635,15 @@ export class SocialPageComponent implements OnInit {
           this.unreadNotifications = 0;
           this.messageService.add({
             severity: 'success',
-            summary: 'Notificaciones',
-            detail: 'Todas las notificaciones han sido marcadas como leídas'
+            summary: this.transloco.translate('social.toasts.notifications'),
+            detail: this.transloco.translate('social.toasts.notificationsReadDetail')
           });
         },
         error: () => {
           this.messageService.add({
             severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudieron marcar las notificaciones'
+            summary: this.transloco.translate('social.toasts.error'),
+            detail: this.transloco.translate('social.toasts.notificationsError')
           });
         }
       });

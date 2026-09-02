@@ -1,3 +1,4 @@
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import {
   Component,
   inject,
@@ -34,20 +35,20 @@ export interface AdoptionHistoryItem {
 @Component({
   selector: 'app-adoption-history',
   standalone: true,
-  imports: [CommonModule, TagModule],
+  imports: [TranslocoModule, CommonModule, TagModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="adoption-history">
       <h3 class="section-title">
         <i class="pi pi-history"></i>
-        Historial de adopciÃƒÂ³n
+        {{ this.i18n.translate('adoptionHistory.title') }}
       </h3>
 
       @if (items().length === 0) {
         <div class="empty-state">
           <i class="pi pi-inbox"></i>
-          <p>No hay historial de adopciones</p>
-          <span class="empty-subtitle">Las solicitudes y cambios de propietario aparecerÃƒÂ¡n aquÃƒÂ­.</span>
+          <p>{{ this.i18n.translate('adoptionHistory.empty') }}</p>
+          <span class="empty-subtitle">{{ this.i18n.translate('adoptionHistory.emptySubtitle') }}</span>
         </div>
       } @else {
         <div class="history-list">
@@ -77,7 +78,7 @@ export interface AdoptionHistoryItem {
                 @if (item.fromName || item.toName) {
                   <div class="history-transfer">
                     <span class="history-user"><i class="pi pi-arrow-left"></i> De: <b>{{ item.fromName }}</b></span>
-                    <span class="history-user"><i class="pi pi-arrow-right"></i> a: <b>{{ item.toName }}</b></span>
+                    <span class="history-user"><i class="pi pi-arrow-right"></i>{{ this.i18n.translate('adoptionHistory.to') }}<b>{{ item.toName }}</b></span>
                   </div>
                 }
                 @if (item.detail) { <p class="history-detail">{{ item.detail }}</p> }
@@ -98,7 +99,7 @@ export interface AdoptionHistoryItem {
                 <div class="owner-name">{{ owner.ownerName ?? owner.ownerId }}</div>
                 <div class="owner-dates">
                   <i class="pi pi-calendar"></i>
-                  {{ owner.fromDate | date: 'mediumDate' }} Ã¢â‚¬â€œ {{ owner.toDate ? (owner.toDate | date: 'mediumDate') : 'Actual' }}
+                  {{ owner.fromDate | date: 'mediumDate' }} – {{ owner.toDate ? (owner.toDate | date: 'mediumDate') : ('adoptionHistory.current' | transloco) }}
                 </div>
                 @if (owner.reason) {
                   <span class="owner-reason"><i class="pi pi-tag"></i> {{ ownerReasonLabel(owner.reason) }}</span>
@@ -309,6 +310,7 @@ export interface AdoptionHistoryItem {
   ],
 })
 export class AdoptionHistoryComponent implements OnInit, OnDestroy {
+  readonly i18n = inject(TranslocoService);
   readonly petId = input<string>('');
 
   private readonly adoptionService = inject(AdoptionService);
@@ -351,7 +353,7 @@ export class AdoptionHistoryComponent implements OnInit, OnDestroy {
       result.push({
         id: `req-${entry.requestId}-${idx}`,
         type: 'request',
-        label: 'Solicitud de adopción',
+        label: this.i18n.translate('adoptionHistory.requestLabel'),
         status: entry.status,
         date: entry.statusChangedAt,
         detail: entry.notes ? entry.notes : undefined,
@@ -364,13 +366,13 @@ export class AdoptionHistoryComponent implements OnInit, OnDestroy {
       result.push({
         id: `own-${change.changedAt}-${idx}`,
         type: 'ownership',
-        label: 'Cambio de propietario',
+        label: this.i18n.translate('adoptionHistory.ownershipLabel'),
         reason: change.reason,
         date: change.changedAt,
         fromName: change.previousOwnerName || change.previousOwnerId,
         toName: change.newOwnerName || change.newOwnerId,
         detail: change.adoptionRequestId
-          ? `VÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­a solicitud ${change.adoptionRequestId}`
+          ? `${this.i18n.translate('adoptionHistory.viaRequest')} ${change.adoptionRequestId}`
           : 'Cambio registrado',
       });
     });
@@ -387,22 +389,22 @@ export class AdoptionHistoryComponent implements OnInit, OnDestroy {
       return '';
     }
     const map: Record<string, string> = {
-      ADOPTION_COMPLETED: 'AdopciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n completada',
-      RETURNED: 'Devuelta',
-      TRANSFERRED: 'Transferida',
-      OTHER: 'Otro',
+      ADOPTION_COMPLETED: this.i18n.translate('adoptionHistory.reasonOwner.completed'),
+      RETURNED: this.i18n.translate('adoptionHistory.reasonOwner.returned'),
+      TRANSFERRED: this.i18n.translate('adoptionHistory.reasonOwner.transferred'),
+      OTHER: this.i18n.translate('adoptionHistory.reasonOwner.other'),
     };
     return map[reason.toUpperCase()] || reason;
   }
 
   statusLabel(status: string): string {
     const map: Record<string, string> = {
-      pending: 'Pendiente',
-      pending_contact: 'Contacto',
-      pending_delivery: 'Entrega',
-      completed: 'Completado',
-      rejected: 'Rechazado',
-      approved: 'Aprobado',
+      pending: this.i18n.translate('adoptionHistory.pending'),
+      pending_contact: this.i18n.translate('adoptionHistory.contact'),
+      pending_delivery: this.i18n.translate('adoptionHistory.delivery'),
+      completed: this.i18n.translate('adoptionHistory.completed'),
+      rejected: this.i18n.translate('adoptionHistory.rejected'),
+      approved: this.i18n.translate('adoptionHistory.approved'),
     };
     return map[status] || status;
   }
@@ -425,11 +427,11 @@ export class AdoptionHistoryComponent implements OnInit, OnDestroy {
 
   reasonLabel(reason: OwnershipChangeReason): string {
     const map: Record<OwnershipChangeReason, string> = {
-      adoption_completed: 'Por adopciÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â³n completada',
-      returned: 'Mascota devuelta',
-      transferred: 'Transferencia entre usuarios',
-      other: 'Otro motivo',
+      adoption_completed: this.i18n.translate('adoptionHistory.reason.completed'),
+      returned: this.i18n.translate('adoptionHistory.reason.returned'),
+      transferred: this.i18n.translate('adoptionHistory.reason.transferred'),
+      other: this.i18n.translate('adoptionHistory.reason.other'),
     };
-    return map[reason] || 'Otro motivo';
+    return map[reason] || this.i18n.translate('adoptionHistory.reason.other');
   }
 }

@@ -1,3 +1,4 @@
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Component, input, output, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CommentItemComponent } from '../comment-item/comment-item.component';
@@ -7,7 +8,7 @@ import { SocialService, CommentResponse } from '../../../../social/infrastructur
 @Component({
   selector: 'app-comment-section',
   standalone: true,
-  imports: [CommonModule, CommentItemComponent, CommentFormComponent],
+  imports: [TranslocoModule, CommonModule, CommentItemComponent, CommentFormComponent],
   template: `
     <div class="comment-section">
       <!-- Comment Form (for new top-level comment) -->
@@ -29,19 +30,19 @@ import { SocialService, CommentResponse } from '../../../../social/infrastructur
             [targetType]="targetType()"
             [userId]="currentUserId()"
             [parentId]="replyingToId()"
-            [placeholder]="'Escribe una respuesta...'"
+            [placeholder]="this.i18n.translate('commentSection.replyPlaceholder')"
             (commentCreated)="onReplyCreated($event)"
           />
-          <button class="cancel-reply-btn" (click)="cancelReply()">Cancelar</button>
+          <button class="cancel-reply-btn" (click)="cancelReply()">{{ this.i18n.translate('commentSection.cancel') }}</button>
         </div>
       }
 
       <!-- Comments List -->
       <div class="comments-list">
         @if (loading()) {
-          <div class="comments-loading">Cargando comentarios...</div>
+          <div class="comments-loading">{{ this.i18n.translate('commentSection.loading') }}</div>
         } @else if (comments().length === 0) {
-          <div class="comments-empty">No hay comentarios aún. ¡Sé el primero!</div>
+          <div class="comments-empty">{{ this.i18n.translate('commentSection.empty') }}</div>
         } @else {
           @for (comment of comments(); track comment.id) {
             <app-comment-item
@@ -110,6 +111,7 @@ import { SocialService, CommentResponse } from '../../../../social/infrastructur
   `]
 })
 export class CommentSectionComponent {
+  readonly i18n = inject(TranslocoService);
   private readonly socialService = inject(SocialService);
 
   // Inputs
@@ -154,7 +156,7 @@ export class CommentSectionComponent {
       targetId: this.targetId(),
       targetType: this.targetType(),
       content: event.content,
-      authorFirstName: 'Tú',
+      authorFirstName: this.i18n.translate('commentSection.you'),
       authorLastName: '',
       authorAvatarUrl: '',
       createdAt: new Date().toISOString(),
@@ -168,7 +170,7 @@ export class CommentSectionComponent {
 
   startReply(commentId: string): void {
     const comment = this.findComment(commentId);
-    this.replyingToName.set(comment ? `${comment.authorFirstName} ${comment.authorLastName}`.trim() || 'Usuario' : 'usuario');
+    this.replyingToName.set(comment ? `${comment.authorFirstName} ${comment.authorLastName}`.trim() || this.i18n.translate('commentSection.user') : 'usuario');
     this.replyingToId.set(commentId);
   }
 
@@ -182,7 +184,7 @@ export class CommentSectionComponent {
       targetId: this.targetId(),
       targetType: this.targetType(),
       content: event.content,
-      authorFirstName: 'Tú',
+      authorFirstName: this.i18n.translate('commentSection.you'),
       authorLastName: '',
       authorAvatarUrl: '',
       createdAt: new Date().toISOString(),
@@ -233,7 +235,7 @@ export class CommentSectionComponent {
       },
       error: (err) => {
         console.error('Error deleting comment:', err);
-        alert('Error al eliminar el comentario');
+        alert(this.i18n.translate('commentSection.deleteError'));
       }
     });
   }

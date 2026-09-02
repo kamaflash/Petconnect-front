@@ -1,4 +1,5 @@
-import { Component, input, output } from '@angular/core';
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
+import { Component, input, output , inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -7,7 +8,7 @@ import { CommentResponse } from '../../../../social/infrastructure/services/soci
 @Component({
   selector: 'app-comment-item',
   standalone: true,
-  imports: [CommonModule, RouterModule, ButtonModule],
+  imports: [TranslocoModule, CommonModule, RouterModule, ButtonModule],
   template: `
     <div class="comment-item" [class.is-reply]="isReply()">
       <div class="comment-avatar">
@@ -23,10 +24,10 @@ import { CommentResponse } from '../../../../social/infrastructure/services/soci
         <div class="comment-actions">
           <span class="comment-time">{{ formatDate(comment().createdAt) }}</span>
           @if (!isReply()) {
-            <button class="comment-action-btn" (click)="onReply()">Responder</button>
+            <button class="comment-action-btn" (click)="onReply()">{{ this.i18n.translate('commentItem.reply') }}</button>
           }
           @if (canDelete()) {
-            <button class="comment-action-btn delete" (click)="onDelete()">Eliminar</button>
+            <button class="comment-action-btn delete" (click)="onDelete()">{{ this.i18n.translate('commentItem.delete') }}</button>
           }
         </div>
         <!-- Replies -->
@@ -140,6 +141,7 @@ import { CommentResponse } from '../../../../social/infrastructure/services/soci
   `]
 })
 export class CommentItemComponent {
+  readonly i18n = inject(TranslocoService);
   // Inputs
   comment = input.required<CommentResponse>();
   currentUserId = input<string>('');
@@ -165,7 +167,7 @@ export class CommentItemComponent {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return 'Ahora';
+    if (diffMins < 1) return this.i18n.translate('commentItem.now');
     if (diffMins < 60) return `Hace ${diffMins}m`;
     if (diffHours < 24) return `Hace ${diffHours}h`;
     if (diffDays < 7) return `Hace ${diffDays}d`;
@@ -177,7 +179,7 @@ export class CommentItemComponent {
   }
 
   onDelete(): void {
-    if (confirm('¿Estás seguro de que quieres eliminar este comentario?')) {
+    if (confirm(this.i18n.translate('commentItem.deleteConfirm'))) {
       this.deleteRequested.emit(this.comment().id);
     }
   }

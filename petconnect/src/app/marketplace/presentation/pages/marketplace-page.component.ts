@@ -13,6 +13,7 @@ import { RadioButtonModule } from 'primeng/radiobutton';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { RouterLink, Router } from '@angular/router';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../../../adoptions/presentation/components/pet-feed-grid/pet-feed-grid.component';
 import { MarketplaceService, ProductResponse } from '../../infrastructure/services/marketplace.service';
@@ -60,6 +61,7 @@ interface CartItem {
     RouterLink,
     ModalComponent,
     PetFeedGridComponent,
+    TranslocoModule,
   ],
   providers: [MessageService],
   template: `
@@ -68,8 +70,8 @@ interface CartItem {
       <div class="marketplace-header">
         <div class="header-content">
           <div class="header-left">
-            <h1>Tienda de Mascotas</h1>
-            <p>Todo lo que tu mascota necesita</p>
+            <h1>{{ 'marketplace.title' | transloco }}</h1>
+            <p>{{ 'marketplace.subtitle' | transloco }}</p>
           </div>
           <div class="header-right">
             <div class="search-bar">
@@ -77,13 +79,13 @@ interface CartItem {
               <input
                 type="text"
                 pInputText
-                placeholder="Buscar productos..."
+                placeholder="{{ 'marketplace.searchPlaceholder' | transloco }}"
                 [(ngModel)]="searchQuery"
               />
             </div>
             <button class="cart-button" (click)="toggleCart()">
               <i class="pi pi-shopping-cart"></i>
-              <span>Carrito</span>
+              <span>{{ 'marketplace.cart' | transloco }}</span>
               @if (cartItems().length > 0) {
                 <span class="cart-badge">{{ cartItems().length }}</span>
               }
@@ -94,7 +96,7 @@ interface CartItem {
                 (click)="createProduct()"
               >
                 <i class="pi pi-plus"></i>
-                <span>Crear producto</span>
+                <span>{{ 'marketplace.createProduct' | transloco }}</span>
               </button>
             }
           </div>
@@ -103,7 +105,7 @@ interface CartItem {
 
       <app-pet-feed-grid
         [items]="filteredProducts()"
-        itemLabel="productos"
+        [itemLabel]="'marketplace.itemLabel' | transloco"
         itemKeyField="id"
         [filterConfigs]="productFilterConfigs"
         [columnConfigs]="productColumnConfigs"
@@ -115,7 +117,7 @@ interface CartItem {
       <!-- Cart Sidebar -->
       <div class="cart-sidebar" [class.open]="cartOpen()">
         <div class="cart-header">
-          <h2>Carrito de Compras</h2>
+          <h2>{{ 'marketplace.cartTitle' | transloco }}</h2>
           <button class="close-cart-btn" (click)="toggleCart()">
             <i class="pi pi-times"></i>
           </button>
@@ -124,7 +126,7 @@ interface CartItem {
           @if (cartItems().length === 0) {
             <div class="empty-cart">
               <i class="pi pi-shopping-cart"></i>
-              <p>Tu carrito está vacío</p>
+              <p>{{ 'marketplace.emptyCart' | transloco }}</p>
             </div>
           } @else {
             <div class="cart-items">
@@ -152,11 +154,11 @@ interface CartItem {
             </div>
             <div class="cart-footer">
               <div class="cart-total">
-                <span>Total:</span>
+                <span>{{ 'marketplace.total' | transloco }}</span>
                 <span class="total-amount">{{ cartTotal() | currency:'EUR' }}</span>
               </div>
               <button class="checkout-btn" (click)="checkout()">
-                Proceder al pago
+                {{ 'marketplace.checkout' | transloco }}
               </button>
             </div>
           }
@@ -183,7 +185,7 @@ interface CartItem {
                     <i class="pi pi-star-fill" [class.filled]="star <= product.rating"></i>
                   }
                 </div>
-                <span>({{ product.reviews }} reseñas)</span>
+                <span>({{ product.reviews }} {{ 'marketplace.reviews' | transloco }})</span>
               </div>
               <p class="product-description">{{ product.description }}</p>
               <div class="product-price-section">
@@ -198,7 +200,7 @@ interface CartItem {
               <div class="product-stock">
                 <i class="pi pi-box"></i>
                 <span [class.in-stock]="product.stock > 0" [class.out-stock]="product.stock === 0">
-                  {{ product.stock > 0 ? 'En stock (' + product.stock + ' unidades)' : 'Agotado' }}
+                  {{ product.stock > 0 ? ('marketplace.inStock' | transloco: { count: product.stock }) : ('marketplace.outOfStock' | transloco) }}
                 </span>
               </div>
               <div class="product-actions">
@@ -208,7 +210,7 @@ interface CartItem {
                   [disabled]="product.stock === 0"
                 >
                   <i class="pi pi-shopping-cart"></i>
-                  {{ product.stock === 0 ? 'Agotado' : 'Añadir al carrito' }}
+                  {{ product.stock === 0 ? ('marketplace.outOfStock' | transloco) : ('marketplace.addToCart' | transloco) }}
                 </button>
               </div>
             </div>
@@ -680,6 +682,7 @@ export class MarketplacePageComponent implements OnInit {
   private readonly marketplaceService = inject(MarketplaceService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly transloco = inject(TranslocoService);
 
   // Products data
   products = signal<Product[]>([]);
@@ -699,24 +702,24 @@ export class MarketplacePageComponent implements OnInit {
     {
       type: 'text',
       key: 'search',
-      label: 'Búsqueda',
-      placeholder: 'Buscar productos...'
+      label: this.transloco.translate('marketplace.search'),
+      placeholder: this.transloco.translate('marketplace.searchPlaceholder')
     },
     {
       type: 'checkbox',
       key: 'categories',
-      label: 'Categorías',
+      label: this.transloco.translate('marketplace.categories'),
       options: [
-        { label: 'Alimento', value: 'Alimento' },
-        { label: 'Juguetes', value: 'Juguetes' },
-        { label: 'Accesorios', value: 'Accesorios' },
-        { label: 'Salud', value: 'Salud' }
+        { label: this.transloco.translate('marketplace.food'), value: 'Alimento' },
+        { label: this.transloco.translate('marketplace.toys'), value: 'Juguetes' },
+        { label: this.transloco.translate('marketplace.accessories'), value: 'Accesorios' },
+        { label: this.transloco.translate('marketplace.health'), value: 'Salud' }
       ]
     },
     {
       type: 'checkbox',
       key: 'brands',
-      label: 'Marca',
+      label: this.transloco.translate('marketplace.categoryBrand'),
       options: [
         { label: 'Marca A', value: 'Marca A' },
         { label: 'Marca B', value: 'Marca B' },
@@ -726,9 +729,9 @@ export class MarketplacePageComponent implements OnInit {
     {
       type: 'checkbox',
       key: 'inStock',
-      label: 'Disponibilidad',
+      label: this.transloco.translate('marketplace.availability'),
       options: [
-        { label: 'Solo en stock', value: 'true' }
+        { label: this.transloco.translate('marketplace.inStockOnly'), value: 'true' }
       ]
     }
   ];
@@ -736,27 +739,27 @@ export class MarketplacePageComponent implements OnInit {
   productColumnConfigs: ColumnConfig[] = [
     {
       key: 'image',
-      label: 'Imagen',
+      label: this.transloco.translate('marketplace.image'),
       type: 'image'
     },
     {
       key: 'name',
-      label: 'Nombre',
+      label: this.transloco.translate('marketplace.name'),
       type: 'text'
     },
     {
       key: 'description',
-      label: 'Descripción',
+      label: this.transloco.translate('marketplace.description'),
       type: 'text'
     },
     {
       key: 'price',
-      label: 'Precio',
+      label: this.transloco.translate('marketplace.price'),
       type: 'price'
     },
     {
       key: 'stock',
-      label: 'Stock',
+      label: this.transloco.translate('marketplace.stock'),
       type: 'text',
       icon: 'pi-box'
     }
@@ -815,8 +818,8 @@ export class MarketplacePageComponent implements OnInit {
         console.error('Error loading products:', error);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudieron cargar los productos'
+          summary: this.transloco.translate('marketplace.error'),
+          detail: this.transloco.translate('marketplace.loadError')
         });
       }
     });
@@ -875,8 +878,8 @@ export class MarketplacePageComponent implements OnInit {
   checkout(): void {
     this.messageService.add({
       severity: 'success',
-      summary: 'Compra realizada',
-      detail: 'Tu pedido ha sido procesado correctamente'
+      summary: this.transloco.translate('marketplace.purchaseDone'),
+      detail: this.transloco.translate('marketplace.purchaseDetail')
     });
     this.cartItems.set([]);
     this.toggleCart();

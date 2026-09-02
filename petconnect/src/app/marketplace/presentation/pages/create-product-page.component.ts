@@ -1,3 +1,4 @@
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -16,7 +17,7 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
 @Component({
   selector: 'app-create-product-page',
   standalone: true,
-  imports: [
+  imports: [TranslocoModule, 
     CommonModule,
     FormsModule,
     ButtonModule,
@@ -32,8 +33,8 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
     <div class="create-product-page">
       <div class="create-product-container">
         <div class="page-header">
-          <h1>Crear Producto</h1>
-          <p>Añade un nuevo producto a tu tienda</p>
+          <h1>{{ this.i18n.translate('createProduct.title') }}</h1>
+          <p>{{ this.i18n.translate('createProduct.subtitle') }}</p>
         </div>
 
         <div class="product-form-card">
@@ -41,25 +42,25 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
             <div class="form-grid">
               <!-- Nombre -->
               <div class="form-field full-width">
-                <label for="name">Nombre del producto *</label>
+                <label for="name">{{ this.i18n.translate('createProduct.name') }}</label>
                 <input
                   id="name"
                   pInputText
                   [(ngModel)]="formData.name"
                   name="name"
-                  placeholder="Nombre del producto"
+                  [placeholder]="this.i18n.translate('createProduct.namePlaceholder')"
                   required
                 />
               </div>
 
               <!-- Categoría -->
               <div class="form-field">
-                <label for="category">Categoría *</label>
+                <label for="category">{{ this.i18n.translate('createProduct.category') }}</label>
                 <p-select
                   [options]="categories"
                   [(ngModel)]="formData.category"
                   name="category"
-                  placeholder="Selecciona una categoría"
+                  [placeholder]="this.i18n.translate('createProduct.selectCategory')"
                   optionLabel="label"
                   required
                 />
@@ -67,19 +68,19 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
 
               <!-- Subcategoría -->
               <div class="form-field">
-                <label for="subcategory">Subcategoría</label>
+                <label for="subcategory">{{ this.i18n.translate('createProduct.subcategory') }}</label>
                 <input
                   id="subcategory"
                   pInputText
                   [(ngModel)]="formData.subcategory"
                   name="subcategory"
-                  placeholder="Ej: Perros, Gatos..."
+                  [placeholder]="this.i18n.translate('createProduct.subcategoryPlaceholder')"
                 />
               </div>
 
               <!-- Precio -->
               <div class="form-field">
-                <label for="price">Precio (€) *</label>
+                <label for="price">{{ this.i18n.translate('createProduct.price') }}</label>
                 <p-inputNumber
                   [(ngModel)]="formData.price"
                   name="price"
@@ -92,7 +93,7 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
 
               <!-- Precio original -->
               <div class="form-field">
-                <label for="originalPrice">Precio original (€)</label>
+                <label for="originalPrice">{{ this.i18n.translate('createProduct.originalPrice') }}</label>
                 <p-inputNumber
                   [(ngModel)]="formData.originalPrice"
                   name="originalPrice"
@@ -104,7 +105,7 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
 
               <!-- Stock -->
               <div class="form-field">
-                <label for="stock">Stock *</label>
+                <label for="stock">{{ this.i18n.translate('createProduct.stock') }}</label>
                 <p-inputNumber
                   [(ngModel)]="formData.stock"
                   name="stock"
@@ -116,19 +117,19 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
 
               <!-- Marca -->
               <div class="form-field">
-                <label for="brand">Marca</label>
+                <label for="brand">{{ this.i18n.translate('createProduct.brand') }}</label>
                 <input
                   id="brand"
                   pInputText
                   [(ngModel)]="formData.brand"
                   name="brand"
-                  placeholder="Marca del producto"
+                  [placeholder]="this.i18n.translate('createProduct.brandPlaceholder')"
                 />
               </div>
 
               <!-- Descuento -->
               <div class="form-field">
-                <label for="discount">Descuento (%)</label>
+                <label for="discount">{{ this.i18n.translate('createProduct.discount') }}</label>
                 <p-inputNumber
                   [(ngModel)]="formData.discount"
                   name="discount"
@@ -140,37 +141,37 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
 
               <!-- Imagen URL -->
               <div class="form-field full-width">
-                <label for="imageUrl">URL de la imagen principal</label>
+                <label for="imageUrl">{{ this.i18n.translate('createProduct.imageUrl') }}</label>
                 <input
                   id="imageUrl"
                   pInputText
                   [(ngModel)]="formData.imageUrl"
                   name="imageUrl"
-                  placeholder="https://..."
+                  [placeholder]="this.i18n.translate('createProduct.imageUrlPlaceholder')"
                 />
               </div>
 
               <!-- Tags -->
               <div class="form-field full-width">
-                <label for="tags">Etiquetas (separadas por coma)</label>
+                <label for="tags">{{ this.i18n.translate('createProduct.tags') }}</label>
                 <input
                   id="tags"
                   pInputText
                   [(ngModel)]="formData.tags"
                   name="tags"
-                  placeholder="Ej: nuevo, popular, oferta"
+                  [placeholder]="this.i18n.translate('createProduct.tagsPlaceholder')"
                 />
               </div>
 
               <!-- Descripción -->
               <div class="form-field full-width">
-                <label for="description">Descripción del producto</label>
+                <label for="description">{{ this.i18n.translate('createProduct.description') }}</label>
                 <textarea
                   id="description"
                   pTextarea
                   [(ngModel)]="formData.description"
                   name="description"
-                  placeholder="Describe tu producto..."
+                  [placeholder]="this.i18n.translate('createProduct.descriptionPlaceholder')"
                   rows="4"
                 ></textarea>
               </div>
@@ -180,14 +181,14 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
               <button
                 type="button"
                 pButton
-                label="Cancelar"
+                [label]="this.i18n.translate('createProduct.cancel')"
                 class="p-button-outlined p-button-secondary"
                 (click)="goBack()"
               ></button>
               <button
                 type="submit"
                 pButton
-                label="Crear producto"
+                [label]="this.i18n.translate('createProduct.submit')"
                 class="p-button-primary"
                 [disabled]="loading()"
                 [loading]="loading()"
@@ -294,6 +295,7 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
   `]
 })
 export class CreateProductPageComponent {
+  readonly i18n = inject(TranslocoService);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
   private readonly marketplaceService = inject(MarketplaceService);

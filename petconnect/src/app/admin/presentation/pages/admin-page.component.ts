@@ -1,3 +1,4 @@
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -56,6 +57,7 @@ interface ProductItem {
   selector: 'app-admin-page',
   standalone: true,
   imports: [
+    TranslocoModule,
     CommonModule,
     ButtonModule,
     CardModule,
@@ -74,8 +76,8 @@ interface ProductItem {
       <div class="admin-container">
         <!-- Header -->
         <div class="admin-header">
-          <h1>Panel de Administración</h1>
-          <p class="welcome-text">¡Bienvenido, {{ userName() }}!</p>
+          <h1>{{ 'admin.dashboardTitle' | transloco }}</h1>
+          <p class="welcome-text">{{ 'admin.welcome' | transloco:{ userName: userName() } }}</p>
         </div>
 
         <!-- Tabs -->
@@ -302,13 +304,13 @@ interface ProductItem {
           <!-- Adopciones -->
           <div class="admin-section" *ngIf="activeTab() === 'adoptions'">
             <div class="section-header">
-              <h2>Solicitudes de adopción</h2>
+              <h2>{{ 'admin.adoptionRequests' | transloco }}</h2>
             </div>
 
             <div class="adoptions-empty" *ngIf="adminAdoptions().length === 0">
               <i class="pi pi-heart"></i>
-              <p>No tienes solicitudes de adopción todavía.</p>
-              <span class="empty-subtitle">Cuando alguien solicite adoptar una de tus mascotas, aparecerá aquí.</span>
+              <p>{{ 'admin.noAdoptionRequests' | transloco }}</p>
+              <span class="empty-subtitle">{{ 'admin.noAdoptionRequestsSubtitle' | transloco }}</span>
             </div>
 
             <div class="adoptions-list" *ngIf="adminAdoptions().length > 0">
@@ -326,7 +328,7 @@ interface ProductItem {
                     </div>
                     <div class="adoption-request-pet">
                       <i class="pi pi-paw"></i>
-                      <span>{{ req.petName }} · {{ req.species || 'Especie desconocida' }} {{ req.breed ? '· ' + req.breed : '' }}</span>
+                      <span>{{ req.petName }} · {{ req.species || ('admin.unknownSpecies' | transloco) }} {{ req.breed ? '· ' + req.breed : '' }}</span>
                     </div>
                     <div class="adoption-request-message" *ngIf="req.message">
                       "{{ req.message }}"
@@ -341,9 +343,9 @@ interface ProductItem {
                         <span class="adoption-step-dot"></span>
                         <span class="adoption-step-label">{{ adoptionStageShortLabel(stage) }}</span>
                       </div>
-                      <span class="adoption-step-counter" *ngIf="req.status === 'completed'">✓ Finalizada</span>
+                      <span class="adoption-step-counter" *ngIf="req.status === 'completed'">✓ {{ 'admin.completed' | transloco }}</span>
                       <span class="adoption-step-counter" *ngIf="req.status !== 'completed'">
-                        Etapa {{ stageIndexOf(req.status) + 1 }} de {{ adoptionStages.length }}
+                        {{ 'admin.stageOf' | transloco:{ current: stageIndexOf(req.status) + 1, total: adoptionStages.length } }}
                       </span>
                     </div>
                     <div class="adoption-request-date">
@@ -354,20 +356,20 @@ interface ProductItem {
                 <div class="adoption-request-actions">
                   <p-button
                     *ngIf="canAdvance(req.status)"
-                    label="Avanzar etapa"
+                    label="{{ 'admin.advanceStage' | transloco }}"
                     icon="pi pi-arrow-right"
                     styleClass="p-button-sm p-button-success"
                     (onClick)="advanceAdoption(req)"
                   />
                   <p-button
-                    label="Contactar con solicitante"
+                    label="{{ 'admin.contactAdopter' | transloco }}"
                     icon="pi pi-send"
                     styleClass="p-button-sm p-button-secondary"
                     (onClick)="contactAdopter(req)"
                   />
                   <p-button
                     *ngIf="canReject(req.status)"
-                    label="Rechazar"
+                    label="{{ 'admin.reject' | transloco }}"
                     icon="pi pi-times"
                     styleClass="p-button-sm p-button-danger p-button-outlined"
                     (onClick)="rejectAdoption(req)"
@@ -377,12 +379,12 @@ interface ProductItem {
             </div>
 
             <div class="adoptions-section-title">
-              <h3>Mis solicitudes enviadas</h3>
+              <h3>{{ 'admin.mySentRequests' | transloco }}</h3>
             </div>
             <div class="adoptions-empty" *ngIf="myAdoptionRequests().length === 0">
               <i class="pi pi-send"></i>
-              <p>No has enviado solicitudes de adopción todavía.</p>
-              <span class="empty-subtitle">Las solicitudes que realices aparecerán aquí.</span>
+              <p>{{ 'admin.noSentRequests' | transloco }}</p>
+              <span class="empty-subtitle">{{ 'admin.noSentRequestsSubtitle' | transloco }}</span>
             </div>
             <div class="adoptions-list" *ngIf="myAdoptionRequests().length > 0">
               <div class="adoption-request-card" *ngFor="let req of myAdoptionRequests()">
@@ -399,7 +401,7 @@ interface ProductItem {
                     </div>
                     <div class="adoption-request-pet">
                       <i class="pi pi-paw"></i>
-                      <span>{{ req.species || 'Especie desconocida' }} {{ req.breed ? '· ' + req.breed : '' }}</span>
+                      <span>{{ req.species || ('admin.unknownSpecies' | transloco) }} {{ req.breed ? '· ' + req.breed : '' }}</span>
                     </div>
                     <div class="adoption-steps" *ngIf="stageIndexOf(req.status) >= 0">
                       <div
@@ -411,9 +413,9 @@ interface ProductItem {
                         <span class="adoption-step-dot"></span>
                         <span class="adoption-step-label">{{ adoptionStageShortLabel(stage) }}</span>
                       </div>
-                      <span class="adoption-step-counter" *ngIf="isCompleted(req.status)">✓ Finalizada</span>
+                      <span class="adoption-step-counter" *ngIf="isCompleted(req.status)">✓ {{ 'admin.completed' | transloco }}</span>
                       <span class="adoption-step-counter" *ngIf="!isCompleted(req.status)">
-                        Etapa {{ stageIndexOf(req.status) + 1 }} de {{ adoptionStages.length }}
+                        {{ 'admin.stageOf' | transloco:{ current: stageIndexOf(req.status) + 1, total: adoptionStages.length } }}
                       </span>
                     </div>
                     <div class="adoption-request-date">
@@ -423,7 +425,7 @@ interface ProductItem {
                 </div>
                 <div class="adoption-readonly-note">
                   <i class="pi pi-lock"></i>
-                  <span>Solicitud enviada</span>
+                  <span>{{ 'admin.sentRequest' | transloco }}</span>
                 </div>
               </div>
             </div>
@@ -668,6 +670,7 @@ interface ProductItem {
   `]
 })
 export class AdminPageComponent implements OnInit {
+  readonly i18n = inject(TranslocoService);
   private readonly authService = inject(AuthService);
   private readonly socialService = inject(SocialService);
   private readonly petService = inject(PetService);
@@ -721,23 +724,23 @@ export class AdminPageComponent implements OnInit {
 
   // Form configurations
   postFormConfig: DynamicFormConfig = {
-    title: 'Crear Nueva Publicación',
-    submitLabel: 'Crear Publicación',
+    title: this.i18n.translate('admin.createNewPost'),
+    submitLabel: this.i18n.translate('admin.createPost'),
     showCancel: true,
     fields: [
       {
         key: 'caption',
-        label: 'Texto',
+        label: this.i18n.translate('admin.captionLabel'),
         type: 'textarea',
-        placeholder: 'Escribe algo...',
+        placeholder: this.i18n.translate('admin.captionPlaceholder'),
         rows: 3,
         validation: { required: true, minLength: 1, maxLength: 500 }
       },
       {
         key: 'imageUrl',
-        label: 'Imagen',
+        label: this.i18n.translate('common.image'),
         type: 'file',
-        placeholder: 'Selecciona una imagen',
+        placeholder: this.i18n.translate('admin.selectImage'),
         accept: 'image/*',
         maxFileSize: 5000000,
         multiple: false
@@ -746,37 +749,37 @@ export class AdminPageComponent implements OnInit {
   };
 
   eventFormConfig: DynamicFormConfig = {
-    title: 'Crear Nuevo Evento',
-    submitLabel: 'Crear Evento',
+    title: this.i18n.translate('admin.createNewEvent'),
+    submitLabel: this.i18n.translate('admin.createEvent'),
     showCancel: true,
     fields: [
       {
         key: 'title',
-        label: 'Título',
+        label: this.i18n.translate('common.title'),
         type: 'input',
-        placeholder: 'Título del evento',
+        placeholder: this.i18n.translate('admin.eventTitlePlaceholder'),
         validation: { required: true, minLength: 2, maxLength: 100 }
       },
       {
         key: 'description',
-        label: 'Descripción',
+        label: this.i18n.translate('common.description'),
         type: 'textarea',
-        placeholder: 'Descripción del evento',
+        placeholder: this.i18n.translate('admin.eventDescPlaceholder'),
         rows: 3,
         validation: { required: true }
       },
       {
         key: 'location',
-        label: 'Ubicación',
+        label: this.i18n.translate('common.location'),
         type: 'input',
-        placeholder: 'Ubicación del evento',
+        placeholder: this.i18n.translate('admin.eventLocationPlaceholder'),
         validation: { required: true }
       },
       {
         key: 'date',
-        label: 'Fecha',
+        label: this.i18n.translate('common.date'),
         type: 'date',
-        placeholder: 'Selecciona la fecha',
+        placeholder: this.i18n.translate('admin.selectDate'),
         showIcon: true,
         dateFormat: 'dd/mm/yy',
         validation: { required: true }
@@ -785,44 +788,44 @@ export class AdminPageComponent implements OnInit {
   };
 
   petFormConfig: DynamicFormConfig = {
-    title: 'Crear Nueva Mascota',
-    submitLabel: 'Crear Mascota',
+    title: this.i18n.translate('admin.createNewPet'),
+    submitLabel: this.i18n.translate('admin.createPet'),
     showCancel: true,
     resolveOptions: (_field, sourceValue) => SPECIES_BREEDS[sourceValue] ?? [],
     fields: [
       {
         key: 'name',
-        label: 'Nombre',
+        label: this.i18n.translate('admin.name'),
         type: 'input',
-        placeholder: 'Nombre de la mascota',
+        placeholder: this.i18n.translate('admin.petNamePlaceholder'),
         validation: { required: true, minLength: 2, maxLength: 100 }
       },
       {
         key: 'species',
-        label: 'Especie',
+        label: this.i18n.translate('common.species'),
         type: 'select',
-        placeholder: 'Seleccione una especie',
+        placeholder: this.i18n.translate('admin.selectSpecies'),
         options: [
-          { label: 'Perro', value: 'dog' },
-          { label: 'Gato', value: 'cat' },
-          { label: 'Ave', value: 'bird' },
-          { label: 'Conejo', value: 'rabbit' },
-          { label: 'Hámster', value: 'hamster' },
-          { label: 'Otro', value: 'other' }
+          { label: this.i18n.translate('common.dog'), value: 'dog' },
+          { label: this.i18n.translate('common.cat'), value: 'cat' },
+          { label: this.i18n.translate('common.bird'), value: 'bird' },
+          { label: this.i18n.translate('common.rabbit'), value: 'rabbit' },
+          { label: this.i18n.translate('common.hamster'), value: 'hamster' },
+          { label: this.i18n.translate('common.other'), value: 'other' }
         ],
         validation: { required: true }
       },
       {
         key: 'breed',
-        label: 'Raza',
+        label: this.i18n.translate('common.breed'),
         type: 'select',
         dependsOn: 'species',
-        placeholder: 'Seleccione una raza',
+        placeholder: this.i18n.translate('admin.selectBreed'),
         validation: { maxLength: 100 }
       },
       {
         key: 'dateOfBirth',
-        label: 'Fecha de Nacimiento',
+        label: this.i18n.translate('admin.birthDate'),
         type: 'date',
         placeholder: 'Seleccione la fecha',
         showIcon: true,
@@ -830,35 +833,35 @@ export class AdminPageComponent implements OnInit {
       },
       {
         key: 'gender',
-        label: 'Género',
+        label: this.i18n.translate('common.gender'),
         type: 'select',
-        placeholder: 'Seleccione el género',
+        placeholder: this.i18n.translate('common.selectGender'),
         options: [
-          { label: 'Macho', value: 'male' },
-          { label: 'Hembra', value: 'female' },
-          { label: 'Desconocido', value: 'unknown' }
+          { label: this.i18n.translate('common.male'), value: 'male' },
+          { label: this.i18n.translate('common.female'), value: 'female' },
+          { label: this.i18n.translate('admin.unknown'), value: 'unknown' }
         ]
             },
       {
         key: 'color',
-        label: 'Color',
+        label: this.i18n.translate('common.color'),
         type: 'select',
-        placeholder: 'Seleccionar color',
+        placeholder: this.i18n.translate('admin.selectColor'),
         showClear: true,
         options: PET_COLOR_OPTIONS
       },
       {
         key: 'weight',
-        label: 'Peso',
+        label: this.i18n.translate('admin.weight'),
         type: 'number',
-        placeholder: 'Peso',
+        placeholder: this.i18n.translate('admin.weight'),
         validation: { min: 0.1, max: 200 }
       },
       {
         key: 'weightUnit',
-        label: 'Unidad de Peso',
+        label: this.i18n.translate('admin.weightUnit'),
         type: 'select',
-        placeholder: 'Seleccione la unidad',
+        placeholder: this.i18n.translate('admin.selectWeightUnit'),
         options: [
           { label: 'kg', value: 'kg' },
           { label: 'lb', value: 'lb' }
@@ -866,17 +869,17 @@ export class AdminPageComponent implements OnInit {
       },
       {
         key: 'bio',
-        label: 'Biografía',
+        label: this.i18n.translate('common.bio'),
         type: 'textarea',
-        placeholder: 'Información sobre la personalidad y características de tu mascota...',
+        placeholder: this.i18n.translate('common.bioPlaceholder'),
         rows: 3,
         validation: { maxLength: 500 }
       },
       {
         key: 'photos',
-        label: 'Fotos',
+        label: this.i18n.translate('admin.photos'),
         type: 'file',
-        placeholder: 'Selecciona fotos de la mascota',
+        placeholder: this.i18n.translate('admin.selectPetPhotos'),
         accept: 'image/*',
         maxFileSize: 5000000,
         multiple: true
@@ -885,15 +888,15 @@ export class AdminPageComponent implements OnInit {
   };
 
   storyFormConfig: DynamicFormConfig = {
-    title: 'Crear Nueva Historia',
-    submitLabel: 'Crear Historia',
+    title: this.i18n.translate('admin.createNewStory'),
+    submitLabel: this.i18n.translate('admin.createStory'),
     showCancel: true,
     fields: [
       {
         key: 'imageUrl',
-        label: 'Imagen',
+        label: this.i18n.translate('common.image'),
         type: 'file',
-        placeholder: 'Selecciona una imagen',
+        placeholder: this.i18n.translate('admin.selectImage'),
         accept: 'image/*',
         maxFileSize: 5000000,
         multiple: false,
@@ -901,37 +904,37 @@ export class AdminPageComponent implements OnInit {
       },
       {
         key: 'duration',
-        label: 'Duración (horas)',
+        label: this.i18n.translate('admin.durationHours'),
         type: 'number',
-        placeholder: 'Horas que durará la historia',
+        placeholder: this.i18n.translate('admin.durationHoursPlaceholder'),
         validation: { required: true, min: 1, max: 24 }
       }
     ]
   };
 
   groupFormConfig: DynamicFormConfig = {
-    title: 'Crear Nuevo Grupo',
-    submitLabel: 'Crear Grupo',
+    title: this.i18n.translate('admin.createNewGroup'),
+    submitLabel: this.i18n.translate('admin.createGroup'),
     showCancel: true,
     fields: [
       {
         key: 'name',
-        label: 'Nombre',
+        label: this.i18n.translate('admin.name'),
         type: 'input',
-        placeholder: 'Nombre del grupo',
+        placeholder: this.i18n.translate('admin.groupNamePlaceholder'),
         validation: { required: true, minLength: 2, maxLength: 100 }
       },
       {
         key: 'description',
-        label: 'Descripción',
+        label: this.i18n.translate('common.description'),
         type: 'textarea',
-        placeholder: 'Descripción del grupo',
+        placeholder: this.i18n.translate('admin.groupDescPlaceholder'),
         rows: 3,
         validation: { required: true }
       },
       {
         key: 'isPublic',
-        label: 'Grupo público',
+        label: this.i18n.translate('admin.publicGroup'),
         type: 'checkbox'
       }
     ]
@@ -939,35 +942,35 @@ export class AdminPageComponent implements OnInit {
 
   // Service form configuration (for vets)
   serviceFormConfig: DynamicFormConfig = {
-    title: 'Crear Nuevo Servicio',
-    submitLabel: 'Crear Servicio',
+    title: this.i18n.translate('admin.createNewService'),
+    submitLabel: this.i18n.translate('admin.createService'),
     showCancel: true,
     fields: [
       {
         key: 'name',
-        label: 'Nombre del Servicio',
+        label: this.i18n.translate('admin.serviceName'),
         type: 'input',
-        placeholder: 'Ej: Consulta general, Vacunación',
+        placeholder: this.i18n.translate('admin.serviceTagsPlaceholder'),
         validation: { required: true, minLength: 2, maxLength: 100 }
       },
       {
         key: 'description',
-        label: 'Descripción',
+        label: this.i18n.translate('common.description'),
         type: 'textarea',
-        placeholder: 'Describe el servicio...',
+        placeholder: this.i18n.translate('admin.describeService'),
         rows: 3,
         validation: { required: true, maxLength: 500 }
       },
       {
         key: 'price',
-        label: 'Precio (€)',
+        label: this.i18n.translate('admin.price'),
         type: 'input',
         placeholder: 'Ej: 50.00',
         validation: { required: true }
       },
       {
         key: 'duration',
-        label: 'Duración (minutos)',
+        label: this.i18n.translate('admin.durationMinutes'),
         type: 'input',
         placeholder: 'Ej: 30',
         validation: { required: true }
@@ -977,58 +980,58 @@ export class AdminPageComponent implements OnInit {
 
   // Product form configuration (for sellers)
   productFormConfig: DynamicFormConfig = {
-    title: 'Crear Nuevo Producto',
-    submitLabel: 'Crear Producto',
+    title: this.i18n.translate('admin.createNewProduct'),
+    submitLabel: this.i18n.translate('admin.createProduct'),
     showCancel: true,
     fields: [
       {
         key: 'name',
-        label: 'Nombre del Producto',
+        label: this.i18n.translate('admin.productName'),
         type: 'input',
-        placeholder: 'Nombre del producto',
+        placeholder: this.i18n.translate('admin.productNamePlaceholder'),
         validation: { required: true, minLength: 2, maxLength: 100 }
       },
       {
         key: 'description',
-        label: 'Descripción',
+        label: this.i18n.translate('common.description'),
         type: 'textarea',
-        placeholder: 'Describe el producto...',
+        placeholder: this.i18n.translate('admin.describeProduct'),
         rows: 3,
         validation: { required: true, maxLength: 500 }
       },
       {
         key: 'price',
-        label: 'Precio (€)',
+        label: this.i18n.translate('admin.price'),
         type: 'input',
         placeholder: 'Ej: 29.99',
         validation: { required: true }
       },
       {
         key: 'stock',
-        label: 'Stock',
+        label: this.i18n.translate('admin.stock'),
         type: 'input',
-        placeholder: 'Cantidad disponible',
+        placeholder: this.i18n.translate('admin.stockPlaceholder'),
         validation: { required: true, min: 0 }
       },
       {
         key: 'category',
-        label: 'Categoría',
+        label: this.i18n.translate('common.category'),
         type: 'select',
-        placeholder: 'Selecciona una categoría',
+        placeholder: this.i18n.translate('common.selectCategory'),
         options: [
-          { label: 'Alimentos', value: 'food' },
-          { label: 'Accesorios', value: 'accessories' },
-          { label: 'Medicamentos', value: 'medicine' },
-          { label: 'Juguetes', value: 'toys' },
-          { label: 'Otro', value: 'other' }
+          { label: this.i18n.translate('admin.categoryFood'), value: 'food' },
+          { label: this.i18n.translate('admin.categoryAccessories'), value: 'accessories' },
+          { label: this.i18n.translate('admin.categoryMedicine'), value: 'medicine' },
+          { label: this.i18n.translate('admin.categoryToys'), value: 'toys' },
+          { label: this.i18n.translate('common.other'), value: 'other' }
         ],
         validation: { required: true }
       },
       {
         key: 'imageUrl',
-        label: 'Imagen',
+        label: this.i18n.translate('common.image'),
         type: 'file',
-        placeholder: 'Selecciona una imagen',
+        placeholder: this.i18n.translate('admin.selectImage'),
         accept: 'image/*',
         maxFileSize: 5000000,
         multiple: false
@@ -1039,7 +1042,7 @@ export class AdminPageComponent implements OnInit {
   // User info
   userName = computed(() => {
     const user = this.authService.user();
-    return user ? `${user.firstName} ${user.lastName}` : 'Usuario';
+    return user ? `${user.firstName} ${user.lastName}` : this.i18n.translate('admin.userFallback');
   });
 
   // User profile type
@@ -1057,10 +1060,10 @@ export class AdminPageComponent implements OnInit {
   adminPostItems = computed((): TableCardItem[] => {
     return this.adminPosts().map(post => ({
       id: post.id,
-      name: post.caption || 'Sin título',
+      name: post.caption || this.i18n.translate('common.untitled'),
       avatar: post.imageUrl || 'https://placehold.co/150',
-      description: `Likes: ${post.likesCount} | Comentarios: ${post.commentsCount}`,
-      tags: post.active ? ['Activo'] : ['Inactivo'],
+      description: `${this.i18n.translate('admin.likes')}: ${post.likesCount} | ${this.i18n.translate('admin.comments')}: ${post.commentsCount}`,
+      tags: post.active ? [this.i18n.translate('admin.active')] : [this.i18n.translate('admin.inactive')],
     }));
   });
 
@@ -1071,7 +1074,7 @@ export class AdminPageComponent implements OnInit {
       avatar: event.imageUrl || 'https://placehold.co/150',
       description: event.description,
       location: event.location,
-      tags: event.active ? ['Activo'] : ['Inactivo'],
+      tags: event.active ? [this.i18n.translate('admin.active')] : [this.i18n.translate('admin.inactive')],
     }));
   });
 
@@ -1081,20 +1084,20 @@ export class AdminPageComponent implements OnInit {
       name: pet.name,
       avatar: pet.avatarUrl || 'https://placehold.co/150',
       image: pet.imageUrls?.[0] || pet.avatarUrl || 'https://placehold.co/150',
-      description: `Especie: ${pet.species}${pet.breed ? ` | Raza: ${pet.breed}` : ''}${pet.gender ? ` | Género: ${pet.gender}` : ''}`,
+      description: `${this.i18n.translate('admin.species')}: ${pet.species}${pet.breed ? ` | ${this.i18n.translate('common.breed')}: ${pet.breed}` : ''}${pet.gender ? ` | ${this.i18n.translate('common.gender')}: ${pet.gender}` : ''}`,
       species: pet.species,
       breed: pet.breed,
       gender: pet.gender,
-      tags: pet.active ? ['Activo'] : ['Inactivo'],
+      tags: pet.active ? [this.i18n.translate('admin.active')] : [this.i18n.translate('admin.inactive')],
     }));
   });
 
   adminStoryItems = computed((): TableCardItem[] => {
     return this.adminStories().map(story => ({
       id: story.id,
-      name: 'Historia',
+      name: this.i18n.translate('admin.storyItem'),
       avatar: story.imageUrl || 'https://placehold.co/150',
-      description: story.seen ? 'Vista' : 'Pendiente',
+      description: story.seen ? this.i18n.translate('admin.seen') : this.i18n.translate('admin.storyPending'),
     }));
   });
 
@@ -1104,7 +1107,7 @@ export class AdminPageComponent implements OnInit {
       name: group.name,
       avatar: group.avatarUrl || 'https://placehold.co/150',
       description: group.description,
-      tags: group.active ? ['Activo'] : ['Inactivo'],
+      tags: group.active ? [this.i18n.translate('admin.active')] : [this.i18n.translate('admin.inactive')],
     }));
   });
 
@@ -1113,8 +1116,8 @@ export class AdminPageComponent implements OnInit {
       id: service.id,
       name: service.name,
       avatar: 'https://placehold.co/150',
-      description: `${service.description} | Duración: ${service.duration}min | Precio: ${service.price}€`,
-      tags: service.active ? ['Activo'] : ['Inactivo'],
+      description: `${service.description} | ${this.i18n.translate('admin.duration')}: ${service.duration}min | ${this.i18n.translate('admin.price')}: ${service.price}€`,
+      tags: service.active ? [this.i18n.translate('admin.active')] : [this.i18n.translate('admin.inactive')],
     }));
   });
 
@@ -1123,10 +1126,10 @@ export class AdminPageComponent implements OnInit {
       id: product.id,
       name: product.name,
       avatar: product.imageUrl || 'https://placehold.co/150',
-      description: `${product.description || ''} | Stock: ${product.stock} | Categoría: ${product.category}`,
+      description: `${product.description || ''} | ${this.i18n.translate('admin.stock')}: ${product.stock} | ${this.i18n.translate('common.category')}: ${product.category}`,
       rating: product.rating || 0,
       reviews: product.reviews || 0,
-      tags: [product.price.toString() + '€', product.active ? 'Activo' : 'Inactivo'],
+      tags: [product.price.toString() + '€', product.active ? this.i18n.translate('admin.active') : this.i18n.translate('admin.inactive')],
     }));
   });
 
@@ -1219,8 +1222,8 @@ export class AdminPageComponent implements OnInit {
 
     this.messageService.add({
       severity: 'success',
-      summary: 'Publicación creada',
-      detail: 'La publicación ha sido creada correctamente'
+      summary: this.i18n.translate('admin.postCreated'),
+      detail: this.i18n.translate('admin.postCreatedDetail')
     });
   }
 
@@ -1240,8 +1243,8 @@ export class AdminPageComponent implements OnInit {
 
     this.messageService.add({
       severity: 'success',
-      summary: 'Evento creado',
-      detail: `El evento ${eventData.title} ha sido creado correctamente`
+      summary: this.i18n.translate('admin.eventCreated'),
+      detail: this.i18n.translate('admin.eventCreatedDetail', { name: eventData.title })
     });
   }
 
@@ -1292,8 +1295,8 @@ export class AdminPageComponent implements OnInit {
         this.showCreatePetForm.set(false);
         this.messageService.add({
           severity: 'success',
-          summary: 'Mascota creada',
-          detail: `La mascota ${petData.name} ha sido creada correctamente`
+          summary: this.i18n.translate('admin.petCreated'),
+          detail: this.i18n.translate('admin.petCreatedDetail', { name: petData.name })
         });
       },
       error: (err) => {
@@ -1301,7 +1304,7 @@ export class AdminPageComponent implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo crear la mascota'
+          detail: this.i18n.translate('admin.petCreateError')
         });
       }
     });
@@ -1320,8 +1323,8 @@ export class AdminPageComponent implements OnInit {
 
     this.messageService.add({
       severity: 'success',
-      summary: 'Historia creada',
-      detail: 'La historia ha sido creada correctamente'
+      summary: this.i18n.translate('admin.storyCreated'),
+      detail: this.i18n.translate('admin.storyCreatedDetail')
     });
   }
 
@@ -1340,8 +1343,8 @@ export class AdminPageComponent implements OnInit {
 
     this.messageService.add({
       severity: 'success',
-      summary: 'Grupo creado',
-      detail: `El grupo ${groupData.name} ha sido creado correctamente`
+      summary: this.i18n.translate('admin.groupCreated'),
+      detail: this.i18n.translate('admin.groupCreatedDetail', { name: groupData.name })
     });
   }
 
@@ -1361,16 +1364,16 @@ export class AdminPageComponent implements OnInit {
 
     this.messageService.add({
       severity: 'success',
-      summary: 'Servicio creado',
-      detail: `El servicio ${serviceData.name} ha sido creado correctamente`
+      summary: this.i18n.translate('admin.serviceCreated'),
+      detail: this.i18n.translate('admin.serviceCreatedDetail', { name: serviceData.name })
     });
   }
 
   deleteServiceById(id: string) {
     this.messageService.add({
       severity: 'info',
-      summary: 'En desarrollo',
-      detail: 'La eliminación de servicios estará disponible próximamente'
+      summary: this.i18n.translate('admin.underDevelopment'),
+      detail: this.i18n.translate('admin.deleteServicesSoon')
     });
   }
 
@@ -1401,8 +1404,8 @@ export class AdminPageComponent implements OnInit {
         this.showCreateProductForm.set(false);
         this.messageService.add({
           severity: 'success',
-          summary: 'Producto creado',
-          detail: `El producto ${product.name} ha sido creado correctamente`
+          summary: this.i18n.translate('admin.productCreated'),
+          detail: this.i18n.translate('admin.productCreatedDetail', { name: product.name })
         });
       },
       error: (err) => {
@@ -1410,7 +1413,7 @@ export class AdminPageComponent implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo crear el producto'
+          detail: this.i18n.translate('admin.productCreateError')
         });
       }
     });
@@ -1419,57 +1422,58 @@ export class AdminPageComponent implements OnInit {
   deleteProductById(id: string) {
     this.messageService.add({
       severity: 'info',
-      summary: 'En desarrollo',
-      detail: 'La eliminación de productos estará disponible próximamente'
+      summary: this.i18n.translate('admin.underDevelopment'),
+      detail: this.i18n.translate('admin.deleteProductsSoon')
     });
   }
 
   // Tabs configuration
-  adminTabs = computed((): Tab[] => {
+    adminTabs = computed((): Tab[] => {
     const profileType = this.userProfileType();
+    const t = this.i18n;
     const tabs: Tab[] = [
       // Common tabs for all users
-      { id: 'posts', label: 'Publicaciones', icon: 'photo_library' },
+      { id: 'posts', label: t.translate('admin.tabs.posts'), icon: 'photo_library' },
     ];
 
     // Add pets tab for all except sellers
     if (profileType !== 'seller') {
-      tabs.push({ id: 'pets', label: 'Mis Mascotas', icon: 'pet_supplies' });
+      tabs.push({ id: 'pets', label: t.translate('admin.tabs.pets'), icon: 'pet_supplies' });
     }
 
     // Add tabs based on profile type
     if (profileType === 'vet') {
       tabs.push(
-        { id: 'services', label: 'Mis Servicios', icon: 'medical_services' },
-        { id: 'appointments', label: 'Citas', icon: 'calendar_month' }
+        { id: 'services', label: t.translate('admin.tabs.services'), icon: 'medical_services' },
+        { id: 'appointments', label: t.translate('admin.tabs.appointments'), icon: 'calendar_month' }
       );
     } else if (profileType === 'seller') {
       tabs.push(
-        { id: 'products', label: 'Mis Productos', icon: 'shopping_bag' },
-        { id: 'orders', label: 'Pedidos', icon: 'receipt_long' }
+        { id: 'products', label: t.translate('admin.tabs.products'), icon: 'shopping_bag' },
+        { id: 'orders', label: t.translate('admin.tabs.orders'), icon: 'receipt_long' }
       );
     } else if (profileType === 'shelter') {
       tabs.push(
-        { id: 'adoptions', label: 'Adopciones', icon: 'favorite' },
-        { id: 'shelter-pets', label: 'Mascotas en Refugio', icon: 'pets' }
+        { id: 'adoptions', label: t.translate('admin.tabs.adoptions'), icon: 'favorite' },
+        { id: 'shelter-pets', label: t.translate('admin.tabs.shelterPets'), icon: 'pets' }
       );
     } else if (profileType === 'trainer') {
       tabs.push(
-        { id: 'training-services', label: 'Servicios de Entrenamiento', icon: 'fitness_center' },
-        { id: 'sessions', label: 'Sesiones', icon: 'event_available' }
+        { id: 'training-services', label: t.translate('admin.tabs.trainingServices'), icon: 'fitness_center' },
+        { id: 'sessions', label: t.translate('admin.tabs.sessions'), icon: 'event_available' }
       );
     }
 
     // Add general tabs (exclude groups for sellers)
     tabs.push(
-      { id: 'events', label: 'Eventos', icon: 'event' },
-      { id: 'stories', label: 'Historias', icon: 'schedule' }
+      { id: 'events', label: t.translate('admin.tabs.events'), icon: 'event' },
+      { id: 'stories', label: t.translate('admin.tabs.stories'), icon: 'schedule' }
     );
 
     // Replace the generic 'groups' tab with an 'adoptions' tab for pet owners
     // (only added once; shelters already receive an adoptions tab above)
-    if (profileType !== 'seller' && !tabs.some(t => t.id === 'adoptions')) {
-      tabs.push({ id: 'adoptions', label: 'Adopciones', icon: 'favorite' });
+    if (profileType !== 'seller' && !tabs.some(tab => tab.id === 'adoptions')) {
+      tabs.push({ id: 'adoptions', label: t.translate('admin.tabs.adoptions'), icon: 'favorite' });
     }
 
     return tabs;
@@ -1485,13 +1489,13 @@ export class AdminPageComponent implements OnInit {
 
   adoptionStatusLabel(status: string): string {
     switch (status?.toLowerCase()) {
-      case 'pending': return 'Pendiente de aceptación';
-      case 'pending_contact': return 'En contacto';
-      case 'pending_delivery': return 'Pendiente de entrega';
-      case 'completed': return 'Entregada / Finalizada';
-      case 'approved': return 'Aprobada';
-      case 'rejected': return 'Rechazada';
-      default: return 'Pendiente';
+      case 'pending': return this.i18n.translate('admin.pendingApproval');
+      case 'pending_contact': return this.i18n.translate('admin.inContact');
+      case 'pending_delivery': return this.i18n.translate('admin.pendingDelivery');
+      case 'completed': return this.i18n.translate('admin.completedAdapter');
+      case 'approved': return this.i18n.translate('admin.approved');
+      case 'rejected': return this.i18n.translate('admin.rejected');
+      default: return this.i18n.translate('admin.pendingApproval');
     }
   }
 
@@ -1512,10 +1516,10 @@ export class AdminPageComponent implements OnInit {
 
   adoptionStageShortLabel(stage: AdoptionStatus): string {
     switch (stage) {
-      case 'pending': return 'Pendiente';
-      case 'pending_contact': return 'Contacto';
-      case 'pending_delivery': return 'Entrega';
-      case 'completed': return 'Entregado';
+      case 'pending': return this.i18n.translate('admin.stagePending');
+      case 'pending_contact': return this.i18n.translate('admin.stageContact');
+      case 'pending_delivery': return this.i18n.translate('admin.stageDelivery');
+      case 'completed': return this.i18n.translate('admin.stageCompleted');
       default: return stage;
     }
   }
@@ -1568,15 +1572,15 @@ export class AdminPageComponent implements OnInit {
         }
         this.messageService.add({
           severity: 'success',
-          summary: 'Solicitud actualizada',
-          detail: `La solicitud de ${req.adopterName} para ${req.petName} avanzó a "${this.adoptionStatusLabel(status)}"`
+          summary: this.i18n.translate('admin.requestUpdated'),
+          detail: this.i18n.translate('admin.requestUpdatedDetail', { adopter: req.adopterName, pet: req.petName, status: this.adoptionStatusLabel(status) })
         });
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo actualizar la solicitud de adopción'
+          detail: this.i18n.translate('admin.adoptionUpdateError')
         });
       }
     });
@@ -1589,15 +1593,15 @@ export class AdminPageComponent implements OnInit {
         this.adminPosts.update(posts => posts.filter(p => p.id !== id));
         this.messageService.add({
           severity: 'success',
-          summary: 'Eliminado',
-          detail: 'Publicación eliminada correctamente'
+          summary: this.i18n.translate('admin.deleted'),
+          detail: this.i18n.translate('admin.postDeleted')
         });
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo eliminar la publicación'
+          detail: this.i18n.translate('admin.postDeleteError')
         });
       }
     });
@@ -1606,8 +1610,8 @@ export class AdminPageComponent implements OnInit {
   deleteEventById(id: string) {
     this.messageService.add({
       severity: 'info',
-      summary: 'En desarrollo',
-      detail: 'La eliminación de eventos estará disponible próximamente'
+      summary: this.i18n.translate('admin.underDevelopment'),
+      detail: this.i18n.translate('admin.deleteEventsSoon')
     });
   }
 
@@ -1617,15 +1621,15 @@ export class AdminPageComponent implements OnInit {
         this.adminPets.update(pets => pets.filter(p => p.id !== id));
         this.messageService.add({
           severity: 'success',
-          summary: 'Eliminado',
-          detail: 'Mascota eliminada correctamente'
+          summary: this.i18n.translate('admin.deleted'),
+          detail: this.i18n.translate('admin.petDeletedDetail')
         });
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo eliminar la mascota'
+          detail: this.i18n.translate('admin.petDeleteError')
         });
       }
     });
@@ -1634,16 +1638,16 @@ export class AdminPageComponent implements OnInit {
   deleteStoryById(id: string) {
     this.messageService.add({
       severity: 'info',
-      summary: 'En desarrollo',
-      detail: 'La eliminación de historias estará disponible próximamente'
+      summary: this.i18n.translate('admin.underDevelopment'),
+      detail: this.i18n.translate('admin.deleteStoriesSoon')
     });
   }
 
   deleteGroupById(id: string) {
     this.messageService.add({
       severity: 'info',
-      summary: 'En desarrollo',
-      detail: 'La eliminación de grupos estará disponible próximamente'
+      summary: this.i18n.translate('admin.underDevelopment'),
+      detail: this.i18n.translate('admin.deleteGroupsSoon')
     });
   }
 }

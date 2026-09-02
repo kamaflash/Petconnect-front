@@ -1,3 +1,4 @@
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -999,6 +1000,7 @@ import {
   `]
 })
 export class GamificationDashboardComponent implements OnInit {
+  readonly i18n = inject(TranslocoService);
   private readonly gamificationService = inject(GamificationService);
   private readonly messageService = inject(MessageService);
 
@@ -1142,7 +1144,7 @@ export class GamificationDashboardComponent implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'No se pudo reclamar',
-          detail: 'Inténtalo de nuevo.',
+          detail: this.i18n.translate('gam.tryAgain'),
         });
       },
     });

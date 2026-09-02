@@ -4,6 +4,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { CheckboxModule } from 'primeng/checkbox';
 import { Router } from '@angular/router';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { AdoptionService } from '../../infrastructure/services/adoption.service';
 import { AvailablePetResponse } from '../../infrastructure/services/adoption.service';
 import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../components/pet-feed-grid/pet-feed-grid.component';
@@ -36,12 +37,13 @@ interface Pet {
     FormsModule,
     CheckboxModule,
     PetFeedGridComponent,
+    TranslocoModule,
   ],
   template: `
     <div class="adoptions-page">
       <app-pet-feed-grid
         [items]="pets()"
-        itemLabel="animales"
+        [itemLabel]="'adoptions.itemLabel' | transloco"
         itemKeyField="id"
         [filterConfigs]="petFilterConfigs"
         [columnConfigs]="petColumnConfigs"
@@ -58,6 +60,7 @@ interface Pet {
 export class AdoptionsPageComponent implements OnInit {
   private adoptionService = inject(AdoptionService);
   private router = inject(Router);
+  private readonly transloco = inject(TranslocoService);
 
   // Pets data (loaded from backend)
   pets = signal<Pet[]>([]);
@@ -74,38 +77,38 @@ export class AdoptionsPageComponent implements OnInit {
     {
       type: 'text',
       key: 'searchQuery',
-      label: 'Búsqueda',
-      placeholder: 'Buscar por nombre o raza...'
+      label: this.transloco.translate('adoptions.search'),
+      placeholder: this.transloco.translate('adoptions.searchPlaceholder')
     },
     {
       type: 'checkbox',
       key: 'selectedSpecies',
-      label: 'Especie',
+      label: this.transloco.translate('adoptions.species'),
       options: [
-        { label: 'Perro', value: 'Perro' },
-        { label: 'Gato', value: 'Gato' },
-        { label: 'Ave', value: 'Ave' },
-        { label: 'Conejo', value: 'Conejo' },
-        { label: 'Otro', value: 'Otro' }
+        { label: this.transloco.translate('adoptions.dog'), value: 'Perro' },
+        { label: this.transloco.translate('adoptions.cat'), value: 'Gato' },
+        { label: this.transloco.translate('adoptions.bird'), value: 'Ave' },
+        { label: this.transloco.translate('adoptions.rabbit'), value: 'Conejo' },
+        { label: this.transloco.translate('adoptions.other'), value: 'Otro' }
       ]
     },
     {
       type: 'checkbox',
       key: 'selectedGenders',
-      label: 'Género',
+      label: this.transloco.translate('adoptions.gender'),
       options: [
-        { label: 'Macho', value: 'male' },
-        { label: 'Hembra', value: 'female' }
+        { label: this.transloco.translate('adoptions.male'), value: 'male' },
+        { label: this.transloco.translate('adoptions.female'), value: 'female' }
       ]
     },
     {
       type: 'checkbox',
       key: 'vaccinated',
-      label: 'Características',
+      label: this.transloco.translate('adoptions.characteristics'),
       options: [
-        { label: 'Vacunado', value: 'true' },
-        { label: 'Esterilizado', value: 'sterilized' },
-        { label: 'Microchip', value: 'microchipped' }
+        { label: this.transloco.translate('adoptions.vaccinated'), value: 'true' },
+        { label: this.transloco.translate('adoptions.sterilized'), value: 'sterilized' },
+        { label: this.transloco.translate('adoptions.microchip'), value: 'microchipped' }
       ]
     }
   ];
@@ -113,27 +116,27 @@ export class AdoptionsPageComponent implements OnInit {
   petColumnConfigs: ColumnConfig[] = [
     {
       key: 'image',
-      label: 'Imagen',
+      label: this.transloco.translate('adoptions.image'),
       type: 'image'
     },
     {
       key: 'name',
-      label: 'Nombre',
+      label: this.transloco.translate('adoptions.name'),
       type: 'text'
     },
     {
       key: 'breed',
-      label: 'Raza',
+      label: this.transloco.translate('adoptions.breed'),
       type: 'text'
     },
     {
       key: 'age',
-      label: 'Edad',
+      label: this.transloco.translate('adoptions.age'),
       type: 'text'
     },
     {
       key: 'location',
-      label: 'Ubicación',
+      label: this.transloco.translate('adoptions.location'),
       type: 'text',
       icon: 'pi-map-marker'
     }
@@ -170,8 +173,8 @@ export class AdoptionsPageComponent implements OnInit {
   mapPetResponseToPet(p: AvailablePetResponse): Pet {
     const petDetail = p.pet;
     const age = petDetail.dateOfBirth
-      ? `${new Date().getFullYear() - new Date(petDetail.dateOfBirth).getFullYear()} años`
-      : 'Edad desconocida';
+      ? `${new Date().getFullYear() - new Date(petDetail.dateOfBirth).getFullYear()} ${this.transloco.translate('adoptions.years')}`
+      : this.transloco.translate('adoptions.unknownAge');
 
     const personality = petDetail.temperament
       ? petDetail.temperament.split(',').map(t => t.trim())
@@ -182,12 +185,12 @@ export class AdoptionsPageComponent implements OnInit {
       petId: petDetail.id,
       name: p.name,
       species: this.translateSpecies(petDetail.species),
-      breed: p.breed || 'Sin raza',
+      breed: p.breed || this.transloco.translate('adoptions.noBreed'),
       age,
       gender: (petDetail.gender as 'male' | 'female') || 'male',
-      location: petDetail.lastKnownLocation || 'Ubicación desconocida',
-      shelter: petDetail.adoptionCenter || 'Sin refugio',
-      description: petDetail.bio || 'Sin descripción disponible',
+      location: petDetail.lastKnownLocation || this.transloco.translate('adoptions.unknownLocation'),
+      shelter: petDetail.adoptionCenter || this.transloco.translate('adoptions.noShelter'),
+      description: petDetail.bio || this.transloco.translate('adoptions.noDescription'),
       personality,
       image: p.image || petDetail.avatarUrl || 'https://i.pravatar.cc/300',
       status: p.status === 'AVAILABLE' ? 'available' : p.status === 'PENDING' ? 'pending' : 'adopted',
@@ -199,12 +202,12 @@ export class AdoptionsPageComponent implements OnInit {
 
   translateSpecies(species: string): string {
     const speciesMap: Record<string, string> = {
-      'dog': 'Perro',
-      'cat': 'Gato',
-      'bird': 'Ave',
-      'rabbit': 'Conejo',
-      'hamster': 'Hámster',
-      'other': 'Otro'
+      'dog': this.transloco.translate('adoptions.dog'),
+      'cat': this.transloco.translate('adoptions.cat'),
+      'bird': this.transloco.translate('adoptions.bird'),
+      'rabbit': this.transloco.translate('adoptions.rabbit'),
+      'hamster': this.transloco.translate('adoptions.hamster'),
+      'other': this.transloco.translate('adoptions.other')
     };
     return speciesMap[species.toLowerCase()] || species;
   }

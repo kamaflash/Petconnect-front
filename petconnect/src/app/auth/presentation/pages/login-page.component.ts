@@ -6,6 +6,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
 import { CardModule } from 'primeng/card';
 import { CheckboxModule } from 'primeng/checkbox';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { AuthService } from '../../infrastructure/services/auth.service';
 import { RegisterData } from '../../domain/repositories/auth.repository';
 import { Router, RouterLink } from '@angular/router';
@@ -29,7 +30,7 @@ interface RegisterStep {
 @Component({
   selector: 'app-login-page',
   standalone: true,
-  imports: [
+    imports: [
     CommonModule,
     FormsModule,
     ButtonModule,
@@ -37,7 +38,8 @@ interface RegisterStep {
     PasswordModule,
     CardModule,
     CheckboxModule,
-    RouterLink
+    RouterLink,
+    TranslocoModule
   ],
   template: `
 <div class="auth-layout" [class.in-modal]="inModal()">
@@ -57,12 +59,12 @@ interface RegisterStep {
           </div>
 
           <div class="presentation-text">
-            <h1 class="presentation-title">
-              Porque cada  <span class="highlight">huella</span><br>
-              merece un hogar.
+                      <h1 class="presentation-title">
+              {{ 'auth.taglinePrefix' | transloco }}  <span class="highlight">{{ 'auth.taglineHighlight' | transloco }}</span><br>
+              {{ 'auth.tagline' | transloco }}
             </h1>
             <p class="presentation-description">
-              La red social para amantes de los animales.
+              {{ 'auth.description' | transloco }}
             </p>
           </div>
 
@@ -82,13 +84,13 @@ interface RegisterStep {
 
           <!-- Tabs personalizados -->
           <div class="auth-tabs">
-            <button
+                        <button
               type="button"
               class="tab-button"
               [class.active]="activeTab() === 'login'"
               (click)="activeTab.set('login')"
             >
-              Iniciar sesión
+              {{ 'auth.login' | transloco }}
             </button>
             <button
               type="button"
@@ -96,15 +98,15 @@ interface RegisterStep {
               [class.active]="activeTab() === 'register'"
               (click)="activeTab.set('register')"
             >
-              Registrarse
+              {{ 'auth.register' | transloco }}
             </button>
           </div>
 
           <!-- Formulario de Login -->
           @if (activeTab() === 'login') {
             <div class="form-header">
-              <h2 class="form-title">Bienvenido de nuevo</h2>
-              <p class="form-subtitle">Inicia sesión para continuar</p>
+                            <h2 class="form-title">{{ 'auth.login' | transloco }}</h2>
+              <p class="form-subtitle">{{ 'auth.loginSubtitle' | transloco }}</p>
             </div>
 
             <form (ngSubmit)="onSubmit()" class="auth-form">
@@ -116,7 +118,7 @@ interface RegisterStep {
                   type="email"
                   [(ngModel)]="email"
                   name="email"
-                  placeholder="Correo electrónico"
+                                    placeholder="{{ 'auth.emailPlaceholder' | transloco }}"
                   required
                   class="w-full instagram-input"
                   [class.p-error]="error()"
@@ -130,7 +132,7 @@ interface RegisterStep {
                   name="password"
                   [feedback]="false"
                   [toggleMask]="true"
-                  placeholder="Contraseña"
+                                    placeholder="{{ 'auth.passwordPlaceholder' | transloco }}"
                   required
                   class="w-full"
                   inputStyleClass="w-full instagram-input"
@@ -154,8 +156,8 @@ interface RegisterStep {
                 [disabled]="loading()"
               >
                 <span class="button-content">
-                  <i class="pi pi-sign-in"></i>
-                  Iniciar Sesión
+                                    <i class="pi pi-sign-in"></i>
+                  {{ 'auth.loginButton' | transloco }}
                 </span>
               </button>
 
@@ -175,8 +177,8 @@ interface RegisterStep {
                 [disabled]="loading() || googleLoading()"
               >
                 <span class="button-content">
-                  <i class="pi pi-google"></i>
-                  Iniciar sesión con Google
+                                    <i class="pi pi-google"></i>
+                  {{ 'auth.googleButton' | transloco }}
                 </span>
               </button>
             </form>
@@ -185,8 +187,8 @@ interface RegisterStep {
           <!-- Formulario de Registro - Multi Step -->
           @if (activeTab() === 'register') {
             <div class="form-header">
-              <h2 class="form-title">Crear cuenta</h2>
-              <p class="form-subtitle">Únete a nuestra comunidad</p>
+                            <h2 class="form-title">{{ 'auth.registerTitle' | transloco }}</h2>
+              <p class="form-subtitle">{{ 'auth.registerSubtitle' | transloco }}</p>
             </div>
 
             <!-- Stepper -->
@@ -202,7 +204,7 @@ interface RegisterStep {
                           <span>{{ i + 1 }}</span>
                         }
                       </div>
-                      <span class="stepper-label">{{ step.label }}</span>
+                      <span class="stepper-label">{{ step.label | transloco }}</span>
                     </div>
                   }
                 </div>
@@ -214,7 +216,7 @@ interface RegisterStep {
               @if (registerStep() === 1) {
                 <div class="step-content">
                   <div class="form-group">
-                    <label class="field-label">Tipo de cuenta</label>
+                                        <label class="field-label">{{ 'auth.accountType' | transloco }}</label>
                     <div class="profile-type-selector">
                       @for (option of profileTypeOptions; track option.value) {
                         <button
@@ -227,8 +229,8 @@ interface RegisterStep {
                             <i class="pi {{ option.icon }}"></i>
                           </div>
                           <div class="profile-type-content">
-                            <span class="profile-type-label">{{ option.label }}</span>
-                            <span class="profile-type-description">{{ option.description }}</span>
+                            <span class="profile-type-label">{{ option.label | transloco }}</span>
+                            <span class="profile-type-description">{{ option.description | transloco }}</span>
                           </div>
                           @if (registerData.profileType === option.value) {
                             <div class="profile-type-check">
@@ -246,55 +248,56 @@ interface RegisterStep {
               @if (registerStep() === 2) {
                 <div class="step-content">
                   <div class="form-group">
-                    <label class="field-label">Nombre</label>
+                                        <label class="field-label">{{ 'auth.firstName' | transloco }}</label>
                     <input
                       pInputText
                       id="firstName"
                       type="text"
                       [(ngModel)]="registerData.firstName"
                       name="firstName"
-                      placeholder="Tu nombre"
+                                            placeholder="{{ 'auth.firstNamePlaceholder' | transloco }}"
                       required
                       class="w-full instagram-input"
                     />
                   </div>
 
                   <div class="form-group">
-                    <label class="field-label">Apellidos</label>
+                                        <label class="field-label">{{ 'auth.lastName' | transloco }}</label>
                     <input
                       pInputText
                       id="lastName"
                       type="text"
                       [(ngModel)]="registerData.lastName"
                       name="lastName"
-                      placeholder="Tus apellidos"
+                                            placeholder="{{ 'auth.lastNamePlaceholder' | transloco }}"
                       required
                       class="w-full instagram-input"
                     />
                   </div>
 
                   <div class="form-group">
-                    <label class="field-label">Correo electrónico</label>
+                                        <label class="field-label">{{ 'auth.emailPlaceholder' | transloco }}</label>
                     <input
                       pInputText
                       id="registerEmail"
                       type="email"
                       [(ngModel)]="registerData.email"
                       name="email"
-                      placeholder="tu@email.com"
+                      placeholder="{{ 'auth.emailPlaceholder' | transloco }}"
+
                       required
                       class="w-full instagram-input"
                     />
                   </div>
 
                   <div class="form-group">
-                    <label class="field-label">Contraseña</label>
+                                        <label class="field-label">{{ 'auth.passwordPlaceholder' | transloco }}</label>
                     <p-password
                       [(ngModel)]="registerData.password"
                       name="password"
                       [feedback]="false"
                       [toggleMask]="true"
-                      placeholder="Crea una contraseña"
+                      placeholder="{{ 'auth.createPasswordPlaceholder' | transloco }}"
                       required
                       class="w-full"
                       inputStyleClass="w-full instagram-input"
@@ -320,7 +323,7 @@ interface RegisterStep {
                     (click)="previousStep()"
                   >
                     <i class="pi pi-arrow-left"></i>
-                    Anterior
+                    {{ 'auth.previous' | transloco }}
                   </button>
                 }
                 @if (registerStep() < 2) {
@@ -329,7 +332,7 @@ interface RegisterStep {
                     class="step-button step-button-next"
                     (click)="nextStep()"
                   >
-                    Siguiente
+                    {{ 'auth.next' | transloco }}
                     <i class="pi pi-arrow-right"></i>
                   </button>
                 }
@@ -342,7 +345,7 @@ interface RegisterStep {
                   >
                     <span class="button-content">
                       <i class="pi pi-user-plus"></i>
-                      Registrarse
+                      {{ 'auth.registerSubmit' | transloco }}
                     </span>
                   </button>
                 }
@@ -1177,6 +1180,7 @@ interface RegisterStep {
 export class LoginPageComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly transloco = inject(TranslocoService);
 
   // ===== Inputs para modal =====
   inModal = input<boolean>(false);
@@ -1201,33 +1205,33 @@ export class LoginPageComponent {
   profileTypeOptions: ProfileTypeOption[] = [
     {
       value: 'user',
-      label: 'Usuario',
+      label: 'auth.petOwner',
       icon: 'pi-user',
-      description: 'Para adoptar, compartir y conectar con otros amantes de las mascotas'
+      description: 'auth.petOwnerDesc'
     },
     {
       value: 'vet',
-      label: 'Veterinario',
+      label: 'auth.vet',
       icon: 'pi-heart',
-      description: 'Para ofrecer servicios veterinarios profesionales'
+      description: 'auth.vetDesc'
     },
     {
       value: 'shelter',
-      label: 'Protectora',
+      label: 'auth.shelter',
       icon: 'pi-home',
-      description: 'Para gestionar adopciones y cuidar animales'
+      description: 'auth.shelterDesc'
     },
     {
       value: 'trainer',
-      label: 'Adiestrador',
+      label: 'auth.trainer',
       icon: 'pi-star',
-      description: 'Para ofrecer servicios de entrenamiento canino'
+      description: 'auth.trainerDesc'
     },
     {
       value: 'seller',
-      label: 'Vendedor',
+      label: 'auth.seller',
       icon: 'pi-shopping-cart',
-      description: 'Para vender productos y servicios para mascotas'
+      description: 'auth.sellerDesc'
     }
   ];
 
@@ -1241,8 +1245,8 @@ export class LoginPageComponent {
 
   // ===== Pasos del registro =====
   registerSteps: RegisterStep[] = [
-    { id: 1, label: 'Tipo' },
-    { id: 2, label: 'Datos' }
+    { id: 1, label: 'auth.stepType' },
+    { id: 2, label: 'auth.stepData' }
   ];
 
   // ===== Métodos =====
@@ -1253,7 +1257,7 @@ export class LoginPageComponent {
   nextStep(): void {
     if (this.registerStep() === 1) {
       if (!this.registerData.profileType) {
-        this.error.set('Por favor, selecciona un tipo de cuenta');
+        this.error.set(this.transloco.translate('auth.accountTypeError'));
         return;
       }
     }
@@ -1267,7 +1271,7 @@ export class LoginPageComponent {
 
   async onSubmit(): Promise<void> {
     if (!this.email || !this.password) {
-      this.error.set('Por favor, completa todos los campos');
+      this.error.set(this.transloco.translate('auth.fieldsRequired'));
       return;
     }
 
@@ -1285,7 +1289,7 @@ export class LoginPageComponent {
         this.router.navigate(['/']);
       }
     } catch (err) {
-      this.error.set('Credenciales incorrectas. Por favor, intenta de nuevo.');
+      this.error.set(this.transloco.translate('auth.loginError'));
     } finally {
       this.loading.set(false);
     }
@@ -1337,7 +1341,7 @@ export class LoginPageComponent {
   private async handleGoogleCredential(response: { credential?: string }): Promise<void> {
     if (!response?.credential) {
       this.googleLoading.set(false);
-      this.error.set('No se obtuvo la credencial de Google');
+      this.error.set(this.transloco.translate('auth.googleNoCredential'));
       return;
     }
 
@@ -1356,7 +1360,7 @@ export class LoginPageComponent {
 
       void this.router.navigate([needsProfileCompletion ? '/profile' : '/']);
     } catch (err) {
-      this.error.set('Error al iniciar sesión con Google. Por favor, intenta de nuevo.');
+      this.error.set(this.transloco.translate('auth.googleError'));
     } finally {
       this.googleLoading.set(false);
     }
@@ -1377,7 +1381,7 @@ export class LoginPageComponent {
       // El callback handleGoogleCredential se encarga de navegar / cerrar el modal.
     } catch (err) {
       this.googleLoading.set(false);
-      this.error.set('Google Identity Services no está disponible. Por favor, intenta de nuevo.');
+      this.error.set(this.transloco.translate('auth.googleUnavailable'));
     }
   }
 
@@ -1386,7 +1390,7 @@ export class LoginPageComponent {
     if (!this.registerData.firstName || !this.registerData.lastName ||
         !this.registerData.email || !this.registerData.password ||
         !this.registerData.profileType) {
-      this.error.set('Por favor, completa todos los campos obligatorios');
+      this.error.set(this.transloco.translate('auth.registerFieldsRequired'));
       return;
     }
 
@@ -1399,7 +1403,7 @@ export class LoginPageComponent {
       // Tras el registro, llevar al perfil para completar los datos faltantes
       void this.router.navigate(['/profile']);
     } catch (err) {
-      this.error.set('Error al registrarse. Por favor, intenta de nuevo.');
+      this.error.set(this.transloco.translate('auth.registerError'));
     } finally {
       this.registerLoading.set(false);
     }

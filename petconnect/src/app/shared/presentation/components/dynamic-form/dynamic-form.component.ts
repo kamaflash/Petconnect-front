@@ -1,4 +1,5 @@
-import { Component, input, output, signal, model, OnInit, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
+import { Component, input, output, signal, model, OnInit, OnChanges, OnDestroy, SimpleChanges , inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { FormsModule, ReactiveFormsModule, FormGroup, FormBuilder, ValidatorFn, AbstractControl, Validators } from '@angular/forms';
@@ -92,7 +93,7 @@ export interface DynamicFormConfig {
 @Component({
   selector: 'app-dynamic-form',
   standalone: true,
-  imports: [
+  imports: [TranslocoModule, 
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
@@ -189,7 +190,7 @@ export interface DynamicFormConfig {
                     [id]="field.key"
                     [formControlName]="field.key"
                     [options]="getFieldOptions(field)"
-                    [placeholder]="field.placeholder || 'Seleccionar'"
+                    [placeholder]="field.placeholder || this.i18n.translate('dynamicForm.select')"
                     [disabled]="field.disabled || false"
                     [showClear]="field.showClear ?? true"
                     [class.ng-invalid]="isFieldInvalid(field.key)"
@@ -293,7 +294,7 @@ export interface DynamicFormConfig {
                     <ng-template pTemplate="content" let-files>
                       @if (getFilesWithProgress(field.key)?.length > 0) {
                         <div class="pending-files">
-                          <h5 class="pending-files-title pl-3">Imágenes seleccionadas</h5>
+                          <h5 class="pending-files-title pl-3">{{ this.i18n.translate('dynamicForm.selectedImages') }}</h5>
                           <div class="flex flex-wrap p-0 sm:p-5 gap-5">
                             @for (fileItem of getFilesWithProgress(field.key); track $index) {
                               <div class="image-card">
@@ -312,7 +313,7 @@ export interface DynamicFormConfig {
                       } @else {
                         <div class="flex align-items-center justify-content-center flex-column">
                           <i class="pi pi-cloud-upload border-2 border-circle p-5 text-8xl text-400 border-400"></i>
-                          <p class="mt-4 mb-0">{{ field.placeholder || 'Arrastra imágenes aquí para subir' }}</p>
+                          <p class="mt-4 mb-0">{{ field.placeholder || this.i18n.translate('dynamicForm.dropImages') }}</p>
                         </div>
                       }
                     </ng-template>
@@ -658,6 +659,7 @@ export interface DynamicFormConfig {
   `]
 })
 export class DynamicFormComponent implements OnInit, OnChanges, OnDestroy {
+  readonly i18n = inject(TranslocoService);
   // Input para la configuración del formulario
   config = input<DynamicFormConfig>({ fields: [] });
 

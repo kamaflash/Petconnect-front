@@ -41,6 +41,8 @@ import {
   PostItem,
 } from '../../../shared/presentation/components/post-feed/post-feed.component';
 
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
+
 @Component({
   selector: 'app-home-page',
   standalone: true,
@@ -59,6 +61,7 @@ import {
     SkeletonModule,
 
     PostFeedComponent,
+    TranslocoModule,
   ],
 
   template: `
@@ -74,7 +77,7 @@ import {
           <div class="card-modern">
             <div class="card-header">
               <i class="pi pi-shopping-cart card-header-icon"></i>
-              <span class="card-header-title"> Mercado </span>
+              <span class="card-header-title"> {{ 'home.marketPlace' | transloco }} </span>
             </div>
 
             <div class="card-body">
@@ -106,7 +109,7 @@ import {
                 }
 
                 @if (marketPromos.length === 0) {
-                  <div class="empty-state">No hay promociones disponibles.</div>
+                  <div class="empty-state">{{ 'home.noPromotions' | transloco }}</div>
                 }
               }
             </div>
@@ -118,7 +121,7 @@ import {
             <div class="card-header">
               <i class="pi pi-user-md card-header-icon"></i>
 
-              <span class="card-header-title"> Veterinarios </span>
+              <span class="card-header-title"> {{ 'home.veterinarians' | transloco }} </span>
             </div>
 
             <div class="card-body">
@@ -148,7 +151,7 @@ import {
                         {{ vet.username }}
                       </span>
 
-                      <span class="suggestion-followers"> {{ vet.followers }} seguidores </span>
+                      <span class="suggestion-followers"> {{ vet.followers }} {{ 'home.followers' | transloco }} </span>
                     </div>
 
                     <button
@@ -159,13 +162,13 @@ import {
                     >
                       <i [class]="vet.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"> </i>
 
-                      {{ vet.isFollowing ? 'Siguiendo' : 'Seguir' }}
+                      {{ vet.isFollowing ? ('home.following' | transloco) : ('home.follow' | transloco) }}
                     </button>
                   </div>
                 }
 
                 @if (vets.length === 0) {
-                  <div class="empty-state">No hay veterinarios disponibles.</div>
+                  <div class="empty-state">{{ 'home.noVets' | transloco }}</div>
                 }
               }
             </div>
@@ -177,7 +180,7 @@ import {
             <div class="card-header">
               <i class="pi pi-heart card-header-icon"></i>
 
-              <span class="card-header-title"> Adopciones </span>
+              <span class="card-header-title"> {{ 'home.adoptions' | transloco }} </span>
             </div>
 
             <div class="card-body">
@@ -218,7 +221,7 @@ import {
                 }
 
                 @if (newAdoptions.length === 0) {
-                  <div class="empty-state">No hay nuevas adopciones.</div>
+                  <div class="empty-state">{{ 'home.noAdoptions' | transloco }}</div>
                 }
               }
             </div>
@@ -264,7 +267,7 @@ import {
                 }
 
                 @if (stories.length === 0) {
-                  <div class="empty-stories">No hay historias nuevas.</div>
+                  <div class="empty-stories">{{ 'home.noStories' | transloco }}</div>
                 }
               }
             </div>
@@ -292,9 +295,9 @@ import {
           <div class="level-card">
             <div class="level-top">
               <div class="level-text">
-                <span class="level-label"> Tu Nivel </span>
+                <span class="level-label"> {{ 'home.level' | transloco }} </span>
 
-                <span class="level-number"> Nivel {{ userLevel.level }} </span>
+                <span class="level-number"> {{ 'home.levelNumber' | transloco: { level: userLevel.level } }} </span>
               </div>
 
               <i class="pi pi-trophy level-icon"></i>
@@ -312,7 +315,7 @@ import {
 
           <div class="card-modern">
             <div class="card-header">
-              <span class="card-header-title"> Próximos Logros </span>
+              <span class="card-header-title"> {{ 'home.upcomingAchievements' | transloco }} </span>
             </div>
 
             <div class="card-body">
@@ -363,7 +366,7 @@ import {
                 }
 
                 @if (upcomingAchievements.length === 0) {
-                  <div class="empty-state">No hay logros pendientes.</div>
+                  <div class="empty-state">{{ 'home.noAchievements' | transloco }}</div>
                 }
               }
             </div>
@@ -373,7 +376,7 @@ import {
 
           <div class="card-modern">
             <div class="card-header">
-              <span class="card-header-title"> Quién seguir </span>
+              <span class="card-header-title"> {{ 'home.whoToFollow' | transloco }} </span>
             </div>
 
             <div class="card-body">
@@ -404,7 +407,7 @@ import {
                       </span>
 
                       <span class="suggestion-followers">
-                        {{ suggestion.followers }} seguidores
+                        {{ suggestion.followers }} {{ 'home.followers' | transloco }}
                       </span>
                     </div>
 
@@ -416,13 +419,13 @@ import {
                     >
                       <i [class]="suggestion.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"> </i>
 
-                      {{ suggestion.isFollowing ? 'Siguiendo' : 'Seguir' }}
+                      {{ suggestion.isFollowing ? ('home.following' | transloco) : ('home.follow' | transloco) }}
                     </button>
                   </div>
                 }
 
                 @if (suggestions.length === 0) {
-                  <div class="empty-state">No hay sugerencias disponibles.</div>
+                  <div class="empty-state">{{ 'home.noSuggestions' | transloco }}</div>
                 }
               }
             </div>
@@ -449,7 +452,7 @@ import {
               }
 
               @if (trendingTopics().length === 0) {
-                <div class="empty-state">No hay tendencias disponibles.</div>
+                <div class="empty-state">{{ 'home.noTrends' | transloco }}</div>
               }
             </div>
           </div>
@@ -1139,6 +1142,7 @@ export class HomePageComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly likeService = inject(LikeService);
   private readonly cdr = inject(ChangeDetectorRef);
+  private readonly translocoService = inject(TranslocoService);
 
   /* ============================================================
      DATA
@@ -1223,7 +1227,7 @@ export class HomePageComponent implements OnInit {
         user: {
           name: post.user.name,
           avatar: post.user.avatar,
-          username: post.user.username || '@usuario',
+          username: post.user.username || this.translocoService.translate('home.defaultHandle'),
           userId: post.user.userId,
         },
 
@@ -1335,7 +1339,7 @@ export class HomePageComponent implements OnInit {
               id: story.id,
 
               user: new User({
-                name: profile ? `${profile.firstName} ${profile.lastName}` : 'Usuario',
+                name: profile ? `${profile.firstName} ${profile.lastName}` : this.translocoService.translate('home.defaultUsername'),
 
                 avatar: profile?.avatarUrl || 'https://i.pravatar.cc/150?img=1',
 
@@ -1439,13 +1443,13 @@ export class HomePageComponent implements OnInit {
         id: post.id,
 
         user: new User({
-          name: profile ? `${profile.firstName} ${profile.lastName}` : 'Usuario',
+          name: profile ? `${profile.firstName} ${profile.lastName}` : this.translocoService.translate('home.defaultUsername'),
 
           avatar: profile?.avatarUrl || 'https://i.pravatar.cc/150?img=1',
 
           username: profile
             ? `@${profile.firstName.toLowerCase()}_${profile.lastName.toLowerCase()}`
-            : '@usuario',
+            : this.translocoService.translate('home.defaultHandle'),
 
           userId: post.authorId,
         }),

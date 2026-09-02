@@ -13,6 +13,7 @@ import { AvatarGroupModule } from 'primeng/avatargroup';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { RouterLink } from '@angular/router';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../../../adoptions/presentation/components/pet-feed-grid/pet-feed-grid.component';
 
@@ -57,6 +58,7 @@ interface Event {
     RouterLink,
     ModalComponent,
     PetFeedGridComponent,
+    TranslocoModule,
   ],
   providers: [MessageService],
   template: `
@@ -65,18 +67,18 @@ interface Event {
       <div class="events-header">
         <div class="header-content">
           <div class="header-left">
-            <h3>Eventos</h3>
-            <p>Descubre actividades para tu mascota</p>
+            <h3>{{ 'events.title' | transloco }}</h3>
+            <p>{{ 'events.subtitle' | transloco }}</p>
           </div>
           <div class="header-stats">
             <div class="stat-item">
               <span class="stat-value">{{ upcomingEvents().length }}</span>
-              <span class="stat-label">Próximos</span>
+              <span class="stat-label">{{ 'events.upcoming' | transloco }}</span>
             </div>
             <div class="stat-divider"></div>
             <div class="stat-item">
               <span class="stat-value">{{ totalEvents() }}</span>
-              <span class="stat-label">Total</span>
+              <span class="stat-label">{{ 'events.total' | transloco }}</span>
             </div>
           </div>
         </div>
@@ -84,7 +86,7 @@ interface Event {
 
       <app-pet-feed-grid
         [items]="events()"
-        itemLabel="eventos"
+        [itemLabel]="'events.itemLabel' | transloco"
         itemKeyField="id"
         [filterConfigs]="eventFilterConfigs"
         [columnConfigs]="eventColumnConfigs"
@@ -114,7 +116,7 @@ interface Event {
                 <h2>{{ event.title }}</h2>
                 <div class="event-price-large">
                   @if (event.isFree) {
-                    <span class="price-free-large">Gratis</span>
+                    <span class="price-free-large">{{ 'events.free' | transloco }}</span>
                   } @else {
                     <span class="price-value-large">{{ event.price | currency:'EUR' }}</span>
                   }
@@ -125,7 +127,7 @@ interface Event {
                 <div class="meta-item">
                   <i class="pi pi-calendar"></i>
                   <div class="meta-content">
-                    <strong>Fecha</strong>
+                    <strong>{{ 'events.date' | transloco }}</strong>
                     <span>{{ event.date | date:'dd/MM/yyyy' }}</span>
                     @if (event.endDate) {
                       <span> - {{ event.endDate | date:'dd/MM/yyyy' }}</span>
@@ -135,14 +137,14 @@ interface Event {
                 <div class="meta-item">
                   <i class="pi pi-clock"></i>
                   <div class="meta-content">
-                    <strong>Horario</strong>
+                    <strong>{{ 'events.schedule' | transloco }}</strong>
                     <span>{{ event.date | date:'HH:mm' }}</span>
                   </div>
                 </div>
                 <div class="meta-item">
                   <i class="pi pi-map-marker"></i>
                   <div class="meta-content">
-                    <strong>Ubicación</strong>
+                    <strong>{{ 'events.location' | transloco }}</strong>
                     <span>{{ event.location }}</span>
                     <span class="address">{{ event.address }}</span>
                   </div>
@@ -150,20 +152,20 @@ interface Event {
                 <div class="meta-item">
                   <i class="pi pi-user"></i>
                   <div class="meta-content">
-                    <strong>Organizador</strong>
+                    <strong>{{ 'events.organizer' | transloco }}</strong>
                     <span>{{ event.organizer }}</span>
                   </div>
                 </div>
               </div>
 
               <div class="event-description">
-                <h3>Sobre el evento</h3>
+                <h3>{{ 'events.about' | transloco }}</h3>
                 <p>{{ event.description }}</p>
               </div>
 
               @if (event.agenda && event.agenda.length > 0) {
                 <div class="event-agenda">
-                  <h3>Agenda</h3>
+                  <h3>{{ 'events.agenda' | transloco }}</h3>
                   <div class="agenda-list">
                     @for (item of event.agenda; track item.time) {
                       <div class="agenda-item">
@@ -177,7 +179,7 @@ interface Event {
 
               @if (event.requirements && event.requirements.length > 0) {
                 <div class="event-requirements">
-                  <h3>Requisitos</h3>
+                  <h3>{{ 'events.requirements' | transloco }}</h3>
                   <ul>
                     @for (req of event.requirements; track req) {
                       <li>{{ req }}</li>
@@ -187,7 +189,7 @@ interface Event {
               }
 
               <div class="event-participants-section">
-                <h3>Participantes ({{ event.participants }}{{ event.maxParticipants ? '/' + event.maxParticipants : '' }})</h3>
+                <h3>{{ 'events.participants' | transloco }} ({{ event.participants }}{{ event.maxParticipants ? '/' + event.maxParticipants : '' }})</h3>
                 <div class="participants-avatars">
                   <p-avatarGroup>
                     <p-avatar *ngFor="let i of [1,2,3,4,5]" [image]="'https://i.pravatar.cc/150?img=' + (10 + i)" shape="circle" size="normal"></p-avatar>
@@ -202,7 +204,7 @@ interface Event {
                   (click)="toggleAttendance(event)"
                 >
                   <i class="pi" [class.pi-check]="event.isAttending" [class.pi-plus]="!event.isAttending"></i>
-                  {{ event.isAttending ? 'Cancelar Asistencia' : 'Asistir al Evento' }}
+                  {{ event.isAttending ? ('events.cancelAttendance' | transloco) : ('events.attend' | transloco) }}
                 </button>
               </div>
             </div>
@@ -489,7 +491,9 @@ interface Event {
   `]
 })
 export class EventsPageComponent implements OnInit {
+  readonly i18n = inject(TranslocoService);
   private messageService = inject(MessageService);
+  private readonly transloco = inject(TranslocoService);
 
   // Events data
   events = signal<Event[]>([]);
@@ -506,28 +510,28 @@ export class EventsPageComponent implements OnInit {
     {
       type: 'text',
       key: 'searchQuery',
-      label: 'Búsqueda',
-      placeholder: 'Buscar eventos...'
+      label: this.transloco.translate('events.search'),
+      placeholder: this.transloco.translate('events.searchPlaceholder')
     },
     {
       type: 'checkbox',
       key: 'eventTypes',
-      label: 'Tipo de Evento',
+      label: this.transloco.translate('events.type'),
       options: [
-        { label: 'Paseo', value: 'walk' },
-        { label: 'Feria', value: 'fair' },
-        { label: 'Concurso', value: 'contest' },
-        { label: 'Quedada', value: 'meetup' },
-        { label: 'Taller', value: 'workshop' },
-        { label: 'Benéfico', value: 'charity' }
+        { label: this.transloco.translate('events.walk'), value: 'walk' },
+        { label: this.transloco.translate('events.fair'), value: 'fair' },
+        { label: this.transloco.translate('events.contest'), value: 'contest' },
+        { label: this.transloco.translate('events.meetup'), value: 'meetup' },
+        { label: this.transloco.translate('events.workshop'), value: 'workshop' },
+        { label: this.transloco.translate('events.charity'), value: 'charity' }
       ]
     },
     {
       type: 'checkbox',
       key: 'freeOnly',
-      label: 'Precio',
+      label: this.transloco.translate('events.price'),
       options: [
-        { label: 'Solo gratuitos', value: 'true' }
+        { label: this.transloco.translate('events.freeOnly'), value: 'true' }
       ]
     }
   ];
@@ -535,28 +539,28 @@ export class EventsPageComponent implements OnInit {
   eventColumnConfigs: ColumnConfig[] = [
     {
       key: 'image',
-      label: 'Imagen',
+      label: this.transloco.translate('events.image'),
       type: 'image'
     },
     {
       key: 'title',
-      label: 'Título',
+      label: this.transloco.translate('events.titleCol'),
       type: 'text'
     },
     {
       key: 'date',
-      label: 'Fecha',
+      label: this.transloco.translate('events.date'),
       type: 'date'
     },
     {
       key: 'location',
-      label: 'Ubicación',
+      label: this.transloco.translate('events.location'),
       type: 'text',
       icon: 'pi-map-marker'
     },
     {
       key: 'price',
-      label: 'Precio',
+      label: this.transloco.translate('events.price'),
       type: 'text'
     }
   ];
@@ -599,13 +603,13 @@ export class EventsPageComponent implements OnInit {
       },
       {
         id: '2',
-        title: 'Feria de Adopción',
-        description: 'Evento de adopción de mascotas',
+        title: this.i18n.translate('events.adoptionFair'),
+        description: this.i18n.translate('events.adoptionFairDesc'),
         date: new Date('2025-08-01T09:00:00'),
         location: 'Centro Comercial',
         address: 'Av. Libertad 456',
         type: 'fair',
-        category: 'Adopción',
+        category: this.i18n.translate('events.adoption'),
         image: 'https://i.pravatar.cc/300',
         organizer: 'Protectora Animales',
         organizerImage: 'https://i.pravatar.cc/150',
@@ -621,7 +625,7 @@ export class EventsPageComponent implements OnInit {
         description: 'Demuestra las habilidades de tu mascota',
         date: new Date('2025-08-15T14:00:00'),
         location: 'Arena Canina',
-        address: 'Polígono Deportivo',
+        address: this.i18n.translate('events.sportsCenter'),
         type: 'contest',
         category: 'Competencia',
         image: 'https://i.pravatar.cc/300',
@@ -652,17 +656,17 @@ export class EventsPageComponent implements OnInit {
   getTypeLabel(type: string): string {
     switch (type) {
       case 'walk':
-        return 'Paseo';
+        return this.transloco.translate('events.walk');
       case 'fair':
-        return 'Feria';
+        return this.transloco.translate('events.fair');
       case 'contest':
-        return 'Concurso';
+        return this.transloco.translate('events.contest');
       case 'meetup':
-        return 'Quedada';
+        return this.transloco.translate('events.meetup');
       case 'workshop':
-        return 'Taller';
+        return this.transloco.translate('events.workshop');
       case 'charity':
-        return 'Benéfico';
+        return this.transloco.translate('events.charity');
       default:
         return type;
     }

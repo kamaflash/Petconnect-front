@@ -1,3 +1,4 @@
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Component, signal, computed, inject, effect, OnInit, OnDestroy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
@@ -48,6 +49,7 @@ interface PetComment {
   selector: 'app-pet-profile-page',
   standalone: true,
   imports: [
+    TranslocoModule,
     CommonModule,
     ButtonModule,
     AvatarModule,
@@ -241,7 +243,7 @@ interface PetComment {
                   </div>
                   <div class="info-row">
                     <span class="info-icon"><i class="pi pi-venus-mars"></i></span>
-                    <span class="info-label">Género</span>
+                    <span class="info-label">{{ 'common.gender' | transloco }}</span>
                     <span class="info-value">{{ getGenderLabelWrapper(pet()?.gender) }}</span>
                   </div>
                   <div class="info-row">
@@ -286,7 +288,7 @@ interface PetComment {
                   </div>
                   <div class="info-row full-width">
                     <span class="info-icon"><i class="pi pi-ambulance"></i></span>
-                    <span class="info-label">Condiciones Médicas</span>
+                    <span class="info-label">{{ 'petProfile.medicalConditions' | transloco }}</span>
                     <span class="info-value">{{ pet()?.medicalConditions || '—' }}</span>
                   </div>
                 </div>
@@ -310,16 +312,16 @@ interface PetComment {
                   </div>
                 </div>
 
-                <h4 class="subsection-title">Vacunación</h4>
+                <h4 class="subsection-title">{{ 'common.vaccination' | transloco }}</h4>
                 <div class="info-grid">
                   <div class="info-row">
                     <span class="info-icon"><i class="pi pi-syringe"></i></span>
-                    <span class="info-label">Última Vacunación</span>
+                    <span class="info-label">{{ 'petProfile.lastVaccination' | transloco }}</span>
                     <span class="info-value">{{ pet()?.lastVaccinationDate ? (pet()!.lastVaccinationDate | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-icon"><i class="pi pi-calendar-plus"></i></span>
-                    <span class="info-label">Próxima Vacunación</span>
+                    <span class="info-label">{{ 'petProfile.nextVaccination' | transloco }}</span>
                     <span class="info-value">{{ pet()?.nextVaccinationDate ? (pet()!.nextVaccinationDate | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
                   <div class="info-row">
@@ -358,27 +360,27 @@ interface PetComment {
                   </div>
                   <div class="info-row">
                     <span class="info-icon"><i class="pi pi-mobile"></i></span>
-                    <span class="info-label">Teléfono de Emergencia</span>
+                    <span class="info-label">{{ 'petProfile.emergencyPhone' | transloco }}</span>
                     <span class="info-value">{{ pet()?.emergencyPhone || '—' }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-icon"><i class="pi pi-building"></i></span>
-                    <span class="info-label">Centro de Adopción</span>
+                    <span class="info-label">{{ 'petProfile.adoptionCenter' | transloco }}</span>
                     <span class="info-value">{{ pet()?.adoptionCenter || '—' }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-icon"><i class="pi pi-calendar-check"></i></span>
-                    <span class="info-label">Fecha de Adopción</span>
+                    <span class="info-label">{{ 'petProfile.adoptionDate' | transloco }}</span>
                     <span class="info-value">{{ pet()?.adoptionDate ? (pet()!.adoptionDate | date:'dd/MM/yyyy') : '—' }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-icon"><i class="pi pi-hashtag"></i></span>
-                    <span class="info-label">Número de Registro</span>
+                    <span class="info-label">{{ 'petProfile.registrationNumber' | transloco }}</span>
                     <span class="info-value">{{ pet()?.registrationNumber || '—' }}</span>
                   </div>
                   <div class="info-row">
                     <span class="info-icon"><i class="pi pi-id-card"></i></span>
-                    <span class="info-label">Número de Licencia</span>
+                    <span class="info-label">{{ 'petProfile.licenseNumber' | transloco }}</span>
                     <span class="info-value">{{ pet()?.licenseNumber || '—' }}</span>
                   </div>
                   <div class="info-row">
@@ -393,7 +395,7 @@ interface PetComment {
                   </div>
                   <div class="info-row" *ngIf="pet()?.spayedNeuteredDate">
                     <span class="info-icon"><i class="pi pi-calendar"></i></span>
-                    <span class="info-label">Fecha de Esterilización</span>
+                    <span class="info-label">{{ 'petProfile.sterilizationDate' | transloco }}</span>
                     <span class="info-value">{{ pet()!.spayedNeuteredDate | date:'dd/MM/yyyy' }}</span>
                   </div>
                 </div>
@@ -413,7 +415,7 @@ interface PetComment {
                   </div>
                   <div class="info-row">
                     <span class="info-icon"><i class="pi pi-bolt"></i></span>
-                    <span class="info-label">Nivel de Energía</span>
+                    <span class="info-label">{{ 'petProfile.energyLevel' | transloco }}</span>
                     <span class="info-value">{{ getEnergyLevelLabelWrapper(pet()?.energyLevel) }}</span>
                   </div>
                   <div class="info-row">
@@ -451,7 +453,7 @@ interface PetComment {
               <!-- Tile para añadir nueva foto (solo propietario) -->
               <div class="gallery-item add-photo-item" *ngIf="isOwner()" (click)="!uploadingPhoto() && photoInput.click()">
                 <i class="pi" [class.pi-plus]="!uploadingPhoto()" [class.pi-spin]="uploadingPhoto()" [class.pi-spinner]="uploadingPhoto()"></i>
-                <span>{{ uploadingPhoto() ? 'Subiendo...' : 'Añadir foto' }}</span>
+                <span>{{ uploadingPhoto() ? ('petProfile.uploading' | transloco) : ('petProfile.addPhoto' | transloco) }}</span>
               </div>
               <input
                 #photoInput
@@ -653,7 +655,7 @@ interface PetComment {
         (onHide)="showAdoptionDialog = false"
         [dismissableMask]="true"
         styleClass="adoption-dialog"
-        [header]="'Solicitar adopción de ' + (pet()?.name || '')"
+        [header]="('petProfile.requestAdoptionOf' | transloco) + (pet()?.name || '')"
       >
         <app-dynamic-form
           [config]="adoptionFormConfig"
@@ -2138,6 +2140,7 @@ interface PetComment {
   `]
 })
 export class PetProfilePageComponent implements OnInit, OnDestroy {
+  readonly i18n = inject(TranslocoService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
@@ -2186,13 +2189,13 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
 
   // Adoption request form config
   adoptionFormConfig: DynamicFormConfig = {
-    title: 'Solicitar adopción',
+    title: this.i18n.translate('petProfile.requestAdoption'),
     submitLabel: 'Enviar solicitud',
     showCancel: true,
     fields: [
       {
         key: 'message',
-        label: 'Cuéntanos por qué quieres adoptar a esta mascota',
+        label: this.i18n.translate('petProfile.whyAdopt'),
         type: 'textarea',
         placeholder: 'Comparte tu experiencia con mascotas, tu hogar y motivos...',
         rows: 4,
@@ -2248,7 +2251,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
 
   petTabs = computed((): Tab[] => {
     return [
-      { id: 'info', label: 'Información', icon: 'info' },
+      { id: 'info', label: this.i18n.translate('petProfile.info'), icon: 'info' },
       { id: 'photos', label: 'Fotos', icon: 'photo_library' },
       { id: 'posts', label: 'Publicaciones', icon: 'photo_library' },
       { id: 'comments', label: 'Comentarios', icon: 'comment' },
@@ -2315,7 +2318,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo cargar la información de la mascota'
+          detail: this.i18n.translate('petProfile.loadError')
         });
       }
     });
@@ -2434,16 +2437,16 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         image: 'https://picsum.photos/400/400?random=10',
         likesCount: 24,
         commentsCount: 5,
-        caption: '¡Día de parque! 🐾',
-        date: 'Hace 2 días'
+        caption: this.i18n.translate('petProfile.memory1'),
+        date: this.i18n.translate('petProfile.twoDaysAgo')
       },
       {
         id: '2',
         image: 'https://picsum.photos/400/400?random=11',
         likesCount: 18,
         commentsCount: 3,
-        caption: 'Baño relajante 🛁',
-        date: 'Hace 5 días'
+        caption: this.i18n.translate('petProfile.memory2'),
+        date: this.i18n.translate('petProfile.fiveDaysAgo')
       },
       {
         id: '3',
@@ -2462,7 +2465,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         id: '1',
         authorName: 'María García',
         authorAvatar: 'https://i.pravatar.cc/150?img=1',
-        content: '¡Qué adorable! Me encanta cómo ha crecido 🐕',
+        content: this.i18n.translate('petProfile.comment1'),
         date: new Date('2024-01-15'),
         likes: 5,
         liked: false
@@ -2488,7 +2491,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         command: () => this.startEditing()
       },
       {
-        label: pet?.availableForAdoption ? 'Quitar de adopción' : 'Poner en adopción',
+        label: pet?.availableForAdoption ? this.i18n.translate('petProfile.removeFromAdoption') : this.i18n.translate('petProfile.putForAdoption'),
         icon: pet?.availableForAdoption ? 'pi pi-heart' : 'pi pi-home',
         command: () => this.toggleAdoptionStatus()
       },
@@ -2502,7 +2505,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
 
   // Form configurations
   editPetFormConfig: DynamicFormConfig = {
-    title: 'Editar Información',
+    title: this.i18n.translate('petProfile.editInfo'),
     submitLabel: 'Guardar Cambios',
     showCancel: true,
     resolveOptions: (_field, sourceValue) => SPECIES_BREEDS[sourceValue] ?? [],
@@ -2524,7 +2527,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
           { label: 'Gato', value: 'cat' },
           { label: 'Ave', value: 'bird' },
           { label: 'Conejo', value: 'rabbit' },
-          { label: 'Hámster', value: 'hamster' },
+          { label: this.i18n.translate('common.hamster'), value: 'hamster' },
           { label: 'Otro', value: 'other' }
         ],
         validation: { required: true }
@@ -2547,9 +2550,9 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       },
       {
         key: 'gender',
-        label: 'Género',
+        label: this.i18n.translate('common.gender'),
         type: 'select',
-        placeholder: 'Seleccione el género',
+        placeholder: this.i18n.translate('common.selectGender'),
         options: [
           { label: 'Macho', value: 'male' },
           { label: 'Hembra', value: 'female' },
@@ -2568,7 +2571,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         key: 'microchipId',
         label: 'Microchip ID',
         type: 'input',
-        placeholder: 'Número de microchip',
+        placeholder: this.i18n.translate('petProfile.microchip'),
         validation: { maxLength: 100 }
       },
       {
@@ -2590,9 +2593,9 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       },
       {
         key: 'bio',
-        label: 'Biografía',
+        label: this.i18n.translate('common.bio'),
         type: 'textarea',
-        placeholder: 'Información sobre la personalidad y características de tu mascota...',
+        placeholder: this.i18n.translate('common.bioPlaceholder'),
         rows: 4,
         validation: { maxLength: 500 }
       }
@@ -2600,7 +2603,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   };
 
   medicalFormConfig: DynamicFormConfig = {
-    title: 'Editar Información Médica',
+    title: this.i18n.translate('petProfile.editMedical'),
     submitLabel: 'Guardar Cambios',
     showCancel: true,
     fields: [
@@ -2621,9 +2624,9 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       },
       {
         key: 'medicalConditions',
-        label: 'Condiciones Médicas',
+        label: this.i18n.translate('petProfile.medicalConditions'),
         type: 'textarea',
-        placeholder: 'Condiciones médicas o enfermedades...',
+        placeholder: this.i18n.translate('petProfile.medicalConditionsPlaceholder'),
         rows: 2,
         validation: { maxLength: 500 }
       },
@@ -2636,39 +2639,39 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       },
       {
         key: 'vetPhone',
-        label: 'Teléfono del Veterinario',
+        label: this.i18n.translate('petProfile.vetPhone'),
         type: 'input',
-        placeholder: 'Teléfono del veterinario',
+        placeholder: this.i18n.translate('petProfile.vetPhonePlaceholder'),
         validation: { maxLength: 20 }
       },
       {
         key: 'vetAddress',
-        label: 'Dirección del Veterinario',
+        label: this.i18n.translate('petProfile.vetAddress'),
         type: 'input',
-        placeholder: 'Dirección de la clínica veterinaria',
+        placeholder: this.i18n.translate('petProfile.vetAddressPlaceholder'),
         validation: { maxLength: 255 }
       },
       {
         key: 'lastVaccinationDate',
-        label: 'Última Vacunación',
+        label: this.i18n.translate('petProfile.lastVaccination'),
         type: 'date',
-        placeholder: 'Fecha de última vacuna',
+        placeholder: this.i18n.translate('petProfile.lastVaccinationPlaceholder'),
         showIcon: true,
         dateFormat: 'dd/mm/yy'
       },
       {
         key: 'nextVaccinationDate',
-        label: 'Próxima Vacunación',
+        label: this.i18n.translate('petProfile.nextVaccination'),
         type: 'date',
-        placeholder: 'Fecha de próxima vacuna',
+        placeholder: this.i18n.translate('petProfile.nextVaccinationPlaceholder'),
         showIcon: true,
         dateFormat: 'dd/mm/yy'
       },
       {
         key: 'lastVetVisit',
-        label: 'Última Visita al Veterinario',
+        label: this.i18n.translate('petProfile.lastVetVisit'),
         type: 'date',
-        placeholder: 'Fecha de última visita',
+        placeholder: this.i18n.translate('petProfile.lastVetVisitPlaceholder'),
         showIcon: true,
         dateFormat: 'dd/mm/yy'
       },
@@ -2676,21 +2679,21 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         key: 'insuranceProvider',
         label: 'Aseguradora',
         type: 'input',
-        placeholder: 'Compañía de seguros',
+        placeholder: this.i18n.translate('petProfile.insurance'),
         validation: { maxLength: 100 }
       },
       {
         key: 'insurancePolicyNumber',
-        label: 'Número de Póliza',
+        label: this.i18n.translate('petProfile.policyNumber'),
         type: 'input',
-        placeholder: 'Número de póliza de seguro',
+        placeholder: this.i18n.translate('petProfile.policyNumberPlaceholder'),
         validation: { maxLength: 100 }
       }
     ]
   };
 
   additionalFormConfig: DynamicFormConfig = {
-    title: 'Editar Información Adicional',
+    title: this.i18n.translate('petProfile.editAdditional'),
     submitLabel: 'Guardar Cambios',
     showCancel: true,
     fields: [
@@ -2703,38 +2706,38 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       },
       {
         key: 'emergencyPhone',
-        label: 'Teléfono de Emergencia',
+        label: this.i18n.translate('petProfile.emergencyPhone'),
         type: 'input',
-        placeholder: 'Teléfono del contacto de emergencia',
+        placeholder: this.i18n.translate('petProfile.emergencyPhonePlaceholder'),
         validation: { maxLength: 20 }
       },
       {
         key: 'adoptionDate',
-        label: 'Fecha de Adopción',
+        label: this.i18n.translate('petProfile.adoptionDate'),
         type: 'date',
-        placeholder: 'Fecha de adopción',
+        placeholder: this.i18n.translate('petProfile.adoptionDatePlaceholder'),
         showIcon: true,
         dateFormat: 'dd/mm/yy'
       },
       {
         key: 'adoptionCenter',
-        label: 'Centro de Adopción',
+        label: this.i18n.translate('petProfile.adoptionCenter'),
         type: 'input',
-        placeholder: 'Nombre del centro de adopción',
+        placeholder: this.i18n.translate('petProfile.adoptionCenterPlaceholder'),
         validation: { maxLength: 100 }
       },
       {
         key: 'registrationNumber',
-        label: 'Número de Registro',
+        label: this.i18n.translate('petProfile.registrationNumber'),
         type: 'input',
-        placeholder: 'Número de registro',
+        placeholder: this.i18n.translate('petProfile.registrationNumberPlaceholder'),
         validation: { maxLength: 50 }
       },
       {
         key: 'licenseNumber',
-        label: 'Número de Licencia',
+        label: this.i18n.translate('petProfile.licenseNumber'),
         type: 'input',
-        placeholder: 'Número de licencia',
+        placeholder: this.i18n.translate('petProfile.licenseNumberPlaceholder'),
         validation: { maxLength: 50 }
       },
       {
@@ -2752,9 +2755,9 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       },
       {
         key: 'spayedNeuteredDate',
-        label: 'Fecha de Esterilización',
+        label: this.i18n.translate('petProfile.sterilizationDate'),
         type: 'date',
-        placeholder: 'Fecha de esterilización/castración',
+        placeholder: this.i18n.translate('petProfile.sterilizationDatePlaceholder'),
         showIcon: true,
         dateFormat: 'dd/mm/yy'
       }
@@ -2773,9 +2776,9 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         placeholder: 'Seleccione el temperamento',
         options: [
           { label: 'Tranquilo', value: 'calm' },
-          { label: 'Energético', value: 'energetic' },
-          { label: 'Juguetón', value: 'playful' },
-          { label: 'Tímido', value: 'shy' },
+          { label: this.i18n.translate('petProfile.energetic'), value: 'energetic' },
+          { label: this.i18n.translate('petProfile.playful'), value: 'playful' },
+          { label: this.i18n.translate('petProfile.shy'), value: 'shy' },
           { label: 'Agresivo', value: 'aggressive' },
           { label: 'Amigable', value: 'friendly' },
           { label: 'Otro', value: 'other' }
@@ -2783,9 +2786,9 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       },
       {
         key: 'energyLevel',
-        label: 'Nivel de Energía',
+        label: this.i18n.translate('petProfile.energyLevel'),
         type: 'select',
-        placeholder: 'Seleccione el nivel de energía',
+        placeholder: this.i18n.translate('petProfile.energyLevelPlaceholder'),
         options: [
           { label: 'Bajo', value: 'low' },
           { label: 'Medio', value: 'medium' },
@@ -2799,7 +2802,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         placeholder: 'Seleccione el nivel',
         options: [
           { label: 'Ninguno', value: 'none' },
-          { label: 'Básico', value: 'basic' },
+          { label: this.i18n.translate('petProfile.basic'), value: 'basic' },
           { label: 'Intermedio', value: 'intermediate' },
           { label: 'Avanzado', value: 'advanced' }
         ]
@@ -2823,7 +2826,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         key: 'specialNeeds',
         label: 'Necesidades Especiales',
         type: 'textarea',
-        placeholder: 'Necesidades especiales o cuidados específicos...',
+        placeholder: this.i18n.translate('petProfile.specialNeedsPlaceholder'),
         rows: 2,
         validation: { maxLength: 500 }
       }
@@ -2842,7 +2845,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
    * la edición del usuario (campos que parecen no editables).
    */
   currentEditFormConfig = computed<DynamicFormConfig>(() => ({
-    title: 'Editar Información',
+    title: this.i18n.translate('petProfile.editInfo'),
     submitLabel: 'Guardar Cambios',
     showCancel: true,
     resolveOptions: (_field: DynamicFormField, sourceValue: any) => SPECIES_BREEDS[sourceValue] ?? [],
@@ -2946,7 +2949,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Éxito',
+          summary: this.i18n.translate('common.success'),
           detail: 'Mascota actualizada correctamente'
         });
         this.isEditing.set(false);
@@ -2970,7 +2973,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   deletePet(): void {
     this.messageService.add({
       severity: 'success',
-      summary: 'Éxito',
+      summary: this.i18n.translate('common.success'),
       detail: 'Mascota eliminada correctamente'
     });
     this.showDeleteDialog = false;
@@ -2986,8 +2989,8 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: newStatus ? 'En adopción' : 'Adopción cancelada',
-          detail: newStatus ? 'La mascota está disponible para adopción' : 'La mascota ya no está en adopción'
+          summary: newStatus ? this.i18n.translate('petProfile.forAdoption') : this.i18n.translate('petProfile.adoptionCancelled'),
+          detail: newStatus ? this.i18n.translate('petProfile.availableForAdoption') : this.i18n.translate('petProfile.noLongerForAdoption')
         });
         this.loadPetData(pet.id);
       },
@@ -2995,7 +2998,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo actualizar el estado de adopción'
+          detail: this.i18n.translate('petProfile.adoptionStatusError')
         });
       }
     });
@@ -3060,8 +3063,8 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         this.uploadingPhoto.set(false);
         this.messageService.add({
           severity: 'success',
-          summary: 'Foto añadida',
-          detail: 'La nueva foto se ha añadido a la galería'
+          summary: this.i18n.translate('petProfile.photoAdded'),
+          detail: this.i18n.translate('petProfile.photoAddedDetail')
         });
         // Refrescar la mascota para mostrar la nueva foto
         this.loadPetData(pet.id);
@@ -3071,7 +3074,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo añadir la foto a la mascota'
+          detail: this.i18n.translate('petProfile.photoAddError')
         });
       }
     });
@@ -3101,7 +3104,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo enviar la solicitud de adopción'
+          detail: this.i18n.translate('petProfile.adoptionRequestError')
         });
       }
     });
@@ -3173,7 +3176,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     if (!dateOfBirth) return '—';
     const birth = new Date(dateOfBirth);
     const age = new Date().getFullYear() - birth.getFullYear();
-    return age > 0 ? age + ' años' : '< 1 año';
+    return age > 0 ? age + this.i18n.translate('petProfile.years') : this.i18n.translate('petProfile.lessThanYear');
   }
 
   // Wrappers para labels

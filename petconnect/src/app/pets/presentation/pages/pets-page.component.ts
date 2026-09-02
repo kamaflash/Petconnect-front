@@ -1,3 +1,4 @@
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
@@ -102,6 +103,7 @@ interface Pet {
   `],
 })
 export class PetsPageComponent implements OnInit {
+  readonly i18n = inject(TranslocoService);
   private router = inject(Router);
   private petService = inject(PetService);
   private authService = inject(AuthService);
@@ -142,7 +144,7 @@ export class PetsPageComponent implements OnInit {
     { label: 'Gato', value: 'Gato' },
     { label: 'Ave', value: 'Ave' },
     { label: 'Conejo', value: 'Conejo' },
-    { label: 'Hámster', value: 'Hámster' },
+    { label: this.i18n.translate('common.hamster'), value: this.i18n.translate('common.hamster') },
   ];
 
   ngOnInit(): void {

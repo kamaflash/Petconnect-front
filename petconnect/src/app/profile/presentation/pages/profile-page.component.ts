@@ -30,6 +30,7 @@ import { GeocodingResult } from '../../../shared/services/geolocation.service';
 import { DialogModule } from 'primeng/dialog';
 import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
 type ProfileType = 'user' | 'shelter' | 'seller' | 'vet' | 'pet' | 'trainer';
 
@@ -156,7 +157,8 @@ interface Pet {
     LocationPickerComponent,
     DialogModule,
     PostFeedComponent,
-    ModalComponent
+    ModalComponent,
+    TranslocoModule
   ],
   providers: [MessageService],
   template: `
@@ -218,7 +220,7 @@ interface Pet {
                 <div class="profile-stats-instagram">
                   <div class="stat-item-instagram" *ngFor="let stat of profileStats()">
                     <span class="stat-value-instagram">{{ stat.value }}</span>
-                    <span class="stat-label-instagram">{{ stat.label }}</span>
+                    <span class="stat-label-instagram">{{ ('profile.stats.' + stat.label) | transloco }}</span>
                   </div>
                 </div>
 
@@ -230,7 +232,7 @@ interface Pet {
                   </span>
                 </div>
 
-                <p class="profile-bio-instagram">{{ userProfile()?.bio || 'Sin descripción' }}</p>
+                <p class="profile-bio-instagram">{{ userProfile()?.bio || ('profile.noDescription' | transloco) }}</p>
 
                 <!-- Información de ubicación y contacto -->
                 <div class="profile-contact-info">
@@ -253,17 +255,17 @@ interface Pet {
               <ng-container *ngIf="!loading()">
                 <button *ngIf="isOwnProfile()" class="btn-action btn-edit" (click)="setActiveTab('knowme')">
                   <i class="pi pi-pencil"></i>
-                  <span>Editar</span>
+                  <span>{{ 'profile.edit' | transloco }}</span>
                 </button>
 
                 <button *ngIf="!isOwnProfile()" class="btn-action" [class.btn-following]="userProfile()?.isFollowing" (click)="toggleFollow()">
                   <i [class]="userProfile()?.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"></i>
-                  <span>{{ userProfile()?.isFollowing ? 'Siguiendo' : 'Seguir' }}</span>
+                  <span>{{ userProfile()?.isFollowing ? ('profile.following' | transloco) : ('profile.follow' | transloco) }}</span>
                 </button>
 
                 <button *ngIf="!isOwnProfile()" class="btn-action btn-message" (click)="openChat()">
                   <i class="pi pi-send"></i>
-                  <span>Mensaje</span>
+                  <span>{{ 'profile.message' | transloco }}</span>
                 </button>
 
                 <button *ngIf="isOwnProfile()" class="btn-action btn-more" (click)="profileMenu.toggle($event)">
@@ -295,8 +297,8 @@ interface Pet {
               </div>
               <div class="post-card-instagram empty" *ngIf="userPosts().length === 0">
                 <i class="pi pi-camera"></i>
-                <p>No hay publicaciones</p>
-                <span class="empty-subtitle">Comparte tus momentos</span>
+                <p>{{ 'profile.noPosts' | transloco }}</p>
+                <span class="empty-subtitle">{{ 'profile.shareMoments' | transloco }}</span>
               </div>
             </div>
             <div class="posts-grid-instagram" *ngIf="loading()">
@@ -318,7 +320,7 @@ interface Pet {
             >
               <ng-template card-actions let-item>
                 <a [routerLink]="'/profile/pet/' + item.id" class="p-button p-button-sm p-button-outlined">
-                  <i class="pi pi-eye"></i> Ver perfil
+                  <i class="pi pi-eye"></i> {{ 'profile.viewProfile' | transloco }}
                 </a>
                 <button
                   *ngIf="isOwnProfile()"
@@ -327,7 +329,7 @@ interface Pet {
                   (click)="$event.stopPropagation(); toggleAdoptionStatus(item.id, item.adoptionStatus)"
                 >
                   <i [class]="item.adoptionStatus === 'available' ? 'pi pi-heart' : 'pi pi-heart-fill'"></i>
-                  {{ item.adoptionStatus === 'available' ? 'En adopción' : 'Poner en adopción' }}
+                  {{ item.adoptionStatus === 'available' ? ('profile.forAdoption' | transloco) : ('profile.putForAdoption' | transloco) }}
                 </button>
               </ng-template>
             </app-table-card>
@@ -355,41 +357,41 @@ interface Pet {
                 <div class="knowme-section">
                   <h4 class="knowme-section-title">
                     <i class="pi pi-info-circle"></i>
-                    Información Personal
+                    {{ 'profile.sections.personal' | transloco }}
                   </h4>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-user"></i></span>
-                    <span class="knowme-label">Nombre</span>
+                    <span class="knowme-label">{{ 'profile.fields.name' | transloco }}</span>
                     <span class="knowme-value">{{ userProfile()?.name }}</span>
                   </div>
                   <div class="knowme-item" *ngIf="userProfile()?.type === 'user'">
                     <span class="knowme-icon"><i class="pi pi-at"></i></span>
-                    <span class="knowme-label">Usuario</span>
+                    <span class="knowme-label">{{ 'profile.fields.username' | transloco }}</span>
                     <span class="knowme-value">{{ userUsername() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-calendar"></i></span>
-                    <span class="knowme-label">Se unió</span>
+                    <span class="knowme-label">{{ 'profile.fields.joined' | transloco }}</span>
                     <span class="knowme-value">{{ userProfile()?.joinDate | date:'MMMM yyyy' }}</span>
                   </div>
                   <div class="knowme-item" *ngIf="userProfile()?.location">
                     <span class="knowme-icon"><i class="pi pi-map-marker"></i></span>
-                    <span class="knowme-label">Ubicación</span>
+                    <span class="knowme-label">{{ 'profile.fields.location' | transloco }}</span>
                     <span class="knowme-value">{{ userProfile()?.location }}</span>
                   </div>
                   <div class="knowme-item" *ngIf="userPhone() !== '—'">
                     <span class="knowme-icon"><i class="pi pi-phone"></i></span>
-                    <span class="knowme-label">Teléfono</span>
+                    <span class="knowme-label">{{ 'profile.fields.phone' | transloco }}</span>
                     <span class="knowme-value">{{ userPhone() }}</span>
                   </div>
                   <div class="knowme-item" *ngIf="userEmail() !== '—'">
                     <span class="knowme-icon"><i class="pi pi-envelope"></i></span>
-                    <span class="knowme-label">Email</span>
+                    <span class="knowme-label">{{ 'profile.fields.email' | transloco }}</span>
                     <span class="knowme-value">{{ userEmail() }}</span>
                   </div>
                   <div class="knowme-item" *ngIf="userProfile()?.website">
                     <span class="knowme-icon"><i class="pi pi-globe"></i></span>
-                    <span class="knowme-label">Sitio web</span>
+                    <span class="knowme-label">{{ 'profile.fields.website' | transloco }}</span>
                     <span class="knowme-value">
                       <a [href]="'https://' + userProfile()?.website" target="_blank" class="knowme-link">
                         {{ userProfile()?.website }}
@@ -402,41 +404,41 @@ interface Pet {
                 <div class="knowme-section" *ngIf="userProfile()?.type === 'vet'">
                   <h4 class="knowme-section-title">
                     <i class="pi pi-heart"></i>
-                    Información Veterinaria
+                    {{ 'profile.sections.vet' | transloco }}
                   </h4>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-briefcase"></i></span>
-                    <span class="knowme-label">Especialidad</span>
+                    <span class="knowme-label">{{ 'profile.fields.specialty' | transloco }}</span>
                     <span class="knowme-value">{{ vetSpecialty() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-id-card"></i></span>
-                    <span class="knowme-label">Nº Colegiado</span>
+                    <span class="knowme-label">{{ 'profile.fields.licenseNumber' | transloco }}</span>
                     <span class="knowme-value">{{ vetLicenseNumber() }}</span>
                   </div>
                   <div class="knowme-item" *ngIf="vetRating() > 0">
                     <span class="knowme-icon"><i class="pi pi-star-fill"></i></span>
-                    <span class="knowme-label">Valoración</span>
-                    <span class="knowme-value">{{ vetRating() }} ★ ({{ vetReviews() }} reseñas)</span>
+                    <span class="knowme-label">{{ 'profile.fields.rating' | transloco }}</span>
+                    <span class="knowme-value">{{ vetRating() }} ★ ({{ vetReviews() }} {{ 'profile.fields.reviews' | transloco }})</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-users"></i></span>
-                    <span class="knowme-label">Pacientes</span>
+                    <span class="knowme-label">{{ 'profile.fields.patients' | transloco }}</span>
                     <span class="knowme-value">{{ vetPatients() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-heart"></i></span>
-                    <span class="knowme-label">Seguidores</span>
+                    <span class="knowme-label">{{ 'profile.fields.followers' | transloco }}</span>
                     <span class="knowme-value">{{ vetFollowers() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-image"></i></span>
-                    <span class="knowme-label">Publicaciones</span>
+                    <span class="knowme-label">{{ 'profile.fields.posts' | transloco }}</span>
                     <span class="knowme-value">{{ vetPosts() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-heart-fill"></i></span>
-                    <span class="knowme-label">Likes</span>
+                    <span class="knowme-label">{{ 'profile.fields.likes' | transloco }}</span>
                     <span class="knowme-value">{{ vetLikes() }}</span>
                   </div>
                 </div>
@@ -444,36 +446,36 @@ interface Pet {
                 <div class="knowme-section" *ngIf="userProfile()?.type === 'trainer'">
                   <h4 class="knowme-section-title">
                     <i class="pi pi-graduation-cap"></i>
-                    Información de Entrenamiento
+                    {{ 'profile.sections.trainer' | transloco }}
                   </h4>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-briefcase"></i></span>
-                    <span class="knowme-label">Especialización</span>
+                    <span class="knowme-label">{{ 'profile.fields.specialization' | transloco }}</span>
                     <span class="knowme-value">{{ trainerSpecialty() }}</span>
                   </div>
                   <div class="knowme-item" *ngIf="trainerRating() > 0">
                     <span class="knowme-icon"><i class="pi pi-star-fill"></i></span>
-                    <span class="knowme-label">Valoración</span>
-                    <span class="knowme-value">{{ trainerRating() }} ★ ({{ trainerReviews() }} reseñas)</span>
+                    <span class="knowme-label">{{ 'profile.fields.rating' | transloco }}</span>
+                    <span class="knowme-value">{{ trainerRating() }} ★ ({{ trainerReviews() }} {{ 'profile.fields.reviews' | transloco }})</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-users"></i></span>
-                    <span class="knowme-label">Clientes</span>
+                    <span class="knowme-label">{{ 'profile.fields.clients' | transloco }}</span>
                     <span class="knowme-value">{{ trainerClients() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-heart"></i></span>
-                    <span class="knowme-label">Seguidores</span>
+                    <span class="knowme-label">{{ 'profile.fields.followers' | transloco }}</span>
                     <span class="knowme-value">{{ trainerFollowers() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-image"></i></span>
-                    <span class="knowme-label">Publicaciones</span>
+                    <span class="knowme-label">{{ 'profile.fields.posts' | transloco }}</span>
                     <span class="knowme-value">{{ trainerPosts() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-heart-fill"></i></span>
-                    <span class="knowme-label">Likes</span>
+                    <span class="knowme-label">{{ 'profile.fields.likes' | transloco }}</span>
                     <span class="knowme-value">{{ trainerLikes() }}</span>
                   </div>
                 </div>
@@ -481,31 +483,31 @@ interface Pet {
                 <div class="knowme-section" *ngIf="userProfile()?.type === 'shelter'">
                   <h4 class="knowme-section-title">
                     <i class="pi pi-home"></i>
-                    Información de la Protectora
+                    {{ 'profile.sections.shelter' | transloco }}
                   </h4>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-heart"></i></span>
-                    <span class="knowme-label">Registro</span>
+                    <span class="knowme-label">{{ 'profile.fields.registration' | transloco }}</span>
                     <span class="knowme-value">{{ shelterCharityNumber() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-paw"></i></span>
-                    <span class="knowme-label">Mascotas en adopción</span>
+                    <span class="knowme-label">{{ 'profile.fields.petsForAdoption' | transloco }}</span>
                     <span class="knowme-value">{{ shelterPets() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-check-circle"></i></span>
-                    <span class="knowme-label">Adopciones realizadas</span>
+                    <span class="knowme-label">{{ 'profile.fields.adoptionsCompleted' | transloco }}</span>
                     <span class="knowme-value">{{ shelterAdoptions() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-star-fill"></i></span>
-                    <span class="knowme-label">Reseñas</span>
+                    <span class="knowme-label">{{ 'profile.fields.reviews' | transloco }}</span>
                     <span class="knowme-value">{{ shelterReviews() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-heart"></i></span>
-                    <span class="knowme-label">Seguidores</span>
+                    <span class="knowme-label">{{ 'profile.fields.followers' | transloco }}</span>
                     <span class="knowme-value">{{ shelterFollowers() }}</span>
                   </div>
                 </div>
@@ -513,31 +515,31 @@ interface Pet {
                 <div class="knowme-section" *ngIf="userProfile()?.type === 'seller'">
                   <h4 class="knowme-section-title">
                     <i class="pi pi-shopping-bag"></i>
-                    Información de la Tienda
+                    {{ 'profile.sections.store' | transloco }}
                   </h4>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-shop"></i></span>
-                    <span class="knowme-label">Tienda</span>
+                    <span class="knowme-label">{{ 'profile.fields.store' | transloco }}</span>
                     <span class="knowme-value">{{ sellerStoreName() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-box"></i></span>
-                    <span class="knowme-label">Productos</span>
+                    <span class="knowme-label">{{ 'profile.fields.products' | transloco }}</span>
                     <span class="knowme-value">{{ sellerProducts() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-shopping-cart"></i></span>
-                    <span class="knowme-label">Ventas</span>
+                    <span class="knowme-label">{{ 'profile.fields.sales' | transloco }}</span>
                     <span class="knowme-value">{{ sellerSales() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-star-fill"></i></span>
-                    <span class="knowme-label">Reseñas</span>
+                    <span class="knowme-label">{{ 'profile.fields.reviews' | transloco }}</span>
                     <span class="knowme-value">{{ sellerReviews() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-heart"></i></span>
-                    <span class="knowme-label">Seguidores</span>
+                    <span class="knowme-label">{{ 'profile.fields.followers' | transloco }}</span>
                     <span class="knowme-value">{{ sellerFollowers() }}</span>
                   </div>
                 </div>
@@ -545,36 +547,36 @@ interface Pet {
                 <div class="knowme-section" *ngIf="userProfile()?.type === 'pet'">
                   <h4 class="knowme-section-title">
                     <i class="pi pi-paw"></i>
-                    Información de la Mascota
+                    {{ 'profile.sections.pet' | transloco }}
                   </h4>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-tag"></i></span>
-                    <span class="knowme-label">Especie</span>
+                    <span class="knowme-label">{{ 'profile.fields.species' | transloco }}</span>
                     <span class="knowme-value">{{ petSpecies() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-user"></i></span>
-                    <span class="knowme-label">Raza</span>
+                    <span class="knowme-label">{{ 'profile.fields.breed' | transloco }}</span>
                     <span class="knowme-value">{{ petBreed() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-calendar"></i></span>
-                    <span class="knowme-label">Edad</span>
+                    <span class="knowme-label">{{ 'profile.fields.age' | transloco }}</span>
                     <span class="knowme-value">{{ petAge() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-user"></i></span>
-                    <span class="knowme-label">Familia</span>
+                    <span class="knowme-label">{{ 'profile.fields.family' | transloco }}</span>
                     <span class="knowme-value">{{ petOwnerName() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-heart-fill"></i></span>
-                    <span class="knowme-label">Likes</span>
+                    <span class="knowme-label">{{ 'profile.fields.likes' | transloco }}</span>
                     <span class="knowme-value">{{ petLikes() }}</span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-image"></i></span>
-                    <span class="knowme-label">Publicaciones</span>
+                    <span class="knowme-label">{{ 'profile.fields.posts' | transloco }}</span>
                     <span class="knowme-value">{{ petPostsCount() }}</span>
                   </div>
                 </div>
@@ -626,8 +628,8 @@ interface Pet {
         [visible]="showConfirmDialog()"
         [showHeader]="false"
         size="auto"
-        confirmLabel="Sí, guardar"
-        cancelLabel="Cancelar"
+        confirmLabel="{{ 'profile.confirm.confirm' | transloco }}"
+        cancelLabel="{{ 'profile.confirm.cancel' | transloco }}"
         [cancelText]="true"
         buttonPosition="center"
         [dismissableMask]="false"
@@ -639,9 +641,9 @@ interface Pet {
           <div class="confirm-profile-icon">
             <i class="pi pi-check"></i>
           </div>
-          <h3 class="confirm-profile-title">¿Guardar cambios?</h3>
+          <h3 class="confirm-profile-title">{{ 'profile.confirm.title' | transloco }}</h3>
           <p class="confirm-profile-message">
-            ¿Deseas guardar los cambios realizados en tu perfil?
+            {{ 'profile.confirm.message' | transloco }}
           </p>
         </div>
       </app-modal>
@@ -1528,6 +1530,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   private readonly profileService = inject(ProfileService);
   private readonly socialService = inject(SocialService);
   private readonly messageService = inject(MessageService);
+  private readonly transloco = inject(TranslocoService);
   private readonly cdr = inject(ChangeDetectorRef);
   private paramSubscription?: Subscription;
 
@@ -2392,36 +2395,36 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     switch (profile.type) {
       case 'user':
         return [
-          { value: (profile as UserProfile).stats.pets, label: 'Família' },
-          { value: this.followersCount(), label: 'Seguidores' },
-          { value: this.followingCount(), label: 'Siguiendo' },
-          { value: (profile as UserProfile).stats.posts, label: 'Publicaciones' },
+          { value: (profile as UserProfile).stats.pets, label: 'family' },
+          { value: this.followersCount(), label: 'followers' },
+          { value: this.followingCount(), label: 'following' },
+          { value: (profile as UserProfile).stats.posts, label: 'posts' },
         ];
       case 'shelter':
         return [
-          { value: (profile as ShelterProfile).stats.pets, label: 'Família' },
-          { value: this.followersCount(), label: 'Seguidores' },
-          { value: (profile as ShelterProfile).stats.adoptions, label: 'Adopciones' },
-          { value: (profile as ShelterProfile).stats.reviews, label: 'Reseñas' },
+          { value: (profile as ShelterProfile).stats.pets, label: 'family' },
+          { value: this.followersCount(), label: 'followers' },
+          { value: (profile as ShelterProfile).stats.adoptions, label: 'adoptions' },
+          { value: (profile as ShelterProfile).stats.reviews, label: 'reviews' },
         ];
       case 'vet':
         return [
-          { value: (profile as VetProfile).stats.patients, label: 'Pacientes' },
-          { value: this.followersCount(), label: 'Seguidores' },
-          { value: (profile as VetProfile).stats.posts, label: 'Publicaciones' },
-          { value: (profile as VetProfile).stats.likes, label: 'Likes' },
+          { value: (profile as VetProfile).stats.patients, label: 'patients' },
+          { value: this.followersCount(), label: 'followers' },
+          { value: (profile as VetProfile).stats.posts, label: 'posts' },
+          { value: (profile as VetProfile).stats.likes, label: 'likes' },
         ];
       case 'seller':
         return [
-          { value: (profile as SellerProfile).stats.products, label: 'Productos' },
-          { value: this.followersCount(), label: 'Seguidores' },
-          { value: (profile as SellerProfile).stats.sales, label: 'Ventas' },
-          { value: (profile as SellerProfile).stats.reviews, label: 'Reseñas' },
+          { value: (profile as SellerProfile).stats.products, label: 'products' },
+          { value: this.followersCount(), label: 'followers' },
+          { value: (profile as SellerProfile).stats.sales, label: 'sales' },
+          { value: (profile as SellerProfile).stats.reviews, label: 'reviews' },
         ];
       case 'pet':
         return [
-          { value: (profile as PetProfile).stats.likes, label: 'Likes' },
-          { value: (profile as PetProfile).stats.posts, label: 'Publicaciones' },
+          { value: (profile as PetProfile).stats.likes, label: 'likes' },
+          { value: (profile as PetProfile).stats.posts, label: 'posts' },
         ];
       default:
         return [];
@@ -2438,56 +2441,56 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     const baseFields = [
       {
         key: 'profileType',
-        label: 'Tipo de perfil',
+        label: this.transloco.translate('profile.form.profileType'),
         type: 'select' as const,
-        placeholder: 'Selecciona tu tipo de perfil',
+        placeholder: this.transloco.translate('profile.form.profileTypePlaceholder'),
         validation: { required: true },
         options: [
-          { label: 'Usuario', value: 'user' },
-          { label: 'Veterinario', value: 'vet' },
-          { label: 'Protectora', value: 'shelter' },
-          { label: 'Vendedor', value: 'seller' },
-          { label: 'Adiestrador', value: 'trainer' },
+          { label: this.transloco.translate('profile.form.user'), value: 'user' },
+          { label: this.transloco.translate('profile.form.vet'), value: 'vet' },
+          { label: this.transloco.translate('profile.form.shelter'), value: 'shelter' },
+          { label: this.transloco.translate('profile.form.seller'), value: 'seller' },
+          { label: this.transloco.translate('profile.form.trainer'), value: 'trainer' },
         ],
       },
       {
         key: 'firstName',
-        label: 'Nombre',
+        label: this.transloco.translate('profile.form.firstName'),
         type: 'input' as const,
-        placeholder: 'Nombre',
+        placeholder: this.transloco.translate('profile.form.firstName'),
         validation: { required: true, maxLength: 50 }
       },
       {
         key: 'lastName',
-        label: 'Apellidos',
+        label: this.transloco.translate('profile.form.lastName'),
         type: 'input' as const,
-        placeholder: 'Apellidos',
+        placeholder: this.transloco.translate('profile.form.lastName'),
         validation: { required: true, maxLength: 50 }
       },
       {
         key: 'phone',
-        label: 'Teléfono',
+        label: this.transloco.translate('profile.form.phone'),
         type: 'input' as const,
         placeholder: '+34 600 000 000',
         validation: { maxLength: 20 }
       },
       {
         key: 'bio',
-        label: 'Biografía',
+        label: this.transloco.translate('profile.form.bio'),
         type: 'textarea' as const,
-        placeholder: 'Cuéntanos sobre ti...',
+        placeholder: this.transloco.translate('profile.form.bioPlaceholder'),
         rows: 4,
         validation: { maxLength: 500 }
       },
       {
         key: 'location',
-        label: 'Ubicación',
+        label: this.transloco.translate('profile.form.location'),
         type: 'location' as const,
-        placeholder: 'Busca tu dirección'
+        placeholder: this.transloco.translate('profile.form.locationPlaceholder')
       },
       {
         key: 'website',
-        label: 'Sitio web',
+        label: this.transloco.translate('profile.form.website'),
         type: 'input' as const,
         placeholder: 'https://mi-sitio.com',
         validation: { maxLength: 255 }
@@ -2499,7 +2502,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     if (profileType === 'vet' || profileType === 'trainer') {
       typeSpecificFields.push({
         key: 'specialty',
-        label: profileType === 'vet' ? 'Especialidad' : 'Especialización',
+        label: this.transloco.translate(profileType === 'vet' ? 'profile.form.specialty' : 'profile.form.specialization'),
         type: 'input' as const,
         placeholder: profileType === 'vet' ? 'Veterinaria General' : 'Adiestramiento canino',
         validation: { maxLength: 100 }
@@ -2509,9 +2512,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     if (profileType === 'vet') {
       typeSpecificFields.push({
         key: 'licenseNumber',
-        label: 'Número de colegiado',
+        label: this.transloco.translate('profile.form.licenseNumber'),
         type: 'input' as const,
-        placeholder: 'Nº colegiado',
+        placeholder: this.transloco.translate('profile.form.licensePlaceholder'),
         validation: { maxLength: 50 }
       });
     }
@@ -2519,9 +2522,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     if (profileType === 'shelter') {
       typeSpecificFields.push({
         key: 'charityNumber',
-        label: 'Número de registro',
+        label: this.transloco.translate('profile.form.charityNumber'),
         type: 'input' as const,
-        placeholder: 'Nº registro protectora',
+        placeholder: this.transloco.translate('profile.form.charityPlaceholder'),
         validation: { maxLength: 100 }
       });
     }
@@ -2529,16 +2532,16 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     if (profileType === 'seller') {
       typeSpecificFields.push({
         key: 'storeName',
-        label: 'Nombre de tienda',
+        label: this.transloco.translate('profile.form.storeName'),
         type: 'input' as const,
-        placeholder: 'Nombre de tu tienda',
+        placeholder: this.transloco.translate('profile.form.storePlaceholder'),
         validation: { maxLength: 100 }
       });
     }
 
     return {
-      title: 'Editar información personal',
-      submitLabel: 'Guardar cambios',
+      title: this.transloco.translate('profile.form.title'),
+      submitLabel: this.transloco.translate('profile.form.submit'),
       fields: [...baseFields, ...typeSpecificFields]
     } as DynamicFormConfig;
   });
@@ -2579,15 +2582,16 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   // ============================================
 
   profileTabs = computed((): Tab[] => {
+    const t = (key: string) => this.transloco.translate(key);
     const tabs: Tab[] = [
-      { id: 'posts', label: 'Publicaciones', icon: 'photo_library' }
+      { id: 'posts', label: t('profile.tabs.posts'), icon: 'photo_library' }
     ];
 
     if (this.isUser() || this.isShelter()) {
-      tabs.push({ id: 'pets', label: 'Mascotas', icon: 'pets' });
+      tabs.push({ id: 'pets', label: t('profile.tabs.pets'), icon: 'pets' });
     }
 
-    tabs.push({ id: 'knowme', label: 'Conóceme', icon: 'person' });
+    tabs.push({ id: 'knowme', label: t('profile.tabs.knowme'), icon: 'person' });
 
     return tabs;
   });
@@ -2604,8 +2608,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
     this.messageService.add({
       severity: 'success',
-      summary: 'Ubicación confirmada',
-      detail: 'Tu ubicación ha sido guardada. Recuerda guardar los cambios del perfil.'
+      summary: this.transloco.translate('profile.toasts.locationConfirmed'),
+      detail: this.transloco.translate('profile.toasts.locationConfirmedDetail')
     });
   }
 
@@ -2629,12 +2633,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   initializeProfileMenu(): void {
     this.profileMenuItems = [
       {
-        label: 'Editar Perfil',
+        label: this.transloco.translate('profile.menu.editProfile'),
         icon: 'pi pi-pencil',
         command: () => this.setActiveTab('knowme')
       },
       {
-        label: 'Administrar',
+        label: this.transloco.translate('profile.menu.manage'),
         icon: 'pi pi-cog',
         command: () => this.router.navigate(['/admin'])
       }
@@ -2663,8 +2667,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         next: () => {
           this.messageService.add({
             severity: 'success',
-            summary: 'Siguiendo',
-            detail: `Ahora sigues a ${profile.name}`
+            summary: this.transloco.translate('profile.toasts.following'),
+            detail: this.transloco.translate('profile.toasts.followingDetail').replace('{name}', profile.name)
           });
         },
         error: () => {
@@ -2672,8 +2676,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           this.loadedProfiles.set({ ...currentProfiles });
           this.messageService.add({
             severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo seguir al usuario'
+            summary: this.transloco.translate('profile.toasts.error'),
+            detail: this.transloco.translate('profile.toasts.errorFollow')
           });
         }
       });
@@ -2682,8 +2686,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         next: () => {
           this.messageService.add({
             severity: 'info',
-            summary: 'Dejaste de seguir',
-            detail: `Ya no sigues a ${profile.name}`
+            summary: this.transloco.translate('profile.toasts.unfollowed'),
+            detail: this.transloco.translate('profile.toasts.unfollowedDetail').replace('{name}', profile.name)
           });
         },
         error: () => {
@@ -2691,8 +2695,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           this.loadedProfiles.set({ ...currentProfiles });
           this.messageService.add({
             severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo dejar de seguir al usuario'
+            summary: this.transloco.translate('profile.toasts.error'),
+            detail: this.transloco.translate('profile.toasts.errorUnfollow')
           });
         }
       });
@@ -2721,16 +2725,16 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: newStatus ? 'En adopción' : 'Adopción cancelada',
-          detail: newStatus ? 'La mascota ya está disponible para adopción' : 'La mascota ya no está en adopción'
+          summary: this.transloco.translate(newStatus ? 'profile.toasts.adoptionOn' : 'profile.toasts.adoptionOff'),
+          detail: this.transloco.translate(newStatus ? 'profile.toasts.adoptionOnDetail' : 'profile.toasts.adoptionOffDetail')
         });
         this.loadPetsForProfile(this.isOwnProfile() ? this.authService.user()?.id || '' : this.profileId() || '');
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo actualizar el estado de adopción'
+          summary: this.transloco.translate('profile.toasts.error'),
+          detail: this.transloco.translate('profile.toasts.adoptionError')
         });
       }
     });
@@ -2830,8 +2834,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         this.updateOwnProfileFromResponse(response);
         this.messageService.add({
           severity: 'success',
-          summary: 'Perfil actualizado',
-          detail: 'Tu perfil ha sido actualizado correctamente'
+          summary: this.transloco.translate('profile.toasts.profileUpdated'),
+          detail: this.transloco.translate('profile.toasts.profileUpdatedDetail')
         });
         this.loading.set(false);
         this.cdr.detectChanges();
@@ -2840,8 +2844,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         console.error('Error updating profile:', error);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo actualizar el perfil'
+          summary: this.transloco.translate('profile.toasts.error'),
+          detail: this.transloco.translate('profile.toasts.profileUpdateError')
         });
         this.loading.set(false);
         this.cdr.detectChanges();
@@ -2949,8 +2953,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           this.messageService.add({
             severity: 'success',
-            summary: 'Foto actualizada',
-            detail: 'Tu foto de perfil ha sido actualizada'
+            summary: this.transloco.translate('profile.toasts.photoUpdated'),
+            detail: this.transloco.translate('profile.toasts.photoUpdatedDetail')
           });
           this.updateOwnProfileFromResponse(response);
         },
@@ -2958,8 +2962,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           console.error('Error updating avatar:', error);
           this.messageService.add({
             severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo actualizar la foto de perfil'
+            summary: this.transloco.translate('profile.toasts.error'),
+            detail: this.transloco.translate('profile.toasts.photoUpdateError')
           });
           this.loading.set(false);
           this.cdr.detectChanges();
@@ -2994,8 +2998,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         next: (response: any) => {
           this.messageService.add({
             severity: 'success',
-            summary: 'Portada actualizada',
-            detail: 'Tu imagen de portada ha sido actualizada'
+            summary: this.transloco.translate('profile.toasts.coverUpdated'),
+            detail: this.transloco.translate('profile.toasts.coverUpdatedDetail')
           });
           this.updateOwnProfileFromResponse(response);
         },
@@ -3003,8 +3007,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           console.error('Error updating cover:', error);
           this.messageService.add({
             severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo actualizar la imagen de portada'
+            summary: this.transloco.translate('profile.toasts.error'),
+            detail: this.transloco.translate('profile.toasts.coverUpdateError')
           });
           this.loading.set(false);
           this.cdr.detectChanges();
@@ -3019,16 +3023,16 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   // ============================================
 
   getProfileTypeLabel(type: ProfileType | string | undefined): string {
-    const labels: Record<string, string> = {
-      user: 'Usuario',
-      vet: 'Veterinario',
-      shelter: 'Protectora',
-      seller: 'Vendedor',
-      trainer: 'Adiestrador',
-      pet: 'Mascota'
+    const keys: Record<string, string> = {
+      user: 'profile.form.user',
+      vet: 'profile.form.vet',
+      shelter: 'profile.form.shelter',
+      seller: 'profile.form.seller',
+      trainer: 'profile.form.trainer',
+      pet: 'profile.form.pet'
     };
     const normalizedType = type?.toLowerCase() || '';
-    return labels[normalizedType] || 'Usuario';
+    return this.transloco.translate(keys[normalizedType] || 'profile.form.user');
   }
 
   ngOnDestroy(): void {

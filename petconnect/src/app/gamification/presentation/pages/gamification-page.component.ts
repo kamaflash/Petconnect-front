@@ -1,3 +1,4 @@
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Component, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
@@ -17,6 +18,7 @@ import { ChipModule } from 'primeng/chip';
 
 interface Achievement {
   id: string;
+  key: string;
   name: string;
   description: string;
   icon: string;
@@ -44,6 +46,7 @@ interface UserStats {
   selector: 'app-gamification-page',
   standalone: true,
   imports: [
+    TranslocoModule,
     CommonModule,
     ButtonModule,
     CardModule,
@@ -71,23 +74,23 @@ interface UserStats {
         <div class="gamification-page-header">
           <div class="gamification-page-header-content">
             <div class="gamification-page-header-left">
-              <h2 class="gamification-page-header-title">Logros y Niveles</h2>
-              <p class="gamification-page-header-subtitle">Tu progreso en la comunidad</p>
+                            <h2 class="gamification-page-header-title">{{ 'gam.headerTitle' | transloco }}</h2>
+              <p class="gamification-page-header-subtitle">{{ 'gam.headerSubtitle' | transloco }}</p>
             </div>
             <div class="gamification-page-header-stats">
               <div class="gamification-page-stat-item">
-                <span class="gamification-page-stat-value">{{ userStats().level }}</span>
-                <span class="gamification-page-stat-label">Nivel</span>
+                                <span class="gamification-page-stat-value">{{ userStats().level }}</span>
+                <span class="gamification-page-stat-label">{{ 'gam.statLevel' | transloco }}</span>
               </div>
               <div class="gamification-page-stat-divider"></div>
               <div class="gamification-page-stat-item">
                 <span class="gamification-page-stat-value">{{ userStats().totalXP.toLocaleString() }}</span>
-                <span class="gamification-page-stat-label">XP Total</span>
+                <span class="gamification-page-stat-label">{{ 'gam.statXP' | transloco }}</span>
               </div>
               <div class="gamification-page-stat-divider"></div>
               <div class="gamification-page-stat-item">
-                <span class="gamification-page-stat-value">{{ userStats().achievementsUnlocked }}/{{ userStats().totalAchievements }}</span>
-                <span class="gamification-page-stat-label">Logros</span>
+                                <span class="gamification-page-stat-value">{{ userStats().achievementsUnlocked }}/{{ userStats().totalAchievements }}</span>
+                <span class="gamification-page-stat-label">{{ 'gam.statAchievements' | transloco }}</span>
               </div>
             </div>
           </div>
@@ -123,8 +126,8 @@ interface UserStats {
               </div>
               <div class="gamification-page-profile-xp">
                 <div class="gamification-page-profile-xp-header">
-                  <span class="gamification-page-profile-xp-label">Nivel {{ userStats().level }}</span>
-                  <span class="gamification-page-profile-xp-numbers">{{ userStats().currentXP.toLocaleString() }} / {{ userStats().nextLevelXP.toLocaleString() }} XP</span>
+                  <span class="gamification-page-profile-xp-label">{{ 'gam.profileLevel' | transloco }} {{ userStats().level }}</span>
+                  <span class="gamification-page-profile-xp-numbers">{{ userStats().currentXP.toLocaleString() }} / {{ userStats().nextLevelXP.toLocaleString() }} {{ 'gam.xpAbbr' | transloco }}</span>
                 </div>
                 <p-progressBar
                   [value]="levelProgress()"
@@ -136,7 +139,7 @@ interface UserStats {
 
             <!-- Próximos Logros -->
             <div class="gamification-page-upcoming-card">
-              <h4 class="gamification-page-upcoming-title">Próximos Logros</h4>
+                            <h4 class="gamification-page-upcoming-title">{{ 'gam.upcomingTitle' | transloco }}</h4>
               <div class="gamification-page-upcoming-list">
                 @for (achievement of upcomingAchievements(); track achievement.id) {
                   <div class="gamification-page-upcoming-item">
@@ -144,7 +147,7 @@ interface UserStats {
                     <div class="gamification-page-upcoming-info">
                       <div class="gamification-page-upcoming-header">
                         <span class="gamification-page-upcoming-name">{{ achievement.name }}</span>
-                        <span class="gamification-page-upcoming-xp">+{{ achievement.xp }} XP</span>
+                                                <span class="gamification-page-upcoming-xp">+{{ achievement.xp }} {{ 'gam.xpAbbr' | transloco }}</span>
                       </div>
                       <span class="gamification-page-upcoming-desc">{{ achievement.description }}</span>
                       <div class="gamification-page-upcoming-progress">
@@ -165,7 +168,7 @@ interface UserStats {
 
             <!-- Quién seguir -->
             <div class="gamification-page-follow-card">
-              <h4 class="gamification-page-follow-title">Quién seguir</h4>
+                            <h4 class="gamification-page-follow-title">{{ 'gam.followTitle' | transloco }}</h4>
               <div class="gamification-page-follow-item">
                 <p-avatar
                   image="https://i.pravatar.cc/150?img=2"
@@ -176,17 +179,17 @@ interface UserStats {
                 <div class="gamification-page-follow-info">
                   <span class="gamification-page-follow-name">Antonio Herrera</span>
                   <span class="gamification-page-follow-username">@antonio_herrera</span>
-                  <span class="gamification-page-follow-count">625 seguidores</span>
+                                  <span class="gamification-page-follow-count">625{{ 'gam.followers' | transloco }}</span>
                 </div>
-                <button class="gamification-page-follow-btn">Seguir</button>
+                                <button class="gamification-page-follow-btn">{{ 'gam.followButton' | transloco }}</button>
               </div>
             </div>
 
             <!-- Tendencias -->
             <div class="gamification-page-trending-card">
-              <h4 class="gamification-page-trending-title">Tendencias</h4>
+                            <h4 class="gamification-page-trending-title">{{ 'gam.trendingTitle' | transloco }}</h4>
               <div class="gamification-page-trending-item">
-                <span class="gamification-page-trending-rank">#1 TENDENCIA</span>
+                <span class="gamification-page-trending-rank">#1 {{ 'gam.trending' | transloco }}</span>
                 <span class="gamification-page-trending-name">@Prueba</span>
               </div>
             </div>
@@ -202,7 +205,7 @@ interface UserStats {
             <!-- Filtros -->
             <div class="gamification-page-filters-bar">
               <div class="gamification-page-filter-group">
-                <span class="gamification-page-filter-label">Categoría:</span>
+                                <span class="gamification-page-filter-label">{{ 'gam.filterCategory' | transloco }}</span>
                 @for (category of categories; track category.value) {
                   <button
                     class="gamification-page-filter-chip"
@@ -214,26 +217,26 @@ interface UserStats {
                 }
               </div>
               <div class="gamification-page-filter-group">
-                <span class="gamification-page-filter-label">Estado:</span>
+                                <span class="gamification-page-filter-label">{{ 'gam.filterStatus' | transloco }}</span>
                 <button
                   class="gamification-page-filter-chip"
                   [class.gamification-page-filter-chip-active]="filters.unlockedOnly"
                   (click)="toggleUnlockedOnly()"
                 >
-                  Desbloqueados
+                                    {{ 'gam.unlocked' | transloco }}
                 </button>
                 <button
                   class="gamification-page-filter-chip"
                   [class.gamification-page-filter-chip-active]="filters.lockedOnly"
                   (click)="toggleLockedOnly()"
                 >
-                  Bloqueados
+                                    {{ 'gam.locked' | transloco }}
                 </button>
                 <button
                   class="gamification-page-filter-chip gamification-page-filter-chip-clear"
                   (click)="clearFilters()"
                 >
-                  <i class="pi pi-times"></i> Limpiar
+                                    <i class="pi pi-times"></i> {{ 'gam.clearFilters' | transloco }}
                 </button>
               </div>
             </div>
@@ -241,7 +244,7 @@ interface UserStats {
             <!-- Resultados -->
             <div class="gamification-page-results-header">
               <span class="gamification-page-results-count">
-                {{ filteredAchievements().length }} logro{{ filteredAchievements().length !== 1 ? 's' : '' }}
+                {{ filteredAchievements().length }} {{ (filteredAchievements().length !== 1 ? 'gam.resultPlural' : 'gam.resultSingular') | transloco }}
               </span>
             </div>
 
@@ -259,13 +262,13 @@ interface UserStats {
                   </div>
                   <div class="gamification-page-achievement-content">
                     <div class="gamification-page-achievement-title-row">
-                      <h3 class="gamification-page-achievement-name">{{ achievement.name }}</h3>
-                      <span class="gamification-page-achievement-xp">+{{ achievement.xp }} XP</span>
+                      <h3 class="gamification-page-achievement-name">{{ ('gam.ach.' + achievement.key + '.name') | transloco }}</h3>
+                      <span class="gamification-page-achievement-xp">+{{ achievement.xp }} {{ 'gam.xpAbbr' | transloco }}</span>
                     </div>
-                    <p class="gamification-page-achievement-desc">{{ achievement.description }}</p>
+                    <p class="gamification-page-achievement-desc">{{ ('gam.ach.' + achievement.key + '.description') | transloco }}</p>
                     <div class="gamification-page-achievement-footer">
                       <p-tag
-                        [value]="achievement.unlocked ? 'Desbloqueado' : 'Bloqueado'"
+                        [value]="achievement.unlocked ? ('gam.unlocked' | transloco) : ('gam.locked' | transloco)"
                         [severity]="achievement.unlocked ? 'success' : 'secondary'"
                       />
                       @if (achievement.unlocked && achievement.date) {
@@ -283,9 +286,9 @@ interface UserStats {
             @if (filteredAchievements().length === 0) {
               <div class="gamification-page-empty-state">
                 <i class="pi pi-trophy"></i>
-                <p>No se encontraron logros con estos criterios</p>
+                                    <p>{{ 'gam.emptyState' | transloco }}</p>
                 <button class="gamification-page-empty-btn" (click)="clearFilters()">
-                  Limpiar filtros
+                                    {{ 'gam.clearFiltersBtn' | transloco }}
                 </button>
               </div>
             }
@@ -985,6 +988,7 @@ interface UserStats {
   `]
 })
 export class GamificationPageComponent {
+  readonly i18n = inject(TranslocoService);
   private messageService = inject(MessageService);
 
   // ============================================================
@@ -992,10 +996,10 @@ export class GamificationPageComponent {
   // ============================================================
 
   categories = [
-    { label: 'Social', value: 'social' },
-    { label: 'Cuidado', value: 'care' },
-    { label: 'Exploración', value: 'exploration' },
-    { label: 'Especial', value: 'special' }
+    { label: this.i18n.translate('gam.cat.social'), value: 'social' },
+    { label: this.i18n.translate('gam.cat.care'), value: 'care' },
+    { label: this.i18n.translate('gam.cat.exploration'), value: 'exploration' },
+    { label: this.i18n.translate('gam.cat.special'), value: 'special' }
   ];
 
   selectedCategories: string[] = [];
@@ -1015,7 +1019,7 @@ export class GamificationPageComponent {
     totalXP: 2450,
     achievementsUnlocked: 12,
     totalAchievements: 100,
-    rank: 'Experto en Mascotas'
+    rank: this.i18n.translate('gam.rankExpert')
   });
 
   // ============================================================
@@ -1066,8 +1070,9 @@ export class GamificationPageComponent {
   achievements = signal<Achievement[]>([
     {
       id: '1',
-      name: 'Primer paso',
-      description: 'Registra tu primera mascota',
+      key: '1',
+            name: this.i18n.translate('gam.ach.1.name'),
+      description: this.i18n.translate('gam.ach.1.description'),
       icon: '🎖️',
       xp: 50,
       unlocked: true,
@@ -1076,8 +1081,9 @@ export class GamificationPageComponent {
     },
     {
       id: '2',
-      name: 'Amante de los animales',
-      description: 'Registra 3 mascotas',
+      key: '2',
+            name: this.i18n.translate('gam.ach.2.name'),
+      description: this.i18n.translate('gam.ach.2.description'),
       icon: '🐾',
       xp: 100,
       unlocked: true,
@@ -1086,8 +1092,9 @@ export class GamificationPageComponent {
     },
     {
       id: '3',
-      name: 'Cuidador responsable',
-      description: 'Completa 10 citas médicas',
+      key: '3',
+            name: this.i18n.translate('gam.ach.3.name'),
+      description: this.i18n.translate('gam.ach.3.description'),
       icon: '💉',
       xp: 150,
       unlocked: false,
@@ -1096,8 +1103,9 @@ export class GamificationPageComponent {
     },
     {
       id: '4',
-      name: 'Social',
-      description: 'Haz 50 publicaciones',
+      key: '4',
+            name: this.i18n.translate('gam.ach.4.name'),
+      description: this.i18n.translate('gam.ach.4.description'),
       icon: '📱',
       xp: 200,
       unlocked: false,
@@ -1106,8 +1114,9 @@ export class GamificationPageComponent {
     },
     {
       id: '5',
-      name: 'Explorador',
-      description: 'Visita 5 lugares diferentes',
+      key: '5',
+            name: this.i18n.translate('gam.ach.5.name'),
+      description: this.i18n.translate('gam.ach.5.description'),
       icon: '🗺️',
       xp: 100,
       unlocked: true,
@@ -1116,8 +1125,9 @@ export class GamificationPageComponent {
     },
     {
       id: '6',
-      name: 'Campeón',
-      description: 'Gana un concurso',
+      key: '6',
+            name: this.i18n.translate('gam.ach.6.name'),
+      description: this.i18n.translate('gam.ach.6.description'),
       icon: '🏆',
       xp: 300,
       unlocked: false,
@@ -1126,8 +1136,9 @@ export class GamificationPageComponent {
     },
     {
       id: '7',
-      name: 'Compañero fiel',
-      description: 'Participa en 10 eventos',
+      key: '7',
+            name: this.i18n.translate('gam.ach.7.name'),
+      description: this.i18n.translate('gam.ach.7.description'),
       icon: '🤝',
       xp: 250,
       unlocked: true,
@@ -1136,8 +1147,9 @@ export class GamificationPageComponent {
     },
     {
       id: '8',
-      name: 'Héroe anónimo',
-      description: 'Adopta una mascota',
+      key: '8',
+            name: this.i18n.translate('gam.ach.8.name'),
+      description: this.i18n.translate('gam.ach.8.description'),
       icon: '💚',
       xp: 500,
       unlocked: false,
@@ -1146,8 +1158,9 @@ export class GamificationPageComponent {
     },
     {
       id: '9',
-      name: 'Nueva Voz',
-      description: 'Crea tu primera publicación',
+      key: '9',
+            name: this.i18n.translate('gam.ach.9.name'),
+      description: this.i18n.translate('gam.ach.9.description'),
       icon: '🗣️',
       xp: 50,
       unlocked: false,
@@ -1156,8 +1169,9 @@ export class GamificationPageComponent {
     },
     {
       id: '10',
-      name: 'Creador',
-      description: 'Crea 10 publicaciones',
+      key: '10',
+            name: this.i18n.translate('gam.ach.10.name'),
+      description: this.i18n.translate('gam.ach.10.description'),
       icon: '✍️',
       xp: 100,
       unlocked: false,
@@ -1166,8 +1180,9 @@ export class GamificationPageComponent {
     },
     {
       id: '11',
-      name: 'Corazón de la Comunidad',
-      description: 'Responde 10 comentarios',
+      key: '11',
+            name: this.i18n.translate('gam.ach.11.name'),
+      description: this.i18n.translate('gam.ach.11.description'),
       icon: '💚',
       xp: 150,
       unlocked: false,
@@ -1211,8 +1226,8 @@ export class GamificationPageComponent {
     };
     this.messageService.add({
       severity: 'info',
-      summary: 'Filtros limpiados',
-      detail: 'Se han restablecido todos los filtros'
+      summary: this.i18n.translate('gam.toastCleared'),
+      detail: this.i18n.translate('gam.toastClearedDetail')
     });
   }
 }

@@ -4,6 +4,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { CheckboxModule } from 'primeng/checkbox';
 import { Router } from '@angular/router';
+import { TranslocoModule } from '@jsverse/transloco';
 
 export interface FilterConfig {
   type: 'text' | 'checkbox' | 'select' | 'range';
@@ -32,6 +33,7 @@ export interface FilterOptions {
     InputTextModule,
     FormsModule,
     CheckboxModule,
+    TranslocoModule,
   ],
   template: `
     <div class="feed-grid-container">
@@ -39,13 +41,13 @@ export interface FilterOptions {
       <div class="mobile-filters-header">
         <button class="filters-toggle-btn" (click)="toggleFilters()">
           <i class="pi pi-sliders-h"></i>
-          <span>Filtros</span>
+          <span>{{ 'feedGrid.filters' | transloco }}</span>
           @if (hasActiveFilters()) {
             <span class="filter-badge">{{ getActiveFilterCount() }}</span>
           }
         </button>
         <div class="results-count-mobile">
-          {{ filteredItems().length }} resultado{{ filteredItems().length !== 1 ? 's' : '' }}
+          {{ filteredItems().length }} {{ 'feedGrid.results' | transloco }}{{ filteredItems().length !== 1 ? 's' : '' }}
         </div>
       </div>
 
@@ -53,7 +55,7 @@ export interface FilterOptions {
         <!-- Filters Sidebar -->
         <aside class="filters-sidebar" [class.collapsed]="filtersCollapsed()">
           <div class="filter-header">
-            <h3>Filtros</h3>
+            <h3>{{ 'feedGrid.filters' | transloco }}</h3>
             <button class="close-filters-btn" (click)="toggleFilters()">
               <i class="pi pi-times"></i>
             </button>
@@ -96,7 +98,7 @@ export interface FilterOptions {
 
           <button class="clear-filters-btn" (click)="clearFilters()">
             <i class="pi pi-times"></i>
-            Limpiar filtros
+            {{ 'feedGrid.clear' | transloco }}
           </button>
         </aside>
 
@@ -105,7 +107,7 @@ export interface FilterOptions {
           <!-- Results count -->
           <div class="results-header">
             <div class="results-count">
-              {{ filteredItems().length }} {{ itemLabel }} encontrado{{ filteredItems().length !== 1 ? 's' : '' }}
+              {{ filteredItems().length }} {{ itemLabel }} {{ 'feedGrid.found' | transloco }}{{ filteredItems().length !== 1 ? 's' : '' }}
             </div>
           </div>
 
@@ -165,9 +167,9 @@ export interface FilterOptions {
           @if (filteredItems().length === 0) {
             <div class="no-items">
               <i class="pi pi-inbox"></i>
-              <p>No se encontraron {{ itemLabel.toLowerCase() }} con estos criterios</p>
+              <p>{{ 'feedGrid.noResults' | transloco: { items: itemLabel } }}</p>
               <button class="clear-filters-btn" (click)="clearFilters()">
-                Limpiar filtros
+                {{ 'feedGrid.clear' | transloco }}
               </button>
             </div>
           }

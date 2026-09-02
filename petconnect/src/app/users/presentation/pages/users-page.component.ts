@@ -1,4 +1,5 @@
-import { Component, signal } from '@angular/core';
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
+import { Component, signal , inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -22,7 +23,7 @@ interface UserProfile {
 @Component({
   selector: 'app-users-page',
   standalone: true,
-  imports: [
+  imports: [TranslocoModule, 
     CommonModule,
     ButtonModule,
     CardModule,
@@ -34,9 +35,9 @@ interface UserProfile {
   template: `
     <div class="page-content">
       <div class="flex justify-between align-items-center mb-4">
-        <h1 class="text-2xl font-bold m-0">Mi Perfil</h1>
+        <h1 class="text-2xl font-bold m-0">{{ this.i18n.translate('users.myProfile') }}</h1>
         <p-button
-          [label]="isEditing ? 'Cancelar' : 'Editar Perfil'"
+          [label]="isEditing ? this.i18n.translate('users.cancel') : this.i18n.translate('users.editProfile')"
           [icon]="isEditing ? 'pi pi-times' : 'pi pi-pencil'"
           (onClick)="toggleEdit()"
         />
@@ -53,7 +54,7 @@ interface UserProfile {
                 class="mb-3"
               />
               <h2 class="m-0 mb-2">{{ user().name }}</h2>
-              <p-tag [value]="'Nivel ' + user().level" severity="info" />
+              <p-tag [value]="this.i18n.translate('users.level') + user().level" severity="info" />
               <p class="text-sm text-secondary mt-2">
                 Miembro desde {{ user().joinDate }}
               </p>
@@ -65,10 +66,10 @@ interface UserProfile {
         </div>
 
         <div class="col-12 md:col-8">
-          <p-card header="Información Personal">
+          <p-card [header]="this.i18n.translate('users.personalInfo')">
             <div class="flex flex-column gap-3">
               <div class="flex flex-column gap-2">
-                <label for="name">Nombre</label>
+                <label for="name">{{ this.i18n.translate('users.name') }}</label>
                 <input
                   pInputText
                   id="name"
@@ -77,7 +78,7 @@ interface UserProfile {
                 />
               </div>
               <div class="flex flex-column gap-2">
-                <label for="email">Email</label>
+                <label for="email">{{ this.i18n.translate('users.email') }}</label>
                 <input
                   pInputText
                   id="email"
@@ -86,7 +87,7 @@ interface UserProfile {
                 />
               </div>
               <div class="flex flex-column gap-2">
-                <label for="phone">Teléfono</label>
+                <label for="phone">{{ this.i18n.translate('users.phone') }}</label>
                 <input
                   pInputText
                   id="phone"
@@ -95,19 +96,19 @@ interface UserProfile {
                 />
               </div>
               <div class="flex flex-column gap-2">
-                <label for="bio">Biografía</label>
+                <label for="bio">{{ this.i18n.translate('users.bio') }}</label>
                 <textarea
                   id="bio"
                   rows="3"
                   class="w-full"
-                  placeholder="Cuéntanos sobre ti y tus mascotas..."
+                  [placeholder]="this.i18n.translate('users.bioPlaceholder')"
                   [disabled]="!isEditing"
                 ></textarea>
               </div>
             </div>
             @if (isEditing) {
               <ng-template pTemplate="footer">
-                <p-button label="Guardar Cambios" (onClick)="saveProfile()" />
+                <p-button [label]="this.i18n.translate('users.saveChanges')" (onClick)="saveProfile()" />
               </ng-template>
             }
           </p-card>
@@ -124,6 +125,7 @@ interface UserProfile {
   `],
 })
 export class UsersPageComponent {
+  readonly i18n = inject(TranslocoService);
   isEditing = false;
 
   user = signal<UserProfile>({
@@ -134,7 +136,7 @@ export class UsersPageComponent {
     avatar: 'https://i.pravatar.cc/150?img=10',
     level: 12,
     xp: 650,
-    joinDate: 'Ene 2024',
+    joinDate: this.i18n.translate('users.joinDate'),
     petsCount: 2,
   });
 

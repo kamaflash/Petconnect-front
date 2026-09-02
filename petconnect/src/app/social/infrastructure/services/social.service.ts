@@ -1,5 +1,5 @@
-import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+﻿import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { Observable } from 'rxjs';
 
@@ -153,6 +153,17 @@ export interface UpdateCommentRequest {
   content: string;
 }
 
+// ========== PAGINATION ==========
+
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+  last: boolean;
+}
+
 // ========== SERVICE ==========
 
 @Injectable({
@@ -168,9 +179,12 @@ export class SocialService {
     return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts`);
   }
 
-  // Public feed - all active posts (for social page)
-  getPublicFeed(): Observable<PostResponse[]> {
-    return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts/feed`);
+  // Public feed - active posts. The backend may return a Page JSON
+  // ({content, last, totalElements}) or a plain array depending on the
+  // running version; the page/size params are sent when supported.
+  getPublicFeed(page: number = 0, size: number = 10): Observable<PageResponse<PostResponse> | PostResponse[]> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<PageResponse<PostResponse> | PostResponse[]>(`${this.apiUrl}/social/posts/feed`, { params });
   }
 
   getPost(postId: string): Observable<PostResponse> {

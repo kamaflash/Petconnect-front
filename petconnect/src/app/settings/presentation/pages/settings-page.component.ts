@@ -6,7 +6,11 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { TooltipModule } from 'primeng/tooltip';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
+import { SelectModule } from 'primeng/select';
 import { ThemeService } from '../../../shared/infrastructure/services/theme.service';
+import { LanguageService } from '../../../shared/infrastructure/i18n/language.service';
+import type { SupportedLang } from '../../../shared/infrastructure/i18n/language.provider';
 
 interface ThemeColor {
   name: string;
@@ -27,25 +31,39 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
 @Component({
   selector: 'app-settings-page',
   standalone: true,
-  imports: [CommonModule, ButtonModule, CardModule, ToggleSwitchModule, TooltipModule, FormsModule, RouterLink],
+  imports: [CommonModule, ButtonModule, CardModule, ToggleSwitchModule, TooltipModule, FormsModule, RouterLink, TranslocoModule, SelectModule],
   template: `
     <div class="settings-page">
       <div class="settings-container">
         <div class="settings-header">
-          <h1 class="settings-title">Configuración</h1>
-          <p class="settings-subtitle">Personaliza tu experiencia en Lumio</p>
+          <h1 class="settings-title">{{ 'settings.title' | transloco }}</h1>
+          <p class="settings-subtitle">{{ 'settings.subtitle' | transloco }}</p>
         </div>
 
         <!-- Sección de Apariencia -->
         <div class="settings-section">
-          <h2 class="section-title">Apariencia</h2>
+          <h2 class="section-title">{{ 'settings.appearance' | transloco }}</h2>
           <div class="settings-card">
             <div class="settings-item">
               <div class="settings-item-info">
-                <span class="settings-item-label">Color del tema</span>
-                <span class="settings-item-description">Selecciona el color principal de la aplicación</span>
+                <span class="settings-item-label">{{ 'settings.language' | transloco }}</span>
+                <span class="settings-item-description">{{ 'settings.languageDesc' | transloco }}</span>
               </div>
-                                      </div>
+              <p-select
+                [options]="langOptions"
+                optionLabel="label"
+                optionValue="value"
+                [(ngModel)]="selectedLang"
+                (ngModelChange)="onLanguageChange($event)"
+                class="language-select"
+              />
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <span class="settings-item-label">{{ 'settings.themeColor' | transloco }}</span>
+                <span class="settings-item-description">{{ 'settings.themeColorDesc' | transloco }}</span>
+              </div>
+            </div>
             <div class="color-palette">
               @for (color of themeColors; track color.value) {
                 <button
@@ -67,19 +85,19 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
 
         <!-- Sección de Notificaciones -->
         <div class="settings-section">
-          <h2 class="section-title">Notificaciones</h2>
+          <h2 class="section-title">{{ 'settings.notifications' | transloco }}</h2>
           <div class="settings-card">
             <div class="settings-item">
               <div class="settings-item-info">
-                <span class="settings-item-label">Notificaciones por email</span>
-                <span class="settings-item-description">Recibe notificaciones en tu correo electrónico</span>
+                <span class="settings-item-label">{{ 'settings.emailNotifications' | transloco }}</span>
+                <span class="settings-item-description">{{ 'settings.emailNotificationsDesc' | transloco }}</span>
               </div>
               <p-toggleSwitch [(ngModel)]="emailNotifications" />
             </div>
             <div class="settings-item">
               <div class="settings-item-info">
-                <span class="settings-item-label">Notificaciones push</span>
-                <span class="settings-item-description">Recibe notificaciones en tu dispositivo</span>
+                <span class="settings-item-label">{{ 'settings.pushNotifications' | transloco }}</span>
+                <span class="settings-item-description">{{ 'settings.pushNotificationsDesc' | transloco }}</span>
               </div>
               <p-toggleSwitch [(ngModel)]="pushNotifications" />
             </div>
@@ -88,12 +106,12 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
 
         <!-- Sección de Privacidad -->
         <div class="settings-section">
-          <h2 class="section-title">Privacidad</h2>
+          <h2 class="section-title">{{ 'settings.privacy' | transloco }}</h2>
           <div class="settings-card">
             <div class="settings-item">
               <div class="settings-item-info">
-                <span class="settings-item-label">Perfil público</span>
-                <span class="settings-item-description">Permite que otros usuarios vean tu perfil</span>
+                <span class="settings-item-label">{{ 'settings.publicProfile' | transloco }}</span>
+                <span class="settings-item-description">{{ 'settings.publicProfileDesc' | transloco }}</span>
               </div>
               <p-toggleSwitch [(ngModel)]="publicProfile" />
             </div>
@@ -102,19 +120,19 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
 
         <!-- Sección de Cuenta -->
         <div class="settings-section">
-          <h2 class="section-title">Cuenta</h2>
+          <h2 class="section-title">{{ 'settings.account' | transloco }}</h2>
           <div class="settings-card">
             <a routerLink="/auth/login" class="settings-item settings-item-button">
               <div class="settings-item-info">
-                <span class="settings-item-label">Cambiar contraseña</span>
-                <span class="settings-item-description">Actualiza tu contraseña de acceso</span>
+                <span class="settings-item-label">{{ 'settings.changePassword' | transloco }}</span>
+                <span class="settings-item-description">{{ 'settings.changePasswordDesc' | transloco }}</span>
               </div>
               <i class="pi pi-chevron-right" style="color: var(--text-tertiary);"></i>
             </a>
             <a routerLink="/profile" class="settings-item settings-item-button">
               <div class="settings-item-info">
-                <span class="settings-item-label">Editar perfil</span>
-                <span class="settings-item-description">Modifica tu información personal</span>
+                <span class="settings-item-label">{{ 'settings.editProfile' | transloco }}</span>
+                <span class="settings-item-description">{{ 'settings.editProfileDesc' | transloco }}</span>
               </div>
               <i class="pi pi-chevron-right" style="color: var(--text-tertiary);"></i>
             </a>
@@ -123,7 +141,7 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
 
         <!-- Botón Guardar -->
         <div class="settings-actions">
-          <p-button label="Guardar cambios" icon="pi pi-check" (onClick)="saveSettings()" />
+          <p-button label="{{ 'common.save' | transloco }}" icon="pi pi-check" (onClick)="saveSettings()" />
         </div>
       </div>
     </div>
@@ -264,17 +282,26 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
   `]
 })
 export class SettingsPageComponent implements OnInit {
+  readonly i18n = inject(TranslocoService);
   private readonly themeService = inject(ThemeService);
+  private readonly languageService = inject(LanguageService);
 
   selectedColor = signal('#f97316');
+
+  langOptions = [
+    { label: 'Español', value: 'es' },
+    { label: 'English', value: 'en' },
+  ];
+
+  selectedLang = signal<string>(this.languageService.activeLang());
 
   themeColors: ThemeColor[] = [
     { name: 'Naranja', value: '#f97316' },
     { name: 'Verde', value: '#94c748' },
     { name: 'Azul', value: '#3b82f6' },
-    { name: 'Púrpura', value: '#8b5cf6' },
+    { name: this.i18n.translate('settings.colorPurple'), value: '#8b5cf6' },
     { name: 'Rosa', value: '#ec4899' },
-    { name: 'Ámbar', value: '#f59e0b' },
+    { name: this.i18n.translate('settings.colorAmber'), value: '#f59e0b' },
     { name: 'Rojo', value: '#ef4444' }
   ];
 
@@ -295,6 +322,10 @@ export class SettingsPageComponent implements OnInit {
     this.selectedColor.set(color.value);
     this.applyThemeColor(color.value);
     localStorage.setItem('theme-color', color.value);
+  }
+
+  onLanguageChange(lang: string): void {
+    this.languageService.setLang(lang as SupportedLang);
   }
 
   private applyThemeColor(color: string): void {

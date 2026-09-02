@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -8,6 +8,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { TableComponent, TableColumn } from '../../../shared/presentation/components/table/table.component';
 
 interface Vaccine {
@@ -43,16 +44,17 @@ interface Medication {
     FormsModule,
     SelectModule,
     TableComponent,
+    TranslocoModule,
   ],
   template: `
     <div class="page-content">
-      <h1 class="text-2xl font-bold mb-4">Salud de Família</h1>
+      <h1 class="text-2xl font-bold mb-4">{{ 'health.title' | transloco }}</h1>
 
       <div class="grid">
         <div class="col-12 md:col-6">
           <p-card>
             <app-table
-              title="Vacunas"
+              title="{{ 'health.vaccines' | transloco }}"
               [data]="vaccines()"
               [columns]="vaccineColumns"
               [rows]="5"
@@ -63,7 +65,7 @@ interface Medication {
         <div class="col-12 md:col-6">
           <p-card>
             <app-table
-              title="Medicación"
+              title="{{ 'health.medications' | transloco }}"
               [data]="medications()"
               [columns]="medicationColumns"
               [rows]="5"
@@ -82,14 +84,16 @@ interface Medication {
   `],
 })
 export class HealthPageComponent {
+  private readonly transloco = inject(TranslocoService);
+
   vaccineColumns: TableColumn[] = [
-    { field: 'name', header: 'Vacuna', sortable: true },
-    { field: 'pet', header: 'Mascota', sortable: true },
-    { field: 'date', header: 'Fecha', sortable: true },
-    { field: 'nextDate', header: 'Próxima', sortable: true },
+    { field: 'name', header: this.transloco.translate('health.vaccine'), sortable: true },
+    { field: 'pet', header: this.transloco.translate('health.pet'), sortable: true },
+    { field: 'date', header: this.transloco.translate('health.date'), sortable: true },
+    { field: 'nextDate', header: this.transloco.translate('health.next'), sortable: true },
     {
       field: 'status',
-      header: 'Estado',
+      header: this.transloco.translate('health.status'),
       type: 'status',
       format: (value: string) => this.getVaccineStatus(value),
       statusSeverity: (value: string) => this.getVaccineSeverity(value),
@@ -97,10 +101,10 @@ export class HealthPageComponent {
   ];
 
   medicationColumns: TableColumn[] = [
-    { field: 'name', header: 'Medicamento', sortable: true },
-    { field: 'pet', header: 'Mascota', sortable: true },
-    { field: 'dosage', header: 'Dosis', sortable: true },
-    { field: 'frequency', header: 'Frecuencia', sortable: true },
+    { field: 'name', header: this.transloco.translate('health.medication'), sortable: true },
+    { field: 'pet', header: this.transloco.translate('health.pet'), sortable: true },
+    { field: 'dosage', header: this.transloco.translate('health.dosage'), sortable: true },
+    { field: 'frequency', header: this.transloco.translate('health.frequency'), sortable: true },
   ];
 
   vaccines = signal<Vaccine[]>([
@@ -145,11 +149,11 @@ export class HealthPageComponent {
   getVaccineStatus(status: string): string {
     switch (status) {
       case 'completed':
-        return 'Completada';
+        return this.transloco.translate('health.completed');
       case 'pending':
-        return 'Pendiente';
+        return this.transloco.translate('health.pending');
       case 'overdue':
-        return 'Vencida';
+        return this.transloco.translate('health.overdue');
       default:
         return status;
     }

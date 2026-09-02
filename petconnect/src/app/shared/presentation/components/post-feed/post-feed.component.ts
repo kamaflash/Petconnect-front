@@ -5,6 +5,7 @@ import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { SkeletonModule } from 'primeng/skeleton';
 import { RouterModule } from '@angular/router';
+import { TranslocoModule } from '@jsverse/transloco';
 import { LikeService, LikeTargetType } from '../../../infrastructure/services/like.service';
 import { CommentSectionComponent } from '../comment-section/comment-section.component';
 
@@ -41,6 +42,7 @@ export type PostViewMode = 'feed' | 'grid';
     SkeletonModule,
     RouterModule,
     CommentSectionComponent,
+    TranslocoModule,
   ],
   template: `
     <div [class.posts-feed]="mode() === 'feed'" [class.posts-grid]="mode() === 'grid'">
@@ -141,7 +143,7 @@ export type PostViewMode = 'feed' | 'grid';
             <p-avatar-group>
               <p-avatar *ngFor="let avatar of getLikeAvatars(post)" [image]="avatar" shape="circle" size="normal"></p-avatar>
             </p-avatar-group>
-            <span class="likes-text">Le gusta a <strong>{{ post.likes }}</strong> personas</span>
+            <span class="likes-text">{{ 'post.likedBy' | transloco: { count: post.likes } }}</span>
           </div>
 
           <!-- Caption -->
@@ -152,7 +154,7 @@ export type PostViewMode = 'feed' | 'grid';
 
           <!-- Comments -->
           <div class="post-comments">
-            <span class="comments-link" (click)="toggleComments(post.id, false)">Ver los {{ post.comments }} comentarios</span>
+            <span class="comments-link" (click)="toggleComments(post.id, false)">{{ 'post.viewComments' | transloco: { count: post.comments } }}</span>
             <span class="comment-time">{{ post.timestamp | date:'d MMM' }}</span>
           </div>
 

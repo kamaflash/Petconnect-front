@@ -1,4 +1,5 @@
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
+import { Component, computed, inject, input, output, signal, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
@@ -40,7 +41,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
 @Component({
   selector: 'app-table-card',
   standalone: true,
-  imports: [
+  imports: [TranslocoModule, 
     CommonModule,
     ButtonModule,
     AvatarModule,
@@ -60,7 +61,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
             <input
               type="text"
               pInputText
-              placeholder="Buscar..."
+              [placeholder]="this.i18n.translate('tableCard.search')"
               class="search-input"
               [ngModelOptions]="{standalone: true}"
               [(ngModel)]="searchValue"
@@ -751,7 +752,8 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
     }
   `]
 })
-export class TableCardComponent {
+export class TableCardComponent implements AfterViewInit, OnDestroy {
+  readonly i18n = inject(TranslocoService);
   items = input<TableCardItem[]>([]);
   filters = input<{ label: string; value: string }[]>([]);
   showSearch = input(true);
@@ -759,15 +761,21 @@ export class TableCardComponent {
   filteredItems = input<TableCardItem[]>([]);
   editable = input(false);
   loading = input(false);
+  hasMore = input(false);
+  loadingMore = input(false);
   type = input<CardType>('post');
 
   searchChange = output<string>();
   filterChange = output<string>();
   onAdd = output<void>();
+  loadMore = output<void>();
 
   searchValue = signal('');
 
   private router = inject(Router);
+
+  @ViewChild('sentinel') sentinel!: ElementRef;
+  private observer: IntersectionObserver | null = null;
 
   /** Stores the current image index for each pet card by its position in the filtered list */
   petImageIndexes = signal<number[]>([]);
@@ -858,5 +866,25 @@ export class TableCardComponent {
     if (item.id) {
       this.router.navigate(['/profile/pet', item.id]);
     }
+  }
+
+  ngAfterViewInit(): void {
+    this.initInfiniteScroll();
+  }
+
+  ngOnDestroy(): void {
+    this.observer?.disconnect();
+  }
+
+  private initInfiniteScroll(): void {
+    if (!this.sentinel) return;
+    this.observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && this.hasMore() && !this.loadingMore()) {
+          this.loadMore.emit();
+        }
+      });
+    });
+    this.observer.observe(this.sentinel.nativeElement);
   }
 }

@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -8,6 +8,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { TableComponent, TableColumn } from '../../../shared/presentation/components/table/table.component';
 
 interface LostPet {
@@ -35,13 +36,14 @@ interface LostPet {
     FormsModule,
     SelectModule,
     TableComponent,
+    TranslocoModule,
   ],
   template: `
     <div class="page-content">
       <div class="flex justify-between align-items-center mb-4">
-        <h1 class="text-2xl font-bold m-0">Família Perdidas</h1>
+        <h1 class="text-2xl font-bold m-0">{{ 'lostPets.title' | transloco }}</h1>
         <p-button
-          label="Reportar Pérdida"
+          label="{{ 'lostPets.report' | transloco }}"
           icon="pi pi-plus"
           (onClick)="showAddDialog()"
         />
@@ -65,23 +67,25 @@ interface LostPet {
   `],
 })
 export class LostPetsPageComponent {
+  private readonly transloco = inject(TranslocoService);
+
   lostPetColumns: TableColumn[] = [
-    { field: 'name', header: 'Mascota', sortable: true },
+    { field: 'name', header: this.transloco.translate('lostPets.pet'), sortable: true },
     {
       field: 'species',
-      header: 'Especie/Raza',
+      header: this.transloco.translate('lostPets.speciesBreed'),
       format: (value: string, row: LostPet) => `${row.species} - ${row.breed}`,
     },
-    { field: 'lastSeen', header: 'Última Vez', sortable: true },
-    { field: 'location', header: 'Ubicación', sortable: true },
+    { field: 'lastSeen', header: this.transloco.translate('lostPets.lastSeen'), sortable: true },
+    { field: 'location', header: this.transloco.translate('lostPets.location'), sortable: true },
     {
       field: 'reward',
-      header: 'Recompensa',
+      header: this.transloco.translate('lostPets.reward'),
       format: (value: number) => `${value} €`,
     },
     {
       field: 'status',
-      header: 'Estado',
+      header: this.transloco.translate('lostPets.status'),
       type: 'status',
       format: (value: string) => this.getStatusLabel(value),
       statusSeverity: (value: string) => this.getStatusSeverity(value),
@@ -118,11 +122,11 @@ export class LostPetsPageComponent {
   getStatusLabel(status: string): string {
     switch (status) {
       case 'lost':
-        return 'Perdido';
+        return this.transloco.translate('lostPets.lost');
       case 'found':
-        return 'Encontrado';
+        return this.transloco.translate('lostPets.found');
       case 'reunited':
-        return 'Reencontrado';
+        return this.transloco.translate('lostPets.reunited');
       default:
         return status;
     }

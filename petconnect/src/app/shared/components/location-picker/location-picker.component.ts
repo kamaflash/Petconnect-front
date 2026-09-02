@@ -1,3 +1,4 @@
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Component, Input, Output, EventEmitter, OnInit, OnChanges, OnDestroy, ElementRef, ViewChild, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -14,7 +15,7 @@ import { Subscription, debounceTime, distinctUntilChanged, switchMap, catchError
 @Component({
   selector: 'app-location-picker',
   standalone: true,
-  imports: [
+  imports: [TranslocoModule, 
     CommonModule,
     FormsModule,
     InputTextModule,
@@ -34,7 +35,7 @@ import { Subscription, debounceTime, distinctUntilChanged, switchMap, catchError
             [suggestions]="suggestions()"
             (completeMethod)="onSearch($event)"
             (onSelect)="onAddressSelect($event)"
-            [placeholder]="'Escribe tu dirección...'"
+            [placeholder]="this.i18n.translate('locationPicker.searchPlaceholder')"
             [minLength]="3"
             [dropdown]="true"
             [forceSelection]="false"
@@ -56,7 +57,7 @@ import { Subscription, debounceTime, distinctUntilChanged, switchMap, catchError
         <div class="location-info" *ngIf="selectedLocation() as selected">
           <div class="info-header">
             <i class="pi pi-map-marker"></i>
-            <span class="info-title">Ubicación seleccionada</span>
+            <span class="info-title">{{ this.i18n.translate('locationPicker.selected') }}</span>
           </div>
           <p class="address-text">{{ selected.displayName }}</p>
         </div>
@@ -276,6 +277,7 @@ import { Subscription, debounceTime, distinctUntilChanged, switchMap, catchError
   `]
 })
 export class LocationPickerComponent implements OnInit, OnChanges, OnDestroy {
+  readonly i18n = inject(TranslocoService);
   @Input() initialLat?: number;
   @Input() initialLng?: number;
   @Input() initialAddress?: string;
@@ -517,7 +519,7 @@ export class LocationPickerComponent implements OnInit, OnChanges, OnDestroy {
       },
       error: (err: any) => {
         console.error('Error al seleccionar dirección:', err);
-        this.error.set('Error al cargar la dirección seleccionada');
+        this.error.set(this.i18n.translate('locationPicker.error'));
         this.loading.set(false);
         setTimeout(() => this.error.set(null), 3000);
       },
@@ -543,7 +545,7 @@ export class LocationPickerComponent implements OnInit, OnChanges, OnDestroy {
         this.loading.set(false);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error de ubicación',
+          summary: this.i18n.translate('locationPicker.errorTitle'),
           detail: err.message
         });
       }

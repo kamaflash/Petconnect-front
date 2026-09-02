@@ -7,6 +7,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { AvatarModule } from 'primeng/avatar';
 import { TagModule } from 'primeng/tag';
+import { TranslocoModule } from '@jsverse/transloco';
 
 interface Post {
   id: string;
@@ -31,13 +32,14 @@ interface Post {
     FormsModule,
     AvatarModule,
     TagModule,
+    TranslocoModule,
   ],
   template: `
     <div class="page-content">
       <div class="flex justify-between align-items-center mb-4">
-        <h1 class="text-2xl font-bold m-0">Publicaciones</h1>
+        <h1 class="text-2xl font-bold m-0">{{ 'content.posts' | transloco }}</h1>
         <p-button
-          label="Nueva Publicación"
+          label="{{ 'content.newPost' | transloco }}"
           icon="pi pi-plus"
           (onClick)="showAddDialog()"
         />
@@ -56,7 +58,7 @@ interface Post {
                 <p class="m-0 mb-3">{{ post.content }}</p>
                 <img
                   [src]="post.image"
-                  [alt]="'Post image'"
+                  [alt]="'content.imageAlt' | transloco"
                   class="w-full mb-3 border-round"
                   style="max-height: 300px; object-fit: cover"
                 />

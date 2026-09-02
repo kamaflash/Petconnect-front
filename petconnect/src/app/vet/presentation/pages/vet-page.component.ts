@@ -1,3 +1,4 @@
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
@@ -93,6 +94,7 @@ interface Product {
   selector: 'app-vet-page',
   standalone: true,
   imports: [
+    TranslocoModule,
     CommonModule,
     ButtonModule,
     CardModule,
@@ -196,7 +198,7 @@ interface Product {
                 (click)="setActiveVaccineFilter('exotic')"
               >
                 <span class="material-symbols-rounded">auto_awesome</span>
-                <span>Exóticos</span>
+                <span>{{ 'common.exotics' | transloco }}</span>
               </button>
             </div>
             <div class="vaccines-card">
@@ -204,7 +206,7 @@ interface Product {
                 <div class="vaccine-table-header">
                   <span>Vacuna</span>
                   <span>Edad</span>
-                  <span>Descripción</span>
+                  <span>{{ 'common.description' | transloco }}</span>
                 </div>
                 <div class="vaccine-table-row" *ngFor="let vaccine of filteredVaccines()">
                   <span class="vaccine-table-name">{{ vaccine.name }}</span>
@@ -886,6 +888,7 @@ interface Product {
   `]
 })
 export class VetPageComponent implements OnInit {
+  readonly i18n = inject(TranslocoService);
   private messageService = inject(MessageService);
   private readonly profileService = inject(ProfileService);
 
@@ -923,7 +926,7 @@ export class VetPageComponent implements OnInit {
         avatar: 'https://i.pravatar.cc/150?img=10',
         userId: '3'
       },
-      content: '¿Sabías que los perros pueden detectar cambios en el azúcar de la sangre? Son excelentes compañeros para personas con diabetes.',
+      content: this.i18n.translate('vet.tip1'),
       timestamp: new Date(),
       likes: 42,
       category: 'Curiosidad'
@@ -935,7 +938,7 @@ export class VetPageComponent implements OnInit {
         avatar: 'https://i.pravatar.cc/150?img=11',
         userId: '2'
       },
-      content: 'Los gatos persas necesitan cepillado diario para evitar nudos en su pelaje. ¡No lo olvides!',
+      content: this.i18n.translate('vet.tip2'),
       timestamp: new Date(),
       likes: 28,
       category: 'Gatos'
@@ -947,10 +950,10 @@ export class VetPageComponent implements OnInit {
         avatar: 'https://i.pravatar.cc/150?img=12',
         userId: '3'
       },
-      content: 'La desparasitación mensual es clave para prevenir pulgas y garrapatas en perros y gatos.',
+      content: this.i18n.translate('vet.tip3'),
       timestamp: new Date(),
       likes: 56,
-      category: 'Prevención'
+      category: this.i18n.translate('vet.prevention')
     },
     {
       id: '4',
@@ -959,10 +962,10 @@ export class VetPageComponent implements OnInit {
         avatar: 'https://i.pravatar.cc/150?img=13',
         userId: '4'
       },
-      content: 'Los conejos necesitan vitamina C en su dieta. Asegúrate de incluir vegetales ricos en vitamina C.',
+      content: this.i18n.translate('vet.tip4'),
       timestamp: new Date(),
       likes: 18,
-      category: 'Exóticos'
+      category: this.i18n.translate('common.exotics')
     }
   ]);
 
@@ -998,7 +1001,7 @@ export class VetPageComponent implements OnInit {
       petName: 'Max',
       date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
       time: '10:30',
-      type: 'Revisión general',
+      type: this.i18n.translate('vet.generalCheckup'),
       status: 'scheduled'
     },
     {
@@ -1011,7 +1014,7 @@ export class VetPageComponent implements OnInit {
       petName: 'Luna',
       date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
       time: '15:00',
-      type: 'Vacunación',
+      type: this.i18n.translate('common.vaccination'),
       status: 'scheduled'
     }
   ]);
@@ -1022,14 +1025,14 @@ export class VetPageComponent implements OnInit {
       id: '1',
       name: 'Medicina General',
       icon: 'favorite',
-      description: 'Atención médica básica para todas las mascotas',
+      description: this.i18n.translate('vet.basicCareDesc'),
       vetsCount: 45
     },
     {
       id: '2',
-      name: 'Cirugía',
+      name: this.i18n.translate('common.surgery'),
       icon: 'medical_services',
-      description: 'Procedimientos quirúrgicos especializados',
+      description: this.i18n.translate('vet.surgeryDesc'),
       vetsCount: 23
     },
     {
@@ -1041,23 +1044,23 @@ export class VetPageComponent implements OnInit {
     },
     {
       id: '4',
-      name: 'Exóticos',
+      name: this.i18n.translate('common.exotics'),
       icon: 'auto_awesome',
-      description: 'Especialistas en animales exóticos',
+      description: this.i18n.translate('vet.exoticsDesc'),
       vetsCount: 18
     },
     {
       id: '5',
       name: 'Emergencias',
       icon: 'bolt',
-      description: 'Atención 24/7 para urgencias',
+      description: this.i18n.translate('vet.emergencyDesc'),
       vetsCount: 8
     },
     {
       id: '6',
-      name: 'Nutrición',
+      name: this.i18n.translate('vet.nutrition'),
       icon: 'nutrition',
-      description: 'Asesoría nutricional personalizada',
+      description: this.i18n.translate('vet.nutritionDesc'),
       vetsCount: 15
     }
   ]);
@@ -1066,7 +1069,7 @@ export class VetPageComponent implements OnInit {
   products = signal<Product[]>([
     {
       id: '1',
-      name: 'Alimento Húmedo Premium',
+      name: this.i18n.translate('vet.wetFood'),
       image: 'https://images.unsplash.com/photo-1589923188900-117868750514?w=300&h=200&fit=crop',
       price: 12.99,
       category: 'Alimento',
@@ -1082,7 +1085,7 @@ export class VetPageComponent implements OnInit {
     },
     {
       id: '3',
-      name: 'Suplemento Vitamínico',
+      name: this.i18n.translate('vet.supplement'),
       image: 'https://images.unsplash.com/photo-1556912906-5503900e40d5?w=300&h=200&fit=crop',
       price: 24.99,
       category: 'Suplementos',
@@ -1122,9 +1125,9 @@ export class VetPageComponent implements OnInit {
     { label: 'Rocky', value: 'rocky' }
   ];
   appointmentTypes = [
-    { label: 'Revisión general', value: 'general' },
-    { label: 'Vacunación', value: 'vaccination' },
-    { label: 'Cirugía', value: 'surgery' },
+    { label: this.i18n.translate('vet.generalCheckup'), value: 'general' },
+    { label: this.i18n.translate('common.vaccination'), value: 'vaccination' },
+    { label: this.i18n.translate('common.surgery'), value: 'surgery' },
     { label: 'Emergencia', value: 'emergency' }
   ];
 
@@ -1217,11 +1220,11 @@ export class VetPageComponent implements OnInit {
       id: profile.id,
       name: `${profile.firstName} ${profile.lastName}`,
       avatar: profile.avatarUrl || 'https://i.pravatar.cc/150?img=10',
-      clinic: profile.storeName || 'Clínica Veterinaria',
+      clinic: profile.storeName || this.i18n.translate('common.vetClinic'),
       rating: 0,
       reviews: 0,
       specialty: profile.specialty || 'Veterinaria General',
-      location: profile.location || 'Ubicación no especificada',
+      location: profile.location || this.i18n.translate('common.locationNotSpecified'),
       distance: 0,
       isFollowing: false,
       userId: profile.authUserId,
@@ -1340,7 +1343,7 @@ export class VetPageComponent implements OnInit {
   addToCart(product: Product) {
     this.messageService.add({
       severity: 'success',
-      summary: 'Producto añadido',
+      summary: this.i18n.translate('vet.productAdded'),
       detail: `${product.name} ha sido añadido al carrito`
     });
   }

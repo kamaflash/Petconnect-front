@@ -1,4 +1,4 @@
-import { Component, input, output, effect, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef, signal, computed, model } from '@angular/core';
+import { Component, input, output, effect, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef, signal, computed, model, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
@@ -7,6 +7,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { TooltipModule } from 'primeng/tooltip';
 import { SelectModule } from 'primeng/select';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
 export interface TableColumn {
   field: string;
@@ -35,6 +36,7 @@ export interface TableColumn {
     FormsModule,
     TooltipModule,
     SelectModule,
+    TranslocoModule,
   ],
   template: `
     <div class="table-container">
@@ -57,7 +59,7 @@ export interface TableColumn {
           [sortMode]="sortMode()"
           [loading]="loading()"
           [showCurrentPageReport]="true"
-          currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} registros"
+          currentPageReportTemplate="{{ 'table.showing' | transloco }}"
           styleClass="p-datatable-modern"
         >
           <ng-template pTemplate="header">
@@ -88,7 +90,7 @@ export interface TableColumn {
                         [ngModelOptions]="{standalone: true}"
                         [(ngModel)]="filterValues[col.field]"
                         (onChange)="onFilterChange()"
-                        placeholder="Todos"
+                        [placeholder]="('table.all' | transloco)"
                         styleClass="w-full"
                         [showClear]="true"
                         appendTo="body"
@@ -100,7 +102,7 @@ export interface TableColumn {
                         [ngModelOptions]="{standalone: true}"
                         [(ngModel)]="filterValues[col.field]"
                         (ngModelChange)="onFilterChange()"
-                        [placeholder]="'Buscar ' + col.header.toLowerCase()"
+                        [placeholder]="('table.search' | transloco) + ' ' + col.header.toLowerCase()"
                         class="w-full"
                       />
                     }
@@ -130,7 +132,7 @@ export interface TableColumn {
                         severity="info"
                         [text]="true"
                         (onClick)="onView.emit(rowData)"
-                        pTooltip="Ver perfil"
+                        pTooltip="{{ 'table.viewProfile' | transloco }}"
                         tooltipPosition="top"
                       />
                       <p-button
@@ -138,7 +140,7 @@ export interface TableColumn {
                         severity="secondary"
                         [text]="true"
                         (onClick)="onEdit.emit(rowData)"
-                        pTooltip="Editar"
+                        pTooltip="{{ 'table.edit' | transloco }}"
                         tooltipPosition="top"
                       />
                       <p-button
@@ -146,7 +148,7 @@ export interface TableColumn {
                         severity="danger"
                         [text]="true"
                         (onClick)="onDelete.emit(rowData)"
-                        pTooltip="Eliminar"
+                        pTooltip="{{ 'table.delete' | transloco }}"
                         tooltipPosition="top"
                       />
                       <ng-content select="[row-actions]"></ng-content>
@@ -175,7 +177,7 @@ export interface TableColumn {
             <tr>
               <td [attr.colspan]="columns().length" class="table-empty">
                 <i class="pi pi-inbox"></i>
-                <p>No se encontraron registros</p>
+                <p>{{ 'table.empty' | transloco }}</p>
               </td>
             </tr>
           </ng-template>
@@ -184,7 +186,7 @@ export interface TableColumn {
             <tr>
               <td [attr.colspan]="columns().length" class="table-loading">
                 <i class="pi pi-spin pi-spinner"></i>
-                <p>Cargando datos...</p>
+                <p>{{ 'table.loading' | transloco }}</p>
               </td>
             </tr>
           </ng-template>
@@ -650,6 +652,8 @@ export interface TableColumn {
   `]
 })
 export class TableComponent implements OnInit {
+  private readonly transloco = inject(TranslocoService);
+
   // Inputs
   data = input<any[]>([]);
   columns = input<TableColumn[]>([]);
@@ -734,7 +738,7 @@ export class TableComponent implements OnInit {
         const uniqueSet = [...new Set(uniqueValues)];
 
         this.statusOptionsMap[col.field] = [
-          { label: 'Todos', value: null },
+          { label: this.transloco.translate('table.all'), value: null },
           ...uniqueSet.map(val => ({
             label: col.statusLabel ? col.statusLabel(val) : String(val),
             value: val
@@ -746,7 +750,7 @@ export class TableComponent implements OnInit {
 
   getStatusOptions(field: string): any[] {
     return this.statusOptionsMap[field] || [
-      { label: 'Todos', value: null }
+      { label: this.transloco.translate('table.all'), value: null }
     ];
   }
 

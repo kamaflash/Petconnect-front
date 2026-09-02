@@ -2,11 +2,12 @@ import { Component, input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { TranslocoModule } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, ButtonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, ButtonModule, RouterLink, RouterLinkActive, TranslocoModule],
   template: `
 <aside
   [class]="isHovered() || isOpen() ? 'sidebar-expanded' : 'sidebar-collapsed'"
@@ -19,7 +20,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
     <!-- Navegación principal -->
     <nav class="sidebar-nav">
-      <p class="nav-label">INICIO</p>
+      <p class="nav-label">{{ 'nav.groupHome' | transloco }}</p>
 
       <a
         routerLink="/"
@@ -29,7 +30,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         class="sidebar-link"
       >
         <span class="material-symbols-rounded nav-icon" [class.filled]="homeLink.isActive">home</span>
-        <span class="nav-text">Inicio</span>
+        <span class="nav-text">{{ 'nav.home' | transloco }}</span>
       </a>
 
       <a
@@ -39,10 +40,10 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         class="sidebar-link"
       >
         <span class="material-symbols-rounded nav-icon" [class.filled]="socialLink.isActive">groups</span>
-        <span class="nav-text">Comunidad</span>
+        <span class="nav-text">{{ 'nav.community' | transloco }}</span>
       </a>
 
-      <p class="nav-label" style="margin-top: 0.75rem;">SERVICIOS</p>
+      <p class="nav-label" style="margin-top: 0.75rem;">{{ 'nav.groupServices' | transloco }}</p>
 
       <a
         routerLink="/vet"
@@ -51,7 +52,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         class="sidebar-link"
       >
         <span class="material-symbols-rounded nav-icon" [class.filled]="vetLink.isActive">favorite</span>
-        <span class="nav-text">Veterinario</span>
+        <span class="nav-text">{{ 'nav.vet' | transloco }}</span>
       </a>
 
       <a
@@ -61,7 +62,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         class="sidebar-link"
       >
         <span class="material-symbols-rounded nav-icon" [class.filled]="marketplaceLink.isActive">storefront</span>
-        <span class="nav-text">Mercado</span>
+        <span class="nav-text">{{ 'nav.marketplace' | transloco }}</span>
       </a>
 
       <a
@@ -72,10 +73,10 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         class="sidebar-link"
       >
         <span class="material-symbols-rounded nav-icon" [class.filled]="adoptionsLink.isActive">pet_supplies</span>
-        <span class="nav-text">Adopciones</span>
+        <span class="nav-text">{{ 'nav.adoptions' | transloco }}</span>
       </a>
 
-      <p class="nav-label" style="margin-top: 0.75rem;">DESCUBRIR</p>
+      <p class="nav-label" style="margin-top: 0.75rem;">{{ 'nav.groupDiscover' | transloco }}</p>
 
       <a
         routerLink="/events"
@@ -84,7 +85,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         class="sidebar-link"
       >
         <span class="material-symbols-rounded nav-icon" [class.filled]="eventsLink.isActive">event</span>
-        <span class="nav-text">Eventos</span>
+        <span class="nav-text">{{ 'nav.events' | transloco }}</span>
       </a>
 
       <a
@@ -94,10 +95,10 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         class="sidebar-link"
       >
         <span class="material-symbols-rounded nav-icon" [class.filled]="lostpetsLink.isActive">search</span>
-        <span class="nav-text">Búsquedas</span>
+        <span class="nav-text">{{ 'nav.lostPets' | transloco }}</span>
       </a>
 
-      <p class="nav-label" style="margin-top: 0.75rem;">CONTENIDO</p>
+      <p class="nav-label" style="margin-top: 0.75rem;">{{ 'nav.groupContent' | transloco }}</p>
 
       <a
         routerLink="/messages"
@@ -106,7 +107,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         class="sidebar-link"
       >
         <span class="material-symbols-rounded nav-icon" [class.filled]="messagesLink.isActive">chat</span>
-        <span class="nav-text">Mensajes</span>
+        <span class="nav-text">{{ 'nav.messages' | transloco }}</span>
       </a>
       <a
         routerLink="/gamification"
@@ -115,7 +116,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         class="sidebar-link"
       >
         <span class="material-symbols-rounded nav-icon" [class.filled]="gamificationLink.isActive">emoji_events</span>
-        <span class="nav-text">Logros</span>
+        <span class="nav-text">{{ 'nav.achievements' | transloco }}</span>
       </a>
     </nav>
 
@@ -123,7 +124,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     <div class="sidebar-footer">
       <div class="sidebar-footer-content">
         <span class="material-symbols-rounded">info</span>
-        <span class="text-sm">Lumio v2.0</span>
+        <span class="text-sm">{{ 'nav.version' | transloco }}</span>
       </div>
     </div>
   </div>

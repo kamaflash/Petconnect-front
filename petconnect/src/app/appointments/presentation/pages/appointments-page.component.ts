@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -8,6 +8,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { TableComponent, TableColumn } from '../../../shared/presentation/components/table/table.component';
 
 interface Appointment {
@@ -34,13 +35,14 @@ interface Appointment {
     FormsModule,
     SelectModule,
     TableComponent,
+    TranslocoModule,
   ],
   template: `
     <div class="page-content">
       <div class="flex justify-between align-items-center mb-4">
-        <h1 class="text-2xl font-bold m-0">Citas</h1>
+        <h1 class="text-2xl font-bold m-0">{{ 'appointments.title' | transloco }}</h1>
         <p-button
-          label="Nueva Cita"
+          label="{{ 'appointments.new' | transloco }}"
           icon="pi pi-plus"
           (onClick)="showAddDialog()"
         />
@@ -64,15 +66,18 @@ interface Appointment {
   `],
 })
 export class AppointmentsPageComponent {
+  readonly i18n = inject(TranslocoService);
+  private readonly transloco = inject(TranslocoService);
+
   appointmentColumns: TableColumn[] = [
-    { field: 'pet', header: 'Mascota', sortable: true },
-    { field: 'service', header: 'Servicio', sortable: true },
-    { field: 'provider', header: 'Proveedor', sortable: true },
-    { field: 'date', header: 'Fecha', sortable: true },
-    { field: 'time', header: 'Hora', sortable: true },
+    { field: 'pet', header: this.transloco.translate('appointments.pet'), sortable: true },
+    { field: 'service', header: this.transloco.translate('appointments.service'), sortable: true },
+    { field: 'provider', header: this.transloco.translate('appointments.provider'), sortable: true },
+    { field: 'date', header: this.transloco.translate('appointments.date'), sortable: true },
+    { field: 'time', header: this.transloco.translate('appointments.time'), sortable: true },
     {
       field: 'status',
-      header: 'Estado',
+      header: this.transloco.translate('appointments.status'),
       type: 'status',
       format: (value: string) => this.getStatusLabel(value),
       statusSeverity: (value: string) => this.getStatusSeverity(value),
@@ -83,7 +88,7 @@ export class AppointmentsPageComponent {
     {
       id: '1',
       pet: 'Max',
-      service: 'Vacunación',
+      service: this.i18n.translate('common.vaccination'),
       provider: 'Veterinaria Central',
       date: '15/07/2024',
       time: '10:00',
@@ -92,7 +97,7 @@ export class AppointmentsPageComponent {
     {
       id: '2',
       pet: 'Luna',
-      service: 'Peluquería',
+      service: this.i18n.translate('common.grooming'),
       provider: 'Grooming Happy Pets',
       date: '18/07/2024',
       time: '14:30',
@@ -115,11 +120,11 @@ export class AppointmentsPageComponent {
   getStatusLabel(status: string): string {
     switch (status) {
       case 'scheduled':
-        return 'Programada';
+        return this.transloco.translate('appointments.scheduled');
       case 'completed':
-        return 'Completada';
+        return this.transloco.translate('appointments.completed');
       case 'cancelled':
-        return 'Cancelada';
+        return this.transloco.translate('appointments.cancelled');
       default:
         return status;
     }

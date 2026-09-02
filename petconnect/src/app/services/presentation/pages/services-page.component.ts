@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -8,6 +8,7 @@ import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { TableComponent, TableColumn } from '../../../shared/presentation/components/table/table.component';
 
 interface Service {
@@ -34,13 +35,14 @@ interface Service {
     FormsModule,
     SelectModule,
     TableComponent,
+    TranslocoModule,
   ],
   template: `
     <div class="page-content">
       <div class="flex justify-between align-items-center mb-4">
-        <h1 class="text-2xl font-bold m-0">Servicios</h1>
+        <h1 class="text-2xl font-bold m-0">{{ 'services.title' | transloco }}</h1>
         <p-button
-          label="Reservar Servicio"
+          label="{{ 'services.book' | transloco }}"
           icon="pi pi-plus"
           (onClick)="showAddDialog()"
         />
@@ -64,27 +66,30 @@ interface Service {
   `],
 })
 export class ServicesPageComponent {
+  readonly i18n = inject(TranslocoService);
+  private readonly transloco = inject(TranslocoService);
+
   serviceColumns: TableColumn[] = [
-    { field: 'name', header: 'Servicio', sortable: true },
-    { field: 'provider', header: 'Proveedor', sortable: true },
+    { field: 'name', header: this.transloco.translate('services.service'), sortable: true },
+    { field: 'provider', header: this.transloco.translate('services.provider'), sortable: true },
     {
       field: 'type',
-      header: 'Tipo',
+      header: this.transloco.translate('services.type'),
       type: 'status',
       format: (value: string) => this.getTypeLabel(value),
       statusSeverity: (value: string) => this.getTypeSeverity(value),
     },
     {
       field: 'price',
-      header: 'Precio',
+      header: this.transloco.translate('services.price'),
       format: (value: number) => `${value} €`,
     },
     {
       field: 'rating',
-      header: 'Valoración',
+      header: this.transloco.translate('services.rating'),
       format: (value: number) => `${value}`,
     },
-    { field: 'availability', header: 'Disponibilidad', sortable: true },
+    { field: 'availability', header: this.transloco.translate('services.availability'), sortable: true },
   ];
 
   services = signal<Service[]>([
@@ -99,12 +104,12 @@ export class ServicesPageComponent {
     },
     {
       id: '2',
-      name: 'Peluquería Canina',
+      name: this.i18n.translate('services.dogGrooming'),
       provider: 'Grooming Happy Pets',
       type: 'grooming',
       price: 25,
       rating: 4.5,
-      availability: 'Mar-Sáb 10:00-17:00',
+      availability: this.i18n.translate('services.hours'),
     },
     {
       id: '3',
@@ -128,15 +133,15 @@ export class ServicesPageComponent {
   getTypeLabel(type: string): string {
     switch (type) {
       case 'veterinary':
-        return 'Veterinaria';
+        return this.transloco.translate('services.veterinary');
       case 'grooming':
-        return 'Peluquería';
+        return this.transloco.translate('services.grooming');
       case 'walking':
-        return 'Paseo';
+        return this.transloco.translate('services.walking');
       case 'training':
-        return 'Adiestramiento';
+        return this.transloco.translate('services.training');
       case 'boarding':
-        return 'Guardería';
+        return this.transloco.translate('services.boarding');
       default:
         return type;
     }

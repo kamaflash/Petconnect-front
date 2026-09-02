@@ -1,3 +1,4 @@
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
@@ -569,6 +570,7 @@ interface NearbyService {
   `]
 })
 export class NearbyPageComponent implements OnInit, OnDestroy {
+  readonly i18n = inject(TranslocoService);
   private readonly geolocationService = inject(GeolocationService);
   private readonly messageService = inject(MessageService);
 
@@ -601,14 +603,14 @@ export class NearbyPageComponent implements OnInit, OnDestroy {
   services = signal<NearbyService[]>([
     {
       id: '1',
-      name: 'Clínica Veterinaria Central',
+      name: this.i18n.translate('nearby.centralClinic'),
       type: 'vet',
       category: 'Veterinaria General',
-      location: 'Calle Gran Vía 45, Madrid',
+      location: this.i18n.translate('nearby.address1'),
       distance: 2.3,
       rating: 4.5,
       image: 'https://picsum.photos/400/200?random=10',
-      description: 'Clínica veterinaria con servicios completos para mascotas',
+      description: this.i18n.translate('nearby.clinicDesc'),
       phone: '+34 912 345 678',
       website: 'www.vetcentral.es'
     },
@@ -621,7 +623,7 @@ export class NearbyPageComponent implements OnInit, OnDestroy {
       distance: 3.1,
       rating: 4.8,
       image: 'https://picsum.photos/400/200?random=11',
-      description: 'Protectora dedicada al rescate y adopción de animales',
+      description: this.i18n.translate('nearby.shelterDesc'),
       phone: '+34 913 456 789',
       website: 'www.protectoramadrid.org'
     },
@@ -630,11 +632,11 @@ export class NearbyPageComponent implements OnInit, OnDestroy {
       name: 'Hospital Veterinario 24h',
       type: 'vet',
       category: 'Urgencias Veterinarias',
-      location: 'Calle Alcalá 156, Madrid',
+      location: this.i18n.translate('nearby.address2'),
       distance: 4.5,
       rating: 4.2,
       image: 'https://picsum.photos/400/200?random=12',
-      description: 'Atención veterinaria de urgencia las 24 horas',
+      description: this.i18n.translate('nearby.emergency24'),
       phone: '+34 914 567 890',
       website: 'www.vet24h.es'
     },
@@ -656,7 +658,7 @@ export class NearbyPageComponent implements OnInit, OnDestroy {
       name: 'Protectora Huellas',
       type: 'shelter',
       category: 'Protectora de animales',
-      location: 'Calle Móstoles 45, Madrid',
+      location: this.i18n.translate('nearby.address3'),
       distance: 5.2,
       rating: 4.6,
       image: 'https://picsum.photos/400/200?random=14',
@@ -725,18 +727,18 @@ export class NearbyPageComponent implements OnInit, OnDestroy {
             this.loading.set(false);
           },
           error: () => {
-            this.currentAddress.set('Ubicación actual');
+            this.currentAddress.set(this.i18n.translate('nearby.currentLocation'));
             this.loading.set(false);
           }
         });
       },
       error: (err) => {
-        console.error('Error al obtener ubicación:', err);
+        console.error(this.i18n.translate('nearby.locationError'), err);
         this.error.set(err.message);
         this.loading.set(false);
         this.messageService.add({
           severity: 'error',
-          summary: 'Error de ubicación',
+          summary: this.i18n.translate('nearby.locationErrorTitle'),
           detail: err.message
         });
       }

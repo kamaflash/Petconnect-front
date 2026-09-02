@@ -1,3 +1,4 @@
+import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import {
   Component,
   signal,
@@ -39,6 +40,7 @@ import { Subscription } from 'rxjs';
   selector: 'app-messages-page',
   standalone: true,
   imports: [
+    TranslocoModule,
     CommonModule,
     ButtonModule,
     InputTextModule,
@@ -56,7 +58,7 @@ import { Subscription } from 'rxjs';
         <!-- Conversations List -->
         <div class="conversations-sidebar">
           <div class="conversations-header">
-            <h1>Mensajes</h1>
+            <h1>{{ 'messages.title' | transloco }}</h1>
             <button class="new-message-btn" (click)="openNewConversationDialog()">
               <i class="pi pi-pencil"></i>
             </button>
@@ -67,7 +69,7 @@ import { Subscription } from 'rxjs';
             <input
               type="text"
               pInputText
-              placeholder="Buscar conversaciones..."
+              [placeholder]="'messages.searchConversations' | transloco"
               [(ngModel)]="searchQuery"
             />
           </div>
@@ -88,7 +90,7 @@ import { Subscription } from 'rxjs';
                     <span class="conversation-time">{{ conversation.lastMessageAt | date:'shortTime' }}</span>
                   </div>
                   <div class="conversation-preview">
-                    <p class="last-message">{{ conversation.lastMessage || 'Empieza la conversación' }}</p>
+                    <p class="last-message">{{ conversation.lastMessage || this.i18n.translate('messages.startConversation') }}</p>
                     @if (conversation.unreadCount > 0) {
                       <span class="unread-badge">{{ conversation.unreadCount }}</span>
                     }
@@ -114,12 +116,12 @@ import { Subscription } from 'rxjs';
                     @if (isPartnerTyping()) {
                       <span class="typing-indicator">
                         <i class="pi pi-spin pi-spinner"></i>
-                        Escribiendo...
+                        {{ 'messages.typing' | transloco }}
                       </span>
                     } @else {
                       <span class="user-status" [class.online]="partnerOnline()">
                         <span class="status-dot"></span>
-                        {{ partnerOnline() ? 'En línea' : 'Desconectado' }}
+                        {{ partnerOnline() ? ('messages.online' | transloco) : ('messages.offline' | transloco) }}
                       </span>
                     }
                   </div>
@@ -143,12 +145,12 @@ import { Subscription } from 'rxjs';
                   @if (loadingMessages()) {
                     <div class="messages-loading">
                       <i class="pi pi-spin pi-spinner"></i>
-                      <span>Cargando mensajes...</span>
+                      <span>{{ 'messages.loading' | transloco }}</span>
                     </div>
                   } @else if (messages().length === 0) {
                     <div class="messages-empty">
                       <i class="pi pi-comments"></i>
-                      <p>Sin mensajes todavía. ¡Escribe el primero!</p>
+                      <p>{{ 'messages.empty' | transloco }}</p>
                     </div>
                   } @else {
                     @for (message of messages(); track message.id) {
@@ -171,7 +173,7 @@ import { Subscription } from 'rxjs';
                 <input
                   type="text"
                   pInputText
-                  placeholder="Escribe un mensaje..."
+                  [placeholder]="'messages.typePlaceholder' | transloco"
                   [(ngModel)]="newMessage"
                   (ngModelChange)="onTypingInput()"
                   (keyup.enter)="sendMessage()"
@@ -184,8 +186,8 @@ import { Subscription } from 'rxjs';
           } @else {
             <div class="no-conversation">
               <i class="pi pi-comments"></i>
-              <h2>Selecciona una conversación</h2>
-              <p>Elige un chat de la lista para empezar a mensajear</p>
+              <h2>{{ 'messages.selectConversation' | transloco }}</h2>
+              <p>{{ 'messages.selectConversationHint' | transloco }}</p>
             </div>
           }
         </div>
@@ -193,7 +195,7 @@ import { Subscription } from 'rxjs';
 
       <!-- Nuevo mensaje -->
       <p-dialog
-        header="Nuevo mensaje"
+        [header]="'messages.newConversation' | transloco"
         [visible]="showNewDialog()"
         (visibleChange)="showNewDialog.set($event)"
         [style]="{ width: '420px' }"
@@ -205,13 +207,13 @@ import { Subscription } from 'rxjs';
           <input
             type="text"
             pInputText
-            placeholder="Buscar personas..."
+            [placeholder]="'messages.searchPeople' | transloco"
             [(ngModel)]="newUserSearch"
           />
         </div>
         <div class="new-message-users">
           @if (newUserResults().length === 0) {
-            <p class="empty-users">No hay usuarios disponibles</p>
+            <p class="empty-users">{{ 'messages.noUsers' | transloco }}</p>
           }
           @for (user of newUserResults(); track user.authUserId) {
             <div class="new-message-user" (click)="startNewConversation(user)">
@@ -777,6 +779,7 @@ import { Subscription } from 'rxjs';
   `]
 })
 export class MessagesPageComponent implements OnInit, OnDestroy {
+  readonly i18n = inject(TranslocoService);
   private readonly messageService = inject(MessageService);
   private readonly route = inject(ActivatedRoute);
   private readonly authService = inject(AuthService);
@@ -923,7 +926,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
         .subscribe();
       this.webSocket.setTyping(conversation.id, false);
     } catch (e) {
-      console.error('Error al suscribirse a la conversación', e);
+      console.error(this.i18n.translate('messages.subscribeError'), e);
     }
 
     // Marcar como leídos todos los mensajes de la conversación
@@ -994,8 +997,8 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
         error: () =>
           this.messageService.add({
             severity: 'error',
-            summary: 'Error',
-            detail: 'No se pudo enviar el mensaje'
+            summary: this.i18n.translate('messages.error'),
+      detail: this.i18n.translate('messages.sendError')
           })
       });
   }
@@ -1103,8 +1106,8 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
       },
       error: () => this.messageService.add({
         severity: 'error',
-        summary: 'Error',
-        detail: 'No se pudo abrir la conversación'
+        summary: this.i18n.translate('messages.error'),
+        detail: this.i18n.translate('messages.openError')
       })
     });
   }
