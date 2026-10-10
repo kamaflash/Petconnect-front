@@ -1,4 +1,15 @@
-import { Component, OnInit, inject, ChangeDetectorRef, signal, computed } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
@@ -14,6 +25,7 @@ import { SkeletonModule } from 'primeng/skeleton';
 
 import {
   HomeService,
+  PostPageResponse,
   PostResponse,
   UserProfileResponse,
 } from '../../infrastructure/services/home.service';
@@ -176,6 +188,12 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
             (saveToggled)="onSaveToggled($event)"
           >
           </app-post-feed>
+          <div #postsLoadMoreSentinel class="posts-load-more-sentinel" aria-hidden="true"></div>
+          @if (loadingMorePosts()) {
+            <div class="posts-load-more" role="status" aria-label="Cargando más publicaciones">
+              <i class="pi pi-spin pi-spinner"></i>
+            </div>
+          }
         </div>
 
         <!-- RIGHT COLUMN -->
@@ -251,15 +269,32 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
         padding: 1.5rem 0;
       }
 
+      .posts-load-more-sentinel {
+        height: 1px;
+      }
+
+      .posts-load-more {
+        display: flex;
+        justify-content: center;
+        padding: 1rem;
+        color: var(--text-secondary);
+      }
+
       .home-container {
         margin: 0 auto;
         display: grid;
         grid-template-columns: 300px minmax(0, 1fr) 320px;
         max-width: var(--max-page-width);
         gap: 1.5rem;
-        padding: 0 1.5rem;
         width: 100%;
         box-sizing: border-box;
+      }
+
+      .home-heading {
+        max-width: var(--max-page-width);
+        margin-right: auto;
+        margin-left: auto;
+        width: calc(100% - 3rem);
       }
 
       /* ============================================================
@@ -930,7 +965,7 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
     `,
   ],
 })
-export class HomePageComponent implements OnInit {
+export class HomePageComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ============================================================
      DEPENDENCIES
      ============================================================ */
@@ -987,6 +1022,10 @@ export class HomePageComponent implements OnInit {
 
   loadingPosts = signal(true);
 
+  loadingMorePosts = signal(false);
+
+  hasMorePosts = signal(true);
+
   loadingStories = signal(true);
 
   loadingSuggestions = signal(true);
@@ -996,6 +1035,13 @@ export class HomePageComponent implements OnInit {
   loadingVets = signal(true);
 
   loadingAdoptions = signal(true);
+
+  private readonly postPageSize = 10;
+  private currentPostPage = 0;
+  private postsObserver?: IntersectionObserver;
+
+  @ViewChild('postsLoadMoreSentinel')
+  private postsLoadMoreSentinel?: ElementRef<HTMLElement>;
 
   /* ============================================================
      COMPUTED
@@ -1048,6 +1094,26 @@ export class HomePageComponent implements OnInit {
     this.initializeCurrentUser();
 
     this.loadAllData();
+  }
+
+  ngAfterViewInit(): void {
+    if (typeof IntersectionObserver === 'undefined' || !this.postsLoadMoreSentinel) {
+      return;
+    }
+
+    this.postsObserver = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          this.loadNextPostPage();
+        }
+      },
+      { rootMargin: '300px 0px' },
+    );
+    this.postsObserver.observe(this.postsLoadMoreSentinel.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    this.postsObserver?.disconnect();
   }
 
   /* ============================================================
@@ -1143,75 +1209,97 @@ export class HomePageComponent implements OnInit {
      ============================================================ */
 
   private loadPosts(): void {
+    this.currentPostPage = 0;
+    this.hasMorePosts.set(true);
+    this.loadingMorePosts.set(false);
     this.loadingPosts.set(true);
 
     const userId = this.currentUserId();
 
-    if (userId) {
-      this.homeService.getPostsByFollowing(userId).subscribe({
-        next: (posts) => {
-          this.homeService.getAllProfiles().subscribe({
-            next: (profiles) => {
-              this.processPosts(posts, profiles, userId);
-            },
+    this.loadPostPage(0, false, userId);
+  }
 
-            error: () => {
-              this.processPosts(posts, [], userId);
-            },
-          });
-        },
-
-        error: (error) => {
-          console.error('Error loading posts from following:', error);
-
-          this.loadAllPostsFallback(userId);
-        },
-      });
-
+  private loadNextPostPage(): void {
+    if (this.loadingPosts() || this.loadingMorePosts() || !this.hasMorePosts()) {
       return;
     }
 
-    this.loadAllPostsFallback('');
+    this.loadingMorePosts.set(true);
+    this.loadPostPage(this.currentPostPage + 1, true, this.currentUserId());
   }
 
-  private loadAllPostsFallback(userId: string): void {
-    this.homeService.getAllPosts().subscribe({
-      next: (posts) => {
-        this.homeService.getAllProfiles().subscribe({
-          next: (profiles) => {
-            this.processPosts(posts, profiles, userId);
-          },
+  private loadPostPage(page: number, append: boolean, userId: string): void {
+    const loadPublicPage = (): void => {
+      this.homeService.getPublicFeed(page, this.postPageSize).subscribe({
+        next: (response) => this.handlePostPage(response, page, append, userId),
+        error: (error) => this.handlePostPageError(error, append),
+      });
+    };
 
-          error: () => {
-            this.processPosts(posts, [], userId);
-          },
-        });
-      },
+    if (!userId) {
+      loadPublicPage();
+      return;
+    }
 
+    this.homeService.getPostsByFollowing(userId, page, this.postPageSize).subscribe({
+      next: (response) => this.handlePostPage(response, page, append, userId),
       error: (error) => {
-        console.error('Error loading posts:', error);
-
-        this.posts.set([]);
-
-        this.loadingPosts.set(false);
-
-        this.cdr.detectChanges();
+        console.error('Error loading posts from following; falling back to public feed:', error);
+        loadPublicPage();
       },
     });
+  }
+
+  private handlePostPage(
+    response: PostPageResponse,
+    page: number,
+    append: boolean,
+    userId: string,
+  ): void {
+    this.currentPostPage = page;
+    this.hasMorePosts.set(!response.last);
+
+    this.homeService.getAllProfiles().subscribe({
+      next: (profiles) => {
+        this.processPosts(response.content, profiles, userId, append);
+      },
+      error: (error) => {
+        console.error('Error loading profiles for posts:', error);
+        this.processPosts(response.content, [], userId, append);
+      },
+    });
+  }
+
+  private handlePostPageError(error: unknown, append: boolean): void {
+    console.error('Error loading posts:', error);
+
+    if (!append) {
+      this.posts.set([]);
+      this.hasMorePosts.set(false);
+    }
+
+    this.finishPostPageLoading(append);
+  }
+
+  private finishPostPageLoading(append: boolean): void {
+    if (append) {
+      this.loadingMorePosts.set(false);
+    } else {
+      this.loadingPosts.set(false);
+    }
+
+    this.cdr.detectChanges();
   }
 
   private processPosts(
     posts: PostResponse[],
     profiles: UserProfileResponse[],
     userId: string,
+    append: boolean,
   ): void {
     if (!posts || posts.length === 0) {
-      this.posts.set([]);
-
-      this.loadingPosts.set(false);
-
-      this.cdr.detectChanges();
-
+      this.hasMorePosts.set(false);
+      this.finishPostPageLoading(append);
       return;
     }
 
@@ -1250,12 +1338,7 @@ export class HomePageComponent implements OnInit {
     });
 
     if (!userId || loadedPosts.length === 0) {
-      this.posts.set(loadedPosts);
-
-      this.loadingPosts.set(false);
-
-      this.cdr.detectChanges();
-
+      this.applyLoadedPosts(loadedPosts, append);
       return;
     }
 
@@ -1312,21 +1395,13 @@ export class HomePageComponent implements OnInit {
               post.likeAvatars = avatarUrls;
             });
 
-            this.posts.set(loadedPosts);
-
-            this.loadingPosts.set(false);
-
-            this.cdr.detectChanges();
+            this.applyLoadedPosts(loadedPosts, append);
           },
 
           error: (error) => {
             console.error('Error loading like avatars:', error);
 
-            this.posts.set(loadedPosts);
-
-            this.loadingPosts.set(false);
-
-            this.cdr.detectChanges();
+            this.applyLoadedPosts(loadedPosts, append);
           },
         });
       },
@@ -1334,13 +1409,23 @@ export class HomePageComponent implements OnInit {
       error: (error) => {
         console.error('Error loading like status:', error);
 
-        this.posts.set(loadedPosts);
-
-        this.loadingPosts.set(false);
-
-        this.cdr.detectChanges();
+        this.applyLoadedPosts(loadedPosts, append);
       },
     });
+  }
+
+  private applyLoadedPosts(loadedPosts: Post[], append: boolean): void {
+    if (!append) {
+      this.posts.set(loadedPosts);
+    } else {
+      const existingIds = new Set(this.posts().map((post) => post.id));
+      this.posts.update((currentPosts) => [
+        ...currentPosts,
+        ...loadedPosts.filter((post) => !existingIds.has(post.id)),
+      ]);
+    }
+
+    this.finishPostPageLoading(append);
   }
 
   /* ============================================================

@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { inject } from '@angular/core';
 
@@ -9,38 +9,18 @@ export class ThemeService {
   private readonly document = inject(DOCUMENT);
 
   constructor() {
-    // Cargar tema guardado al iniciar
-    const savedTheme = localStorage.getItem('petconnect-theme');
-    if (savedTheme === 'dark') {
-      this.document.documentElement.classList.add('dark');
-    } else if (savedTheme === 'light') {
-      this.document.documentElement.classList.add('light');
-    } else {
-      // Detectar preferencia del sistema
-      if (typeof window !== 'undefined' && window.matchMedia) {
-        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-        if (mediaQuery.matches) {
-          this.document.documentElement.classList.add('dark');
-        } else {
-          this.document.documentElement.classList.add('light');
-        }
-      }
-    }
-
-    // Escuchar cambios en el sistema
+    const savedTheme = this.getSavedTheme();
+    const prefersDark = typeof window !== 'undefined'
+      && window.matchMedia?.('(prefers-color-scheme: dark)').matches;
+    this.applyTheme(savedTheme ? savedTheme === 'dark' : Boolean(prefersDark));
     this.watchSystemTheme();
   }
 
   toggleDarkMode(): void {
-    const isDark = this.document.documentElement.classList.contains('dark');
-    if (isDark) {
-      this.document.documentElement.classList.remove('dark');
-      this.document.documentElement.classList.add('light');
-      localStorage.setItem('petconnect-theme', 'light');
-    } else {
-      this.document.documentElement.classList.remove('light');
-      this.document.documentElement.classList.add('dark');
-      localStorage.setItem('petconnect-theme', 'dark');
+    const nextTheme = this.isDarkMode() ? 'light' : 'dark';
+    this.applyTheme(nextTheme === 'dark');
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('petconnect-theme', nextTheme);
     }
   }
 
@@ -53,18 +33,27 @@ export class ThemeService {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
       const handleChange = (e: MediaQueryListEvent) => {
-        const savedTheme = localStorage.getItem('petconnect-theme');
-        // Solo aplicar tema del sistema si no hay tema guardado
-        if (!savedTheme) {
-          if (e.matches) {
-            this.document.documentElement.classList.add('dark');
-          } else {
-            this.document.documentElement.classList.remove('dark');
-          }
+        if (!this.getSavedTheme()) {
+          this.applyTheme(e.matches);
         }
       };
 
       mediaQuery.addEventListener('change', handleChange);
     }
+  }
+
+  private getSavedTheme(): 'dark' | 'light' | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    const savedTheme = window.localStorage.getItem('petconnect-theme');
+    return savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : null;
+  }
+
+  private applyTheme(isDark: boolean): void {
+    const root = this.document.documentElement;
+    root.classList.remove('dark', 'light');
+    root.classList.add(isDark ? 'dark' : 'light');
   }
 }

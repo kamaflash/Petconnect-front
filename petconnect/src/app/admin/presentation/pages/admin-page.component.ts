@@ -71,10 +71,12 @@ interface ProductItem {
     <div class="admin-page">
       <div class="admin-container">
         <!-- Header -->
-        <div class="admin-header">
-          <h1>{{ 'admin.dashboardTitle' | transloco }}</h1>
-          <p class="welcome-text">{{ 'admin.welcome' | transloco:{ userName: userName() } }}</p>
-        </div>
+        <header class="admin-header page-heading-card">
+          <div class="page-heading-copy">
+            <h1>{{ 'admin.dashboardTitle' | transloco }}</h1>
+            <p class="welcome-text">{{ 'admin.welcome' | transloco:{ userName: userName() } }}</p>
+          </div>
+        </header>
 
         <!-- Tabs -->
         <app-tabs
@@ -404,12 +406,8 @@ interface ProductItem {
   styles: [`
     .admin-page {
       min-height: 100vh;
-      background-color: var(--bitbucket-header-bg);
+      background-color: var(--surface-bg);
       transition: background-color 0.3s ease;
-    }
-
-    .dark .admin-page {
-      background-color: #111827;
     }
 
     .admin-container {

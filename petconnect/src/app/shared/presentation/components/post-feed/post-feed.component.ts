@@ -277,7 +277,7 @@ export type PostViewMode = 'feed' | 'grid';
     .post-image-wrap {
       position: relative;
       width: 100%;
-      background: var(--surface-hover);
+      background: var(--surface-card);
     }
 
     .post-image {
@@ -285,7 +285,7 @@ export type PostViewMode = 'feed' | 'grid';
       width: 100%;
       max-height: 600px;
       object-fit: contain;
-      background: var(--surface-hover);
+      background: transparent;
     }
 
     .post-actions {

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { Observable } from 'rxjs';
 
@@ -12,6 +12,11 @@ export interface PostResponse {
   commentsCount: number;
   active: boolean;
   createdAt: string;
+}
+
+export interface PostPageResponse {
+  content: PostResponse[];
+  last: boolean;
 }
 
 export interface UserProfileResponse {
@@ -183,13 +188,15 @@ export class HomeService {
    }
 
    // Posts from followed users (for home feed)
-   getPostsByFollowing(userId: string): Observable<PostResponse[]> {
-     return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts/following/${userId}`);
+   getPostsByFollowing(userId: string, page: number = 0, size: number = 10): Observable<PostPageResponse> {
+     const params = new HttpParams().set('page', page).set('size', size);
+     return this.http.get<PostPageResponse>(`${this.apiUrl}/social/posts/following/${userId}`, { params });
    }
 
    // Public feed - all posts (for social page)
-   getPublicFeed(): Observable<PostResponse[]> {
-     return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts/feed`);
+   getPublicFeed(page: number = 0, size: number = 10): Observable<PostPageResponse> {
+     const params = new HttpParams().set('page', page).set('size', size);
+     return this.http.get<PostPageResponse>(`${this.apiUrl}/social/posts/feed`, { params });
    }
 
    // Following - get users that the current user follows

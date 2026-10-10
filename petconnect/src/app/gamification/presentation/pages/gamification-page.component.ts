@@ -71,15 +71,15 @@ interface UserStats {
         <!-- HEADER -->
         <!-- ========================================================= -->
 
-        <div class="gamification-page-header">
+        <header class="gamification-page-header page-heading-card">
           <div class="gamification-page-header-content">
-            <div class="gamification-page-header-left">
-                            <h2 class="gamification-page-header-title">{{ 'gam.headerTitle' | transloco }}</h2>
-              <p class="gamification-page-header-subtitle">{{ 'gam.headerSubtitle' | transloco }}</p>
+            <div class="gamification-page-header-left page-heading-copy">
+              <h1>{{ 'gam.headerTitle' | transloco }}</h1>
+              <p>{{ 'gam.headerSubtitle' | transloco }}</p>
             </div>
             <div class="gamification-page-header-stats">
               <div class="gamification-page-stat-item">
-                                <span class="gamification-page-stat-value">{{ userStats().level }}</span>
+                <span class="gamification-page-stat-value">{{ userStats().level }}</span>
                 <span class="gamification-page-stat-label">{{ 'gam.statLevel' | transloco }}</span>
               </div>
               <div class="gamification-page-stat-divider"></div>
@@ -89,12 +89,12 @@ interface UserStats {
               </div>
               <div class="gamification-page-stat-divider"></div>
               <div class="gamification-page-stat-item">
-                                <span class="gamification-page-stat-value">{{ userStats().achievementsUnlocked }}/{{ userStats().totalAchievements }}</span>
+                <span class="gamification-page-stat-value">{{ userStats().achievementsUnlocked }}/{{ userStats().totalAchievements }}</span>
                 <span class="gamification-page-stat-label">{{ 'gam.statAchievements' | transloco }}</span>
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
         <!-- ========================================================= -->
         <!-- MAIN CONTENT -->
@@ -319,10 +319,6 @@ interface UserStats {
        HEADER
        ============================================================== */
 
-    .gamification-page-header {
-      margin-bottom: 1.5rem;
-    }
-
     .gamification-page-header-content {
       display: flex;
       align-items: center;
@@ -336,26 +332,13 @@ interface UserStats {
       min-width: 0;
     }
 
-    .gamification-page-header-title {
-      margin: 0;
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #1a1a2e;
-    }
-
-    .gamification-page-header-subtitle {
-      margin: 0.125rem 0 0;
-      color: #6b7280;
-      font-size: 0.8125rem;
-    }
-
     .gamification-page-header-stats {
       display: flex;
       align-items: center;
       gap: 1.5rem;
       padding: 0.5rem 1rem;
-      background: #ffffff;
-      border-radius: 8px;
+      background: var(--surface-hover);
+      border-radius: var(--radius-md);
     }
 
     .gamification-page-stat-item {
@@ -368,7 +351,7 @@ interface UserStats {
     .gamification-page-stat-value {
       font-size: 1rem;
       font-weight: 600;
-      color: #1a1a2e;
+      color: var(--text-primary);
     }
 
     .gamification-page-stat-label {
@@ -449,7 +432,7 @@ interface UserStats {
     .gamification-page-profile-username {
       margin: 0.125rem 0;
       font-size: 0.75rem;
-      color: #6b7280;
+      color: var(--text-secondary);
     }
 
     .gamification-page-profile-rank {

@@ -38,22 +38,27 @@ export interface Tab {
   styles: [`
     .profile-tabs-instagram {
       margin-top: 1rem;
-      border-bottom: 1px solid var(--bitbucket-border);
       margin-bottom: 1rem;
+      overflow: hidden;
+      border-radius: var(--radius-lg);
+      background: var(--surface-card);
     }
 
     .tabs-container-instagram {
       display: flex;
       justify-content: center;
-      gap: 2rem;
-      padding: 0.75rem 0;
+      gap: clamp(0.75rem, 3vw, 2rem);
+      padding: 0 1rem;
+      overflow-x: auto;
+      scrollbar-width: thin;
     }
 
     .tab-button-instagram {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      padding: 0.5rem 0;
+      padding: 1rem 0;
+      flex-shrink: 0;
       background: none;
       border: none;
       cursor: pointer;
@@ -75,12 +80,12 @@ export interface Tab {
     .tab-button-instagram.active::after {
       content: '';
       position: absolute;
-      bottom: -0.75rem;
+      bottom: 0;
       left: 0;
       right: 0;
-      height: 2px;
+      height: 3px;
       background: var(--primary-color);
-      border-radius: 1px;
+      border-radius: 3px 3px 0 0;
     }
 
     .tab-button-instagram .material-symbols-rounded {
@@ -113,8 +118,29 @@ export interface Tab {
     }
 
     @media (max-width: 768px) {
-      .tabs-button-text {
-        display: none;
+      .tabs-container-instagram {
+        justify-content: flex-start;
+      }
+
+      .tab-button-instagram {
+        font-size: 0.875rem;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .tabs-container-instagram {
+        gap: 1rem;
+        padding: 0 0.75rem;
+      }
+
+      .tab-button-instagram {
+        gap: 0.375rem;
+        padding: 0.875rem 0;
+      }
+
+      .tab-button-instagram .material-symbols-rounded,
+      .tab-button-instagram .pi {
+        font-size: 1rem;
       }
     }
   `]

@@ -39,14 +39,16 @@ interface Service {
   ],
   template: `
     <div class="page-content">
-      <div class="flex justify-between align-items-center mb-4">
-        <h1 class="text-2xl font-bold m-0">{{ 'services.title' | transloco }}</h1>
+      <header class="page-heading-card">
+        <div class="page-heading-copy">
+          <h1>{{ 'services.title' | transloco }}</h1>
+        </div>
         <p-button
           label="{{ 'services.book' | transloco }}"
           icon="pi pi-plus"
           (onClick)="showAddDialog()"
         />
-      </div>
+      </header>
 
       <p-card>
         <app-table
@@ -61,7 +63,7 @@ interface Service {
     .page-content {
       max-width: var(--max-page-width);
       margin: 0 auto;
-      padding: 1.5rem;
+      padding: 0;
     }
   `],
 })

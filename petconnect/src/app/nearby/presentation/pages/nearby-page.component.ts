@@ -44,15 +44,17 @@ interface NearbyService {
     <div class="nearby-page" [class.dark]="isDarkMode()">
       <div class="nearby-container">
         <!-- Header -->
-        <div class="nearby-header">
-          <h1 class="nearby-title">
-            <i class="pi pi-map-marker"></i>
-            Servicios Cercanos
-          </h1>
-          <p class="nearby-subtitle">
-            Encuentra veterinarios, protectoras y eventos cerca de ti
-          </p>
-        </div>
+        <header class="nearby-header page-heading-card">
+          <div class="page-heading-copy">
+            <h1 class="nearby-title">
+              <i class="pi pi-map-marker"></i>
+              Servicios Cercanos
+            </h1>
+            <p class="nearby-subtitle">
+              Encuentra veterinarios, protectoras y eventos cerca de ti
+            </p>
+          </div>
+        </header>
 
         <!-- Filtros -->
         <div class="nearby-filters">
@@ -214,29 +216,11 @@ interface NearbyService {
 
     /* Header */
     .nearby-header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-
-    .nearby-title {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin: 0 0 0.5rem 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
+      justify-content: flex-start;
     }
 
     .nearby-title i {
       color: var(--primary-color);
-    }
-
-    .nearby-subtitle {
-      font-size: 1rem;
-      color: var(--text-secondary);
-      margin: 0;
     }
 
     /* Filters */
@@ -544,10 +528,6 @@ interface NearbyService {
     @media (max-width: 768px) {
       .nearby-container {
         padding: 1rem;
-      }
-
-      .nearby-title {
-        font-size: 1.5rem;
       }
 
       .nearby-filters {

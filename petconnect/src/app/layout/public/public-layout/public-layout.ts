@@ -65,6 +65,7 @@ import { TranslocoModule } from '@jsverse/transloco';
       display: flex;
       flex-direction: column;
       height: 100vh;
+      height: 100dvh;
       background-color: var(--surface-bg);
     }
 
@@ -80,7 +81,8 @@ import { TranslocoModule } from '@jsverse/transloco';
       flex-direction: column;
       flex: 1;
       overflow-y: auto;
-      height: 100%;
+      min-height: 0;
+      min-width: 0;
       padding-left: 72px;
       padding-top: 48px;
     }
@@ -108,7 +110,8 @@ import { TranslocoModule } from '@jsverse/transloco';
       bottom: 0;
       left: 0;
       right: 0;
-      height: 64px;
+      height: calc(64px + env(safe-area-inset-bottom));
+      box-sizing: border-box;
       background-color: color-mix(in srgb, var(--sidebar-bg) 90%, transparent);
       border-top: 1px solid var(--sidebar-border);
       z-index: 100;
@@ -179,7 +182,7 @@ import { TranslocoModule } from '@jsverse/transloco';
       .layout-content-wrapper {
         padding-left: 0;
         padding-top: 0;
-        padding-bottom: 64px;
+        padding-bottom: calc(64px + env(safe-area-inset-bottom));
       }
 
       .desktop-sidebar {

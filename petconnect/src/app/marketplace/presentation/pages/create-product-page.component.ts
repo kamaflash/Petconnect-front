@@ -32,10 +32,12 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
   template: `
     <div class="create-product-page">
       <div class="create-product-container">
-        <div class="page-header">
-          <h1>{{ this.i18n.translate('createProduct.title') }}</h1>
-          <p>{{ this.i18n.translate('createProduct.subtitle') }}</p>
-        </div>
+        <header class="page-header page-heading-card">
+          <div class="page-heading-copy">
+            <h1>{{ this.i18n.translate('createProduct.title') }}</h1>
+            <p>{{ this.i18n.translate('createProduct.subtitle') }}</p>
+          </div>
+        </header>
 
         <div class="product-form-card">
           <form (ngSubmit)="onSubmit()" #productForm="ngForm">
@@ -212,23 +214,6 @@ import { MarketplaceService, CreateProductRequest } from '../../infrastructure/s
       max-width: var(--max-page-width);
       margin: 0 auto;
       padding: 0 1rem;
-    }
-
-    .page-header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-
-    .page-header h1 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin: 0 0 0.5rem 0;
-    }
-
-    .page-header p {
-      color: var(--text-secondary);
-      margin: 0;
     }
 
     .product-form-card {

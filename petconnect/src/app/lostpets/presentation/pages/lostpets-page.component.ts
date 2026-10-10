@@ -40,14 +40,16 @@ interface LostPet {
   ],
   template: `
     <div class="page-content">
-      <div class="flex justify-between align-items-center mb-4">
-        <h1 class="text-2xl font-bold m-0">{{ 'lostPets.title' | transloco }}</h1>
+      <header class="page-heading-card">
+        <div class="page-heading-copy">
+          <h1>{{ 'lostPets.title' | transloco }}</h1>
+        </div>
         <p-button
           label="{{ 'lostPets.report' | transloco }}"
           icon="pi pi-plus"
           (onClick)="showAddDialog()"
         />
-      </div>
+      </header>
 
       <p-card>
         <app-table
@@ -62,7 +64,7 @@ interface LostPet {
     .page-content {
       max-width: var(--max-page-width);
       margin: 0 auto;
-      padding: 1.5rem;
+      padding: 0;
     }
   `],
 })

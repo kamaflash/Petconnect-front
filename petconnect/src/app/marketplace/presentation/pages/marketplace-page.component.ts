@@ -67,9 +67,9 @@ interface CartItem {
   template: `
     <div class="marketplace-page">
       <!-- Header -->
-      <div class="marketplace-header">
+      <header class="marketplace-header page-heading-card">
         <div class="header-content">
-          <div class="header-left">
+          <div class="header-left page-heading-copy">
             <h1>{{ 'marketplace.title' | transloco }}</h1>
             <p>{{ 'marketplace.subtitle' | transloco }}</p>
           </div>
@@ -101,7 +101,7 @@ interface CartItem {
             }
           </div>
         </div>
-      </div>
+      </header>
 
       <app-pet-feed-grid
         [items]="filteredProducts()"
@@ -227,16 +227,11 @@ interface CartItem {
 
     /* Header */
     .marketplace-header {
-      background: var(--surface-card);
-      border-bottom: 1px solid var(--surface-border);
-      padding: 1.5rem 0;
-      margin-bottom: 2rem;
+      gap: 1rem;
     }
 
     .header-content {
-      max-width: var(--max-page-width);
-      margin: 0 auto;
-      padding: 0 2rem;
+      width: 100%;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -244,23 +239,11 @@ interface CartItem {
       gap: 1rem;
     }
 
-    .header-left h1 {
-      margin: 0;
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-
-    .header-left p {
-      margin: 0.25rem 0 0;
-      color: var(--text-secondary);
-      font-size: 0.875rem;
-    }
-
     .header-right {
       display: flex;
       gap: 1rem;
       align-items: center;
+      flex-wrap: wrap;
     }
 
     .search-bar {

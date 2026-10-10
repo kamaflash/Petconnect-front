@@ -182,6 +182,12 @@ interface Notification {
   template: `
     <div class="social-page">
       <div class="social-container">
+        <header class="page-heading-card">
+          <div class="page-heading-copy">
+            <h1>{{ 'breadcrumb.social' | transloco }}</h1>
+          </div>
+        </header>
+
         <!-- Tabs -->
         <app-tabs
           [tabs]="socialTabs()"
@@ -571,12 +577,8 @@ interface Notification {
   styles: [`
     .social-page {
       min-height: 100vh;
-      background-color: var(--bitbucket-header-bg);
+      background-color: var(--surface-bg);
       transition: background-color 0.3s ease;
-    }
-
-    .dark .social-page {
-      background-color: #111827;
     }
 
     .social-container {

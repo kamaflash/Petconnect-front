@@ -48,7 +48,11 @@ interface Medication {
   ],
   template: `
     <div class="page-content">
-      <h1 class="text-2xl font-bold mb-4">{{ 'health.title' | transloco }}</h1>
+      <header class="page-heading-card">
+        <div class="page-heading-copy">
+          <h1>{{ 'health.title' | transloco }}</h1>
+        </div>
+      </header>
 
       <div class="grid">
         <div class="col-12 md:col-6">
@@ -79,7 +83,7 @@ interface Medication {
     .page-content {
       max-width: var(--max-page-width);
       margin: 0 auto;
-      padding: 1.5rem;
+      padding: 0;
     }
   `],
 })

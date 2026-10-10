@@ -64,10 +64,10 @@ interface Event {
   template: `
     <div class="events-page">
       <!-- Header -->
-      <div class="events-header">
+      <header class="events-header page-heading-card">
         <div class="header-content">
-          <div class="header-left">
-            <h3>{{ 'events.title' | transloco }}</h3>
+          <div class="header-left page-heading-copy">
+            <h1>{{ 'events.title' | transloco }}</h1>
             <p>{{ 'events.subtitle' | transloco }}</p>
           </div>
           <div class="header-stats">
@@ -82,7 +82,7 @@ interface Event {
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       <app-pet-feed-grid
         [items]="events()"
@@ -221,14 +221,11 @@ interface Event {
 
     /* Header */
     .events-header {
-      padding: 2rem 0;
-      margin-bottom: 2rem;
+      padding: 1rem 1.25rem;
     }
 
     .header-content {
-      max-width: var(--max-page-width);
-      margin: 0 auto;
-      padding: 0 2rem;
+      width: 100%;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -236,27 +233,13 @@ interface Event {
       gap: 1rem;
     }
 
-    .header-left h1 {
-      margin: 0;
-      font-size: 2rem;
-      font-weight: 700;
-      color: white;
-    }
-
-    .header-left p {
-      margin: 0.25rem 0 0;
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 1rem;
-    }
-
     .header-stats {
       display: flex;
       align-items: center;
       gap: 2rem;
-      background: rgba(255, 255, 255, 0.15);
-      padding: 1rem 2rem;
+      background: var(--surface-hover);
+      padding: 0.75rem 1rem;
       border-radius: var(--radius-md);
-      backdrop-filter: blur(10px);
     }
 
     .stat-item {
@@ -267,18 +250,18 @@ interface Event {
       display: block;
       font-size: 1.5rem;
       font-weight: 400;
-      color: white;
+      color: var(--text-primary);
     }
 
     .stat-label {
       font-size: 0.875rem;
-      color: rgba(255, 255, 255, 0.9);
+      color: var(--text-secondary);
     }
 
     .stat-divider {
       width: 1px;
       height: 3rem;
-      background: rgba(255, 255, 255, 0.3);
+      background: var(--surface-border);
     }
 
     /* Event Detail */

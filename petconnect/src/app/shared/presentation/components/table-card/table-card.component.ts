@@ -115,19 +115,24 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
             </div>
           }
         } @else {
-          <!-- Card para añadir -->
-          @if (editable()) {
-            <div class="add-card" (click)="onAdd.emit()">
-              <div class="add-card-content">
-                <i class="pi pi-plus add-icon"></i>
-                <span class="add-label">{{ addLabel() }}</span>
-              </div>
-            </div>
+          <ng-template #addCard>
+            @if (editable()) {
+              <button type="button" class="add-card" (click)="onAdd.emit()">
+                <span class="add-card-content">
+                  <i class="pi pi-plus add-icon" aria-hidden="true"></i>
+                  <span class="add-label">{{ addLabel() }}</span>
+                </span>
+              </button>
+            }
+          </ng-template>
+          @if (type() === 'service') {
+            <ng-container *ngTemplateOutlet="addCard"></ng-container>
           }
 
           @switch (type()) {
             @case ('post') {
               <div class="posts-grid-instagram">
+                <ng-container *ngTemplateOutlet="addCard"></ng-container>
                 @for (item of filteredItems(); track item.id) {
                   <div class="post-card-instagram">
                     <img [src]="item.image" alt="Post" class="post-image-instagram" />
@@ -142,6 +147,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
 
             @case ('pet') {
               <div class="card-grid">
+                <ng-container *ngTemplateOutlet="addCard"></ng-container>
                 @for (item of filteredItems(); track item.id; let idx = $index) {
                   <div class="card-item pet-card" [class.family-pet-card]="item.familyCard" (click)="onPetClick(item)">
                     <div class="card-actions-top">
@@ -208,6 +214,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
 
             @case ('event') {
               <div class="card-grid">
+                <ng-container *ngTemplateOutlet="addCard"></ng-container>
                 @for (item of filteredItems(); track item.id) {
                   <div class="card-item event-card">
                     <div class="card-actions-top">
@@ -249,6 +256,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
 
             @case ('story') {
               <div class="stories-row">
+                <ng-container *ngTemplateOutlet="addCard"></ng-container>
                 @for (item of filteredItems(); track item.id) {
                   <div class="story-item" [class.seen]="item.seen">
                     <div class="card-actions-top story-actions">
@@ -274,6 +282,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
 
             @case ('group') {
               <div class="card-grid">
+                <ng-container *ngTemplateOutlet="addCard"></ng-container>
                 @for (item of filteredItems(); track item.id) {
                   <div class="card-item group-card">
                     <div class="card-actions-top">
@@ -312,6 +321,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
 
             @case ('product') {
               <div class="product-grid">
+                <ng-container *ngTemplateOutlet="addCard"></ng-container>
                 @for (item of filteredItems(); track item.id) {
                   <div class="product-card">
                     <div class="card-actions-top">
@@ -393,7 +403,6 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 1rem;
     }
-
     .card-item {
       background-color: var(--bitbucket-header-bg);
       border: 1px solid var(--bitbucket-border);
@@ -706,7 +715,6 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
       grid-template-columns: repeat(3, 1fr);
       gap: 0.5rem;
     }
-
     @media (max-width: 768px) {
       .posts-grid-instagram {
         grid-template-columns: 1fr;

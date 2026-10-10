@@ -34,14 +34,16 @@ interface UserProfile {
   ],
   template: `
     <div class="page-content">
-      <div class="flex justify-between align-items-center mb-4">
-        <h1 class="text-2xl font-bold m-0">{{ this.i18n.translate('users.myProfile') }}</h1>
+      <header class="page-heading-card">
+        <div class="page-heading-copy">
+          <h1>{{ this.i18n.translate('users.myProfile') }}</h1>
+        </div>
         <p-button
           [label]="isEditing ? this.i18n.translate('users.cancel') : this.i18n.translate('users.editProfile')"
           [icon]="isEditing ? 'pi pi-times' : 'pi pi-pencil'"
           (onClick)="toggleEdit()"
         />
-      </div>
+      </header>
 
       <div class="grid">
         <div class="col-12 md:col-4">

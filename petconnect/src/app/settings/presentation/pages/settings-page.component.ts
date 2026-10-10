@@ -35,10 +35,12 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
   template: `
     <div class="settings-page">
       <div class="settings-container">
-        <div class="settings-header">
-          <h1 class="settings-title">{{ 'settings.title' | transloco }}</h1>
-          <p class="settings-subtitle">{{ 'settings.subtitle' | transloco }}</p>
-        </div>
+        <header class="settings-header page-heading-card">
+          <div class="page-heading-copy">
+            <h1>{{ 'settings.title' | transloco }}</h1>
+            <p>{{ 'settings.subtitle' | transloco }}</p>
+          </div>
+        </header>
 
         <!-- Sección de Apariencia -->
         <div class="settings-section">
@@ -155,24 +157,6 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
     .settings-container {
       max-width: var(--max-page-width);
       margin: 0 auto;
-    }
-
-    .settings-header {
-      margin-bottom: 2.5rem;
-    }
-
-    .settings-title {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin: 0 0 0.5rem 0;
-      letter-spacing: -0.02em;
-    }
-
-    .settings-subtitle {
-      color: var(--text-secondary);
-      font-size: 0.9375rem;
-      margin: 0;
     }
 
     .settings-section {

@@ -36,14 +36,16 @@ interface Post {
   ],
   template: `
     <div class="page-content">
-      <div class="flex justify-between align-items-center mb-4">
-        <h1 class="text-2xl font-bold m-0">{{ 'content.posts' | transloco }}</h1>
+      <header class="page-heading-card">
+        <div class="page-heading-copy">
+          <h1>{{ 'content.posts' | transloco }}</h1>
+        </div>
         <p-button
           label="{{ 'content.newPost' | transloco }}"
           icon="pi pi-plus"
           (onClick)="showAddDialog()"
         />
-      </div>
+      </header>
 
       <div class="flex flex-column gap-3">
         @for (post of posts(); track post.id) {
@@ -83,7 +85,7 @@ interface Post {
     .page-content {
       max-width: var(--max-page-width);
       margin: 0 auto;
-      padding: 1.5rem;
+      padding: 0;
     }
   `],
 })

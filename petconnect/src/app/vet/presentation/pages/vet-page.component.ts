@@ -117,6 +117,12 @@ interface Product {
   template: `
     <div class="vet-page">
       <div class="vet-container">
+        <header class="page-heading-card">
+          <div class="page-heading-copy">
+            <h1>{{ 'breadcrumb.health' | transloco }}</h1>
+          </div>
+        </header>
+
         <!-- Tabs -->
         <app-tabs
           [tabs]="vetTabs()"
@@ -407,12 +413,8 @@ interface Product {
   styles: [`
     .vet-page {
       min-height: 100vh;
-      background-color: var(--bitbucket-header-bg);
+      background-color: var(--surface-bg);
       transition: background-color 0.3s ease;
-    }
-
-    .dark .vet-page {
-      background-color: #111827;
     }
 
     /* Container */

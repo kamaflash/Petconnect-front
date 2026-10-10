@@ -41,6 +41,12 @@ interface Pet {
   ],
   template: `
     <div class="adoptions-page">
+      <header class="page-heading-card">
+        <div class="page-heading-copy">
+          <h1>{{ 'breadcrumb.adoptions' | transloco }}</h1>
+        </div>
+      </header>
+
       <app-pet-feed-grid
         [items]="pets()"
         [itemLabel]="'adoptions.itemLabel' | transloco"

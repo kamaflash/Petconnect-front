@@ -36,7 +36,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
         <!-- Left: Logo + Navigation -->
         <div class="header-left">
            <div class="logo-container" routerLink="/" style="cursor: pointer;">
-               <img src="https://res.cloudinary.com/dxjcjee8f/image/upload/v1784374711/m9caz3kr9yusdgis1k42.png" alt="Petopia" class="logo-image" />
+               <img src="https://res.cloudinary.com/dxjcjee8f/image/upload/v1784374711/m9caz3kr9yusdgis1k42.png" alt="Petconnect" class="logo-image" />
            </div>
         </div>
 
@@ -52,6 +52,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 class="p-button-text p-button-sm header-btn"
                 (click)="toggleTheme()"
                 pTooltip="{{ 'header.tooltipToggleTheme' | transloco }}"
+                [attr.aria-label]="'header.tooltipToggleTheme' | transloco"
                 tooltipPosition="bottom"
               ></button>
 
@@ -61,6 +62,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 icon="pi pi-bell"
                 class="p-button-text p-button-sm header-btn"
                 pTooltip="{{ 'header.tooltipNotifications' | transloco }}"
+                [attr.aria-label]="'header.tooltipNotifications' | transloco"
                 tooltipPosition="bottom"
                 (click)="onNotifications()"
               >
@@ -73,6 +75,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 icon="pi pi-envelope"
                 class="p-button-text p-button-sm header-btn"
                 pTooltip="{{ 'header.tooltipMessages' | transloco }}"
+                [attr.aria-label]="'header.tooltipMessages' | transloco"
                 tooltipPosition="bottom"
                 (click)="onMessages()"
               >
@@ -87,6 +90,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 icon="pi pi-briefcase"
                 class="p-button-text p-button-sm header-btn"
                 pTooltip="{{ 'header.tooltipAdmin' | transloco }}"
+                [attr.aria-label]="'header.tooltipAdmin' | transloco"
                 tooltipPosition="bottom"
                 (click)="onManagement()"
               ></button>
@@ -98,6 +102,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                   class="p-button-text p-button-sm header-btn user-btn"
                   (click)="menu.toggle($event)"
                   pTooltip="{{ 'header.tooltipMenu' | transloco }}"
+                  [attr.aria-label]="'header.tooltipMenu' | transloco"
                   tooltipPosition="bottom"
                 >
                   @if (isLoggedIn()) {
@@ -140,6 +145,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 class="p-button-text p-button-sm header-btn"
                 (click)="toggleTheme()"
                 pTooltip="{{ 'header.tooltipToggleTheme' | transloco }}"
+                [attr.aria-label]="'header.tooltipToggleTheme' | transloco"
                 tooltipPosition="bottom"
               ></button>
               <button
@@ -147,6 +153,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 icon="pi pi-envelope"
                 class="p-button-text p-button-sm header-btn"
                 pTooltip="{{ 'header.tooltipMessages' | transloco }}"
+                [attr.aria-label]="'header.tooltipMessages' | transloco"
                 tooltipPosition="bottom"
                 (click)="onMessages()"
               >
@@ -159,6 +166,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 icon="pi pi-bell"
                 class="p-button-text p-button-sm header-btn"
                 pTooltip="{{ 'header.tooltipNotifications' | transloco }}"
+                [attr.aria-label]="'header.tooltipNotifications' | transloco"
                 tooltipPosition="bottom"
                 (click)="onNotifications()"
               >
@@ -169,6 +177,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 icon="pi pi-cog"
                 class="p-button-text p-button-sm header-btn"
                 pTooltip="{{ 'header.tooltipSettings' | transloco }}"
+                [attr.aria-label]="'header.tooltipSettings' | transloco"
                 tooltipPosition="bottom"
                 (click)="onSettings()"
               ></button>
@@ -177,6 +186,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 icon="pi pi-briefcase"
                 class="p-button-text p-button-sm header-btn"
                 pTooltip="{{ 'header.tooltipAdmin' | transloco }}"
+                [attr.aria-label]="'header.tooltipAdmin' | transloco"
                 tooltipPosition="bottom"
                 (click)="onManagement()"
               ></button>
@@ -185,6 +195,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 icon="pi pi-user"
                 class="p-button-text p-button-sm header-btn"
                 pTooltip="{{ 'header.tooltipProfile' | transloco }}"
+                [attr.aria-label]="'header.tooltipProfile' | transloco"
                 tooltipPosition="bottom"
                 (click)="onProfile()"
               ></button>
@@ -196,6 +207,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
               class="p-button-text p-button-sm header-btn"
               (click)="onLogin()"
               pTooltip="{{ 'header.tooltipLogin' | transloco }}"
+              [attr.aria-label]="'header.tooltipLogin' | transloco"
               tooltipPosition="bottom"
             ></button>
           }
@@ -303,8 +315,9 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 
     /* ===== LOGO ===== */
     .logo-image {
-      width: 70px !important;
-      height: 70px !important;
+      width: 40px !important;
+      height: 40px !important;
+      object-fit: contain;
     }
 
     /* ===== USER MENU ===== */

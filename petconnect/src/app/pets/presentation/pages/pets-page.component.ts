@@ -32,14 +32,14 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
   template: `
     <p-toast />
     <main class="page-content family-page">
-      <header class="page-header">
-        <div>
+      <header class="page-header page-heading-card">
+        <div class="page-heading-copy">
           <h1 class="text-2xl font-bold m-0">{{ 'petsPage.title' | transloco }}</h1>
           <p class="page-subtitle">{{ 'petsPage.subtitle' | transloco }}</p>
         </div>
       </header>
 
-      <section class="care-summary" *ngIf="!loading() && !loadFailed() && pets().length > 0" aria-labelledby="care-summary-title">
+      <section class="care-summary card-modern  card-orange-border" *ngIf="!loading() && !loadFailed() && pets().length > 0" aria-labelledby="care-summary-title">
         <div class="card-header">
           <i class="pi pi-heart card-header-icon" aria-hidden="true"></i>
           <h2 id="care-summary-title" class="card-header-title">{{ 'petsPage.careTitle' | transloco }}</h2>
@@ -64,7 +64,7 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
         </div>
       </section>
 
-      <section class="pets-panel card-modern" *ngIf="loading()" [attr.aria-label]="'petsPage.loading' | transloco" aria-busy="true">
+      <section class="pets-panel card-modern " *ngIf="loading()" [attr.aria-label]="'petsPage.loading' | transloco" aria-busy="true">
         <div class="card-header">
           <i class="pi pi-paw card-header-icon" aria-hidden="true"></i>
           <span class="card-header-title">{{ 'petsPage.loading' | transloco }}</span>
@@ -158,15 +158,19 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
   `,
   styles: [`
     :host { display: block; }
-    .family-page { max-width: var(--max-page-width); margin: 0 auto; padding: 1.5rem; }
-    .page-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
+    .family-page { max-width: var(--max-page-width); margin: 0 auto; padding: 0 0 1.5rem; }
+    .page-header { justify-content: space-between; gap: 1rem; }
     .page-subtitle { margin: .5rem 0 0; color: var(--text-secondary); }
-    .card-modern { overflow: hidden; margin-bottom: 1rem; border-radius: var(--radius-md); background: var(--surface-card); }
+    .card-modern { overflow: hidden; margin-bottom: 1rem; border-radius: var(--radius-lg); background: var(--surface-card); }
+    .card-orange-border { border: 1px solid var(--surface-border) }
+    .care-summary { border-color: color-mix(in srgb, var(--primary-color) 32%, var(--surface-border)); background: color-mix(in srgb, var(--primary-color) 5%, var(--surface-card)); }
     .card-header { display: flex; align-items: center; gap: .5rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--surface-border); }
     .card-header-icon { color: var(--text-secondary); font-size: 1.125rem; }
     .card-header-title { color: var(--text-primary); font-size: .9375rem; font-weight: 600; }
     .card-body { padding: .75rem 1.25rem; }
     .care-summary h2 { margin: 0; }
+    .care-summary .card-header { background: color-mix(in srgb, var(--primary-color) 8%, var(--surface-card)); }
+    .care-summary .card-header-icon { color: var(--primary-color); }
     .care-summary-body { display: grid; grid-template-columns: minmax(180px, .8fr) minmax(0, 1.2fr) auto; align-items: center; gap: 1rem; }
     .care-summary-copy { margin: 0; color: var(--text-secondary); font-size: .875rem; line-height: 1.5; }
     .care-list { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }
@@ -192,7 +196,7 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
       .care-more { justify-self: start; }
     }
     @media (max-width: 600px) {
-      .family-page { padding: 1rem; }
+      .family-page { padding-bottom: 1rem; }
       .page-header { align-items: flex-start; flex-direction: column; }
       .pets-panel-header { align-items: flex-start; }
       .care-list a { flex-direction: column; gap: .15rem; }
