@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, ChangeDetectorRef, signal, computed } from '@angular/core';
 
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -64,50 +64,35 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
     TranslocoModule,
   ],
 
-  template: `
-    <div class="home-page">
+    template: `
+<div class="home-page">
       <div class="home-container">
-        <!-- ========================================================= -->
         <!-- LEFT COLUMN -->
-        <!-- ========================================================= -->
-
         <div class="left-column">
-          <!-- ===================== MERCADO ===================== -->
-
+          <!-- MERCADO -->
           <div class="card-modern">
             <div class="card-header">
               <i class="pi pi-shopping-cart card-header-icon"></i>
               <span class="card-header-title"> {{ 'home.marketPlace' | transloco }} </span>
+              <a routerLink="/marketplace" class="card-header-link">{{ 'home.seeAll' | transloco }}</a>
             </div>
-
             <div class="card-body">
               @if (loadingPromos()) {
                 <div class="loading-list">
                   <p-skeleton width="100%" height="70px" styleClass="mb-2" />
-
                   <p-skeleton width="100%" height="70px" styleClass="mb-2" />
                 </div>
               } @else {
                 @for (promo of marketPromos; track promo.title) {
                   <div class="promo-item">
                     <img [src]="promo.image" [alt]="promo.title" class="promo-image" />
-
                     <div class="promo-content">
-                      <p class="promo-title">
-                        {{ promo.title }}
-                      </p>
-
-                      <p class="promo-desc">
-                        {{ promo.description }}
-                      </p>
-
-                      @if (promo.tag) {
-                        <p-tag [value]="promo.tag" severity="warn"> </p-tag>
-                      }
+                      <p class="promo-title">{{ promo.title }}</p>
+                      <p class="promo-desc">{{ promo.description }}</p>
+                      @if (promo.tag) { <p-tag [value]="promo.tag" severity="warn"> </p-tag> }
                     </div>
                   </div>
                 }
-
                 @if (marketPromos.length === 0) {
                   <div class="empty-state">{{ 'home.noPromotions' | transloco }}</div>
                 }
@@ -115,83 +100,20 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
             </div>
           </div>
 
-          <!-- ===================== VETERINARIOS ===================== -->
-
-          <div class="card-modern">
-            <div class="card-header">
-              <i class="pi pi-user-md card-header-icon"></i>
-
-              <span class="card-header-title"> {{ 'home.veterinarians' | transloco }} </span>
-            </div>
-
-            <div class="card-body">
-              @if (loadingVets()) {
-                @for (item of [1, 2, 3]; track item) {
-                  <div class="skeleton-user">
-                    <p-skeleton shape="circle" size="40px"> </p-skeleton>
-
-                    <div class="skeleton-user-info">
-                      <p-skeleton width="80%" height="12px"> </p-skeleton>
-
-                      <p-skeleton width="55%" height="10px"> </p-skeleton>
-                    </div>
-                  </div>
-                }
-              } @else {
-                @for (vet of vets; track vet.userId) {
-                  <div class="suggestion-item">
-                    <p-avatar [image]="vet.avatar" shape="circle" size="normal"> </p-avatar>
-
-                    <div class="suggestion-info">
-                      <a [routerLink]="'/profile/' + vet.userId" class="suggestion-name">
-                        {{ vet.name }}
-                      </a>
-
-                      <span class="suggestion-username">
-                        {{ vet.username }}
-                      </span>
-
-                      <span class="suggestion-followers"> {{ vet.followers }} {{ 'home.followers' | transloco }} </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      class="follow-btn"
-                      [class.following]="vet.isFollowing"
-                      (click)="toggleFollow(vet)"
-                    >
-                      <i [class]="vet.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"> </i>
-
-                      {{ vet.isFollowing ? ('home.following' | transloco) : ('home.follow' | transloco) }}
-                    </button>
-                  </div>
-                }
-
-                @if (vets.length === 0) {
-                  <div class="empty-state">{{ 'home.noVets' | transloco }}</div>
-                }
-              }
-            </div>
-          </div>
-
-          <!-- ===================== ADOPCIONES ===================== -->
-
+          <!-- ADOPCIONES -->
           <div class="card-modern">
             <div class="card-header">
               <i class="pi pi-heart card-header-icon"></i>
-
               <span class="card-header-title"> {{ 'home.adoptions' | transloco }} </span>
+              <a routerLink="/adoptions" class="card-header-link">{{ 'home.seeAll' | transloco }}</a>
             </div>
-
             <div class="card-body">
               @if (loadingAdoptions()) {
                 @for (item of [1, 2, 3]; track item) {
                   <div class="skeleton-user">
                     <p-skeleton shape="circle" size="56px"> </p-skeleton>
-
                     <div class="skeleton-user-info">
                       <p-skeleton width="80%" height="12px"> </p-skeleton>
-
                       <p-skeleton width="60%" height="10px"> </p-skeleton>
                     </div>
                   </div>
@@ -200,26 +122,13 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
                 @for (adoption of newAdoptions; track adoption.name) {
                   <div class="adoption-item">
                     <img [src]="adoption.image" [alt]="adoption.name" class="adoption-image" />
-
                     <div class="adoption-info">
-                      <p class="adoption-name">
-                        {{ adoption.name }}
-                      </p>
-
-                      <p class="adoption-breed">
-                        {{ adoption.breed }}
-                      </p>
-
-                      <p-button
-                        label="Conocer"
-                        [routerLink]="'/profile/pet/' + adoption.id"
-                        styleClass="p-button-sm p-button-outlined"
-                      >
-                      </p-button>
+                      <p class="adoption-name">{{ adoption.name }}</p>
+                      <p class="adoption-breed">{{ adoption.breed }}</p>
+                      <p-button label="{{ 'home.know' | transloco }}" (click)="openPetProfile(adoption.petId)" styleClass="p-button-sm p-button-outlined"></p-button>
                     </div>
                   </div>
                 }
-
                 @if (newAdoptions.length === 0) {
                   <div class="empty-state">{{ 'home.noAdoptions' | transloco }}</div>
                 }
@@ -228,28 +137,19 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
           </div>
         </div>
 
-        <!-- ========================================================= -->
         <!-- CENTER COLUMN -->
-        <!-- ========================================================= -->
-
         <div class="center-column">
-          <!-- ===================== LOADING ===================== -->
-
           @if (loadingPosts()) {
             <div class="loading-overlay">
               <p-progressBar mode="indeterminate" [style]="{ height: '4px' }"> </p-progressBar>
             </div>
           }
-
-          <!-- ===================== STORIES ===================== -->
-
           <div class="stories-card">
             <div class="stories-scroll">
               @if (loadingStories()) {
                 @for (item of [1, 2, 3, 4, 5]; track item) {
                   <div class="story-item">
                     <p-skeleton shape="circle" size="56px"> </p-skeleton>
-
                     <p-skeleton width="50px" height="9px"> </p-skeleton>
                   </div>
                 }
@@ -259,22 +159,15 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
                     <div class="story-ring" [class.seen]="story.seen">
                       <p-avatar [image]="story.user.avatar" shape="circle" size="large"> </p-avatar>
                     </div>
-
-                    <span class="story-name">
-                      {{ story.user.name }}
-                    </span>
+                    <span class="story-name">{{ story.user.name }}</span>
                   </a>
                 }
-
                 @if (stories.length === 0) {
                   <div class="empty-stories">{{ 'home.noStories' | transloco }}</div>
                 }
               }
             </div>
           </div>
-
-          <!-- ===================== FEED ===================== -->
-
           <app-post-feed
             [posts]="postItems()"
             [loading]="loadingPosts()"
@@ -285,182 +178,68 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
           </app-post-feed>
         </div>
 
-        <!-- ========================================================= -->
         <!-- RIGHT COLUMN -->
-        <!-- ========================================================= -->
-
         <div class="right-column">
-          <!-- ===================== LEVEL ===================== -->
-
-          <div class="level-card">
-            <div class="level-top">
-              <div class="level-text">
-                <span class="level-label"> {{ 'home.level' | transloco }} </span>
-
-                <span class="level-number"> {{ 'home.levelNumber' | transloco: { level: userLevel.level } }} </span>
-              </div>
-
-              <i class="pi pi-trophy level-icon"></i>
-            </div>
-
-            <div class="level-bar-wrap">
-              <p-progressBar [value]="levelProgress" styleClass="level-progress-bar">
-              </p-progressBar>
-
-              <span class="level-xp"> {{ userLevel.currentXp }} / {{ userLevel.totalXp }} XP </span>
-            </div>
-          </div>
-
-          <!-- ===================== ACHIEVEMENTS ===================== -->
-
-          <div class="card-modern">
-            <div class="card-header">
-              <span class="card-header-title"> {{ 'home.upcomingAchievements' | transloco }} </span>
-            </div>
-
-            <div class="card-body">
-              @if (loadingAchievements()) {
-                @for (item of [1, 2, 3]; track item) {
-                  <div class="skeleton-achievement">
-                    <p-skeleton shape="circle" size="44px"> </p-skeleton>
-
-                    <div class="skeleton-user-info">
-                      <p-skeleton width="80%" height="12px"> </p-skeleton>
-
-                      <p-skeleton width="100%" height="8px"> </p-skeleton>
-
-                      <p-skeleton width="100%" height="5px"> </p-skeleton>
-                    </div>
-                  </div>
-                }
-              } @else {
-                @for (achievement of upcomingAchievements; track achievement.name) {
-                  <div class="achievement-item">
-                    <div class="achievement-icon" [class.unlocked]="achievement.unlocked">
-                      <i class="pi" [class]="achievement.icon"> </i>
-                    </div>
-
-                    <div class="achievement-info">
-                      <p class="achievement-name">
-                        {{ achievement.name }}
-                      </p>
-
-                      <p class="achievement-desc">
-                        {{ achievement.description }}
-                      </p>
-
-                      <div class="achievement-bar">
-                        <p-progressBar
-                          [value]="getAchievementProgress(achievement)"
-                          styleClass="achievement-progress-bar"
-                        >
-                        </p-progressBar>
-
-                        <span class="achievement-count">
-                          {{ achievement.progress }} /
-                          {{ achievement.total }}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                }
-
-                @if (upcomingAchievements.length === 0) {
-                  <div class="empty-state">{{ 'home.noAchievements' | transloco }}</div>
-                }
-              }
-            </div>
-          </div>
-
-          <!-- ===================== SUGGESTIONS ===================== -->
-
+          <!-- A QUIEN SEGUIR (unificado) -->
           <div class="card-modern">
             <div class="card-header">
               <span class="card-header-title"> {{ 'home.whoToFollow' | transloco }} </span>
             </div>
-
             <div class="card-body">
-              @if (loadingSuggestions()) {
-                @for (item of [1, 2, 3, 4]; track item) {
+              @if (peopleLoading()) {
+                @for (item of [1, 2, 3]; track item) {
                   <div class="skeleton-user">
                     <p-skeleton shape="circle" size="40px"> </p-skeleton>
-
                     <div class="skeleton-user-info">
                       <p-skeleton width="80%" height="12px"> </p-skeleton>
-
                       <p-skeleton width="55%" height="10px"> </p-skeleton>
                     </div>
                   </div>
                 }
               } @else {
-                @for (suggestion of suggestions; track suggestion.userId) {
+                @for (person of peopleToFollow(); track person.userId) {
                   <div class="suggestion-item">
-                    <p-avatar [image]="suggestion.avatar" shape="circle" size="normal"> </p-avatar>
-
+                    <p-avatar [image]="person.avatar" shape="circle" size="normal"> </p-avatar>
                     <div class="suggestion-info">
-                      <a [routerLink]="'/profile/' + suggestion.userId" class="suggestion-name">
-                        {{ suggestion.name }}
-                      </a>
-
-                      <span class="suggestion-username">
-                        {{ suggestion.username }}
-                      </span>
-
-                      <span class="suggestion-followers">
-                        {{ suggestion.followers }} {{ 'home.followers' | transloco }}
-                      </span>
+                      <a [routerLink]="'/profile/' + person.userId" class="suggestion-name">{{ person.name }}</a>
+                      <span class="suggestion-username">{{ person.username }}</span>
+                      <span class="suggestion-followers">{{ person.followers }} {{ 'home.followers' | transloco }}</span>
                     </div>
-
-                    <button
-                      type="button"
-                      class="follow-btn"
-                      [class.following]="suggestion.isFollowing"
-                      (click)="toggleFollow(suggestion)"
-                    >
-                      <i [class]="suggestion.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"> </i>
-
-                      {{ suggestion.isFollowing ? ('home.following' | transloco) : ('home.follow' | transloco) }}
+                    <button type="button" class="follow-btn" [class.following]="person.isFollowing" (click)="toggleFollow(person)">
+                      <i [class]="person.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"> </i>
+                      {{ person.isFollowing ? ('home.following' | transloco) : ('home.follow' | transloco) }}
                     </button>
                   </div>
                 }
-
-                @if (suggestions.length === 0) {
+                @if (peopleToFollow().length === 0) {
                   <div class="empty-state">{{ 'home.noSuggestions' | transloco }}</div>
                 }
               }
             </div>
           </div>
 
-          <!-- ===================== TRENDS ===================== -->
-
+          <!-- GAMIFICACION (mini-card) -->
           <div class="card-modern">
             <div class="card-header">
-              <span class="card-header-title"> Tendencias </span>
+              <i class="pi pi-trophy card-header-icon"></i>
+              <span class="card-header-title"> {{ 'home.gamification' | transloco }} </span>
             </div>
-
             <div class="card-body">
-              @for (trend of trendingTopics(); track trend.rank) {
-                <div class="trend-item">
-                  <span class="trend-category"> #{{ trend.rank }} Tendencia </span>
-
-                  <span class="trend-name">
-                    {{ trend.name }}
-                  </span>
-
-                  <span class="trend-posts"> {{ trend.posts }} publicaciones </span>
-                </div>
-              }
-
-              @if (trendingTopics().length === 0) {
-                <div class="empty-state">{{ 'home.noTrends' | transloco }}</div>
-              }
+              <div class="level-text">
+                <span class="level-label">{{ 'home.level' | transloco }}</span>
+                <span class="level-number">{{ 'home.levelNumber' | transloco: { level: userLevel.level } }}</span>
+              </div>
+              <div class="level-bar-wrap">
+                <p-progressBar [value]="levelProgress" styleClass="level-progress-bar"></p-progressBar>
+                <span class="level-xp">{{ userLevel.currentXp }} / {{ userLevel.totalXp }} {{ 'home.xp' | transloco }}</span>
+              </div>
+              <a routerLink="/gamification" class="card-header-link gamification-link">{{ 'home.viewGamification' | transloco }}</a>
             </div>
           </div>
         </div>
       </div>
     </div>
   `,
-
   styles: [
     `
       /* ============================================================
@@ -511,6 +290,25 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
         font-size: 0.9375rem;
         font-weight: 600;
         color: var(--text-primary);
+      }
+
+      .card-header-link {
+        margin-left: auto;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--primary-color);
+        text-decoration: none;
+        transition: opacity 0.2s ease;
+      }
+
+      .card-header-link:hover {
+        opacity: 0.8;
+        text-decoration: underline;
+      }
+
+      .gamification-link {
+        display: inline-block;
+        margin-top: 0.75rem;
       }
 
       .card-body {
@@ -1143,6 +941,7 @@ export class HomePageComponent implements OnInit {
   private readonly likeService = inject(LikeService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly translocoService = inject(TranslocoService);
+  private readonly router = inject(Router);
 
   /* ============================================================
      DATA
@@ -1160,8 +959,6 @@ export class HomePageComponent implements OnInit {
 
   newAdoptions: Adoption[] = [];
 
-  upcomingAchievements: Achievement[] = [];
-
   /* ============================================================
      USER LEVEL
      ============================================================ */
@@ -1171,18 +968,6 @@ export class HomePageComponent implements OnInit {
     currentXp: 650,
     totalXp: 1000,
   });
-
-  /* ============================================================
-     TRENDS
-     ============================================================ */
-
-  trendingTopics = signal<
-    {
-      rank: number;
-      name: string;
-      posts: number;
-    }[]
-  >([]);
 
   /* ============================================================
      CURRENT USER
@@ -1211,8 +996,6 @@ export class HomePageComponent implements OnInit {
   loadingVets = signal(true);
 
   loadingAdoptions = signal(true);
-
-  loadingAchievements = signal(true);
 
   /* ============================================================
      COMPUTED
@@ -1294,11 +1077,7 @@ export class HomePageComponent implements OnInit {
 
     this.loadNewAdoptions();
 
-    this.loadAchievements();
-
     this.loadUserLevel();
-
-    this.loadTrendingTopics();
   }
 
   /* ============================================================
@@ -1770,6 +1549,18 @@ export class HomePageComponent implements OnInit {
   }
 
   /* ============================================================
+     PEOPLE TO FOLLOW (unified: vets + suggestions)
+     ============================================================ */
+
+  peopleToFollow(): Suggestion[] {
+    return [...this.vets, ...this.suggestions];
+  }
+
+  peopleLoading(): boolean {
+    return this.loadingVets() || this.loadingSuggestions();
+  }
+
+  /* ============================================================
      MARKET PROMOS
      ============================================================ */
 
@@ -1844,40 +1635,13 @@ export class HomePageComponent implements OnInit {
   }
 
   /* ============================================================
-     ACHIEVEMENTS
+     NAVEGACIÓN
      ============================================================ */
 
-  private loadAchievements(): void {
-    this.loadingAchievements.set(true);
-
-    this.homeService
-      .getUpcomingAchievements()
-      .pipe(
-        finalize(() => {
-          this.loadingAchievements.set(false);
-
-          this.cdr.detectChanges();
-        }),
-      )
-      .subscribe({
-        next: (response) => {
-          if (response && response.length > 0) {
-            this.upcomingAchievements = response
-
-              .map((achievement) => new Achievement(achievement))
-
-              .slice(0, 4);
-          } else {
-            this.upcomingAchievements = [];
-          }
-        },
-
-        error: (error) => {
-          console.error('Error loading achievements:', error);
-
-          this.upcomingAchievements = [];
-        },
-      });
+  /** Abre el perfil de la mascota seleccionada desde el módulo de adopciones. */
+  openPetProfile(petId: string): void {
+    if (!petId) return;
+    this.router.navigate(['/profile/pet', petId]);
   }
 
   /* ============================================================
@@ -1901,18 +1665,6 @@ export class HomePageComponent implements OnInit {
   }
 
   /* ============================================================
-     ACHIEVEMENT PROGRESS
-     ============================================================ */
-
-  getAchievementProgress(achievement: Achievement): number {
-    if (!achievement.total || achievement.total <= 0) {
-      return 0;
-    }
-
-    return Math.min(100, Math.max(0, (achievement.progress / achievement.total) * 100));
-  }
-
-  /* ============================================================
      FOLLOWERS
      ============================================================ */
 
@@ -1922,34 +1674,6 @@ export class HomePageComponent implements OnInit {
     }
 
     return count.toString();
-  }
-
-  /* ============================================================
-     TRENDING TOPICS
-     ============================================================ */
-
-  private loadTrendingTopics(): void {
-    this.homeService.getTrendingTopics().subscribe({
-      next: (topics) => {
-        const topTopics = (topics || []).slice(0, 4);
-
-        this.trendingTopics.set(
-          topTopics.map((topic, index) => ({
-            rank: index + 1,
-
-            name: topic.name,
-
-            posts: topic.postsCount,
-          })),
-        );
-      },
-
-      error: (error) => {
-        console.error('Error loading trending topics:', error);
-
-        this.trendingTopics.set([]);
-      },
-    });
   }
 
   /* ============================================================

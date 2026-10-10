@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
+import { TranslocoModule } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [CommonModule, ButtonModule],
+  imports: [CommonModule, ButtonModule, TranslocoModule],
   template: `
     <footer class="app-footer">
       <div class="footer-container">
@@ -19,7 +20,7 @@ import { ButtonModule } from 'primeng/button';
               <span class="footer-logo-text">Lumio</span>
             </div>
             <p class="footer-description">
-              La plataforma definitiva para el cuidado, seguimiento y conexión de tu compañero peludo.
+              {{ 'footer.description' | transloco }}
             </p>
             <div class="footer-social">
               <a href="#" class="social-link" aria-label="Facebook">
@@ -39,34 +40,34 @@ import { ButtonModule } from 'primeng/button';
 
           <!-- Columna 2 - Producto -->
           <div class="footer-col">
-            <h4 class="footer-title">Producto</h4>
+            <h4 class="footer-title">{{ 'footer.product' | transloco }}</h4>
             <ul class="footer-links">
-              <li><a href="#">Características</a></li>
-              <li><a href="#">Precios</a></li>
-              <li><a href="#">Actualizaciones</a></li>
-              <li><a href="#">Roadmap</a></li>
+              <li><a href="#">{{ 'footer.features' | transloco }}</a></li>
+              <li><a href="#">{{ 'footer.pricing' | transloco }}</a></li>
+              <li><a href="#">{{ 'footer.updates' | transloco }}</a></li>
+              <li><a href="#">{{ 'footer.roadmap' | transloco }}</a></li>
             </ul>
           </div>
 
           <!-- Columna 3 - Compañía -->
           <div class="footer-col">
-            <h4 class="footer-title">Compañía</h4>
+            <h4 class="footer-title">{{ 'footer.company' | transloco }}</h4>
             <ul class="footer-links">
-              <li><a href="#">Sobre nosotros</a></li>
-              <li><a href="#">Blog</a></li>
-              <li><a href="#">Contacto</a></li>
-              <li><a href="#">Trabaja con nosotros</a></li>
+              <li><a href="#">{{ 'footer.about' | transloco }}</a></li>
+              <li><a href="#">{{ 'footer.blog' | transloco }}</a></li>
+              <li><a href="#">{{ 'footer.contact' | transloco }}</a></li>
+              <li><a href="#">{{ 'footer.careers' | transloco }}</a></li>
             </ul>
           </div>
 
           <!-- Columna 4 - Legal -->
           <div class="footer-col">
-            <h4 class="footer-title">Legal</h4>
+            <h4 class="footer-title">{{ 'footer.legal' | transloco }}</h4>
             <ul class="footer-links">
-              <li><a href="#">Privacidad</a></li>
-              <li><a href="#">Términos de uso</a></li>
-              <li><a href="#">Política de cookies</a></li>
-              <li><a href="#">Aviso legal</a></li>
+              <li><a href="#">{{ 'footer.privacy' | transloco }}</a></li>
+              <li><a href="#">{{ 'footer.terms' | transloco }}</a></li>
+              <li><a href="#">{{ 'footer.cookiesPolicy' | transloco }}</a></li>
+              <li><a href="#">{{ 'footer.legalNotice' | transloco }}</a></li>
             </ul>
           </div>
         </div>
@@ -75,14 +76,14 @@ import { ButtonModule } from 'primeng/button';
         <div class="footer-bottom">
           <div class="footer-bottom-content">
             <span class="footer-copyright">
-              &copy; 2026 Lumio. Todos los derechos reservados.
+              &copy; 2026 Lumio. {{ 'footer.rights' | transloco }}
             </span>
             <div class="footer-bottom-links">
-              <a href="#">Privacidad</a>
+              <a href="#">{{ 'footer.privacyShort' | transloco }}</a>
               <span class="footer-separator">|</span>
-              <a href="#">Términos</a>
+              <a href="#">{{ 'footer.termsShort' | transloco }}</a>
               <span class="footer-separator">|</span>
-              <a href="#">Cookies</a>
+              <a href="#">{{ 'footer.cookiesShort' | transloco }}</a>
             </div>
           </div>
         </div>

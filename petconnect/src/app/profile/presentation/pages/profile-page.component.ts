@@ -285,24 +285,32 @@ interface Pet {
 
         <!-- Contenido de tabs -->
         <div class="profile-content">
-          <!-- Publicaciones - Grid 3 columnas estilo Instagram -->
+          <!-- Publicaciones - Tarjetas estilo mascota -->
           <div class="tab-panel" *ngIf="activeTab() === 'posts'">
-            <div class="posts-grid-instagram" *ngIf="!loading()">
-              <div class="post-card-instagram" *ngFor="let post of userPostItems()" (click)="openPost(post)">
-                <img [src]="post.image" alt="Post" class="post-image-instagram" />
-                <div class="post-overlay-instagram">
-                  <span><i class="pi pi-heart-fill"></i> {{ post.likes }}</span>
-                  <span><i class="pi pi-comment"></i> {{ post.comments }}</span>
+            <div class="posts-card-grid" *ngIf="!loading()">
+              <div class="card-item post-card" *ngFor="let post of userPostItems()" (click)="openPost(post)">
+                <div
+                  class="post-image-section"
+                  [style.background-image]="'url(' + post.image + ')'"
+                >
+                  <div class="post-image-overlay"></div>
+                </div>
+                <div class="post-info-footer">
+                  <div class="post-name" *ngIf="post.caption">{{ post.caption }}</div>
+                  <div class="post-stats">
+                    <span class="post-stat"><span class="material-symbols-rounded stat-icon">favorite</span> {{ post.likes }}</span>
+                    <span class="post-stat"><span class="material-symbols-rounded stat-icon">share</span> {{ post.comments }}</span>
+                  </div>
                 </div>
               </div>
-              <div class="post-card-instagram empty" *ngIf="userPosts().length === 0">
+              <div class="posts-empty" *ngIf="userPosts().length === 0">
                 <i class="pi pi-camera"></i>
                 <p>{{ 'profile.noPosts' | transloco }}</p>
                 <span class="empty-subtitle">{{ 'profile.shareMoments' | transloco }}</span>
               </div>
             </div>
-            <div class="posts-grid-instagram" *ngIf="loading()">
-              <div class="post-card-instagram skeleton-post" *ngFor="let i of [1, 2, 3, 4, 5, 6]">
+            <div class="posts-card-grid" *ngIf="loading()">
+              <div class="card-item post-card skeleton-post" *ngFor="let i of [1, 2, 3, 4, 5, 6]">
                 <p-skeleton height="100%" borderRadius="0"></p-skeleton>
               </div>
             </div>
@@ -1069,96 +1077,122 @@ interface Pet {
     }
 
     /* ============================================
-       POSTS GRID - INSTAGRAM STYLE
+       POSTS GRID - PET CARD STYLE (igual que mascotas)
     ============================================ */
-    .posts-grid-instagram {
+    .posts-card-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 4px;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
     }
 
-    .post-card-instagram {
+    .post-card {
       position: relative;
-      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
       overflow: hidden;
+      border: 1px solid var(--bitbucket-border);
+      border-radius: 0.75rem;
+      min-height: 280px;
       cursor: pointer;
-      border-radius: 4px;
-      background: var(--surface-hover);
+      background-color: var(--bitbucket-header-bg);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .post-card:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transform: translateY(-1px);
+    }
+    .dark .post-card {
+      border-color: rgba(255, 255, 255, 0.1);
     }
 
-    .post-image-instagram {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 0.3s ease;
+    .post-image-section {
+      flex: 1;
+      min-height: 180px;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .post-card-instagram:hover .post-image-instagram {
-      transform: scale(1.03);
-    }
-
-    .post-overlay-instagram {
+    .post-image-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.3);
-      color: white;
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.3) 100%);
+      z-index: 0;
+    }
+
+    .post-info-footer {
+      padding: 0.75rem 1rem 1rem;
+      text-align: center;
+      background-color: var(--bitbucket-header-bg);
+    }
+
+    .post-name {
+      font-weight: 700;
+      font-size: 1.125rem;
+      color: var(--bitbucket-text-primary);
+      margin-bottom: 0.375rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .post-stats {
       display: flex;
       justify-content: center;
-      align-items: center;
-      gap: 1.5rem;
-      opacity: 0;
-      transition: opacity 0.3s ease;
+      gap: 1.25rem;
     }
 
-    .post-card-instagram:hover .post-overlay-instagram {
-      opacity: 1;
-    }
-
-    .post-overlay-instagram span {
+    .post-stat {
+      font-size: 0.8125rem;
+      color: var(--bitbucket-text-secondary);
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-weight: 600;
-      font-size: 0.875rem;
+      gap: 0.25rem;
     }
 
-    .post-overlay-instagram i {
-      font-size: 1rem;
+    .post-stat .stat-icon {
+      font-size: 1.125rem;
+      color: var(--bitbucket-text-secondary);
+      font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20;
     }
 
-    .post-card-instagram.empty {
+    .posts-empty {
+      grid-column: 1 / -1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       color: var(--text-secondary);
-      aspect-ratio: 1;
-      cursor: default;
-      background: var(--surface-hover);
-      grid-column: 1 / -1;
       padding: 40px;
-      border-radius: 8px;
+      border-radius: 0.75rem;
+      background: var(--surface-hover);
     }
 
-    .post-card-instagram.empty i {
+    .posts-empty i {
       font-size: 3rem;
       opacity: 0.4;
       margin-bottom: 12px;
     }
 
-    .post-card-instagram.empty p {
+    .posts-empty p {
       margin: 0;
       font-size: 1rem;
       font-weight: 500;
     }
 
-    .post-card-instagram.empty .empty-subtitle {
+    .posts-empty .empty-subtitle {
       font-size: 0.875rem;
       opacity: 0.6;
     }
 
     .skeleton-post {
-      background: var(--surface-hover);
+      min-height: 280px;
+      display: flex;
     }
 
     /* ============================================
@@ -1415,9 +1449,8 @@ interface Pet {
         height: 140px;
       }
 
-      .posts-grid-instagram {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 2px;
+      .posts-card-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
 
       .knowme-grid {
@@ -1481,9 +1514,8 @@ interface Pet {
         font-size: 0.625rem;
       }
 
-      .posts-grid-instagram {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 2px;
+      .posts-card-grid {
+        grid-template-columns: 1fr;
       }
 
       .btn-action {

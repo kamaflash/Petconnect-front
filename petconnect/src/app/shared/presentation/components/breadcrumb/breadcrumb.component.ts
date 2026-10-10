@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd, RouterModule } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
+import { TranslocoModule } from '@jsverse/transloco';
 
 interface BreadcrumbItem {
   label: string;
@@ -13,7 +14,7 @@ interface BreadcrumbItem {
 @Component({
   selector: 'app-breadcrumb',
   standalone: true,
-  imports: [CommonModule, RouterModule, ButtonModule],
+  imports: [CommonModule, RouterModule, ButtonModule, TranslocoModule],
   template: `
     <nav class="breadcrumb-container" *ngIf="breadcrumbs().length > 0">
       <ol class="breadcrumb-list">
@@ -25,14 +26,14 @@ interface BreadcrumbItem {
               [class.has-icon]="item.icon"
             >
               <i *ngIf="item.icon" class="{{ item.icon }} breadcrumb-icon"></i>
-              <span class="breadcrumb-text">{{ item.label }}</span>
+              <span class="breadcrumb-text">{{ item.label | transloco }}</span>
             </a>
             <i class="pi pi-chevron-right breadcrumb-separator"></i>
           </ng-container>
           <ng-template #lastItem>
             <span class="breadcrumb-current" [class.has-icon]="item.icon">
               <i *ngIf="item.icon" class="{{ item.icon }} breadcrumb-icon"></i>
-              <span class="breadcrumb-text">{{ item.label }}</span>
+              <span class="breadcrumb-text">{{ item.label | transloco }}</span>
             </span>
           </ng-template>
         </li>
@@ -182,25 +183,25 @@ export class BreadcrumbComponent implements OnInit, OnDestroy {
   breadcrumbs = signal<BreadcrumbItem[]>([]);
   private subscription = new Subscription();
 
-  // Mapeo de rutas a etiquetas e iconos
+  // Mapeo de rutas a claves i18n e iconos
   private readonly routeLabels: Record<string, { label: string; icon?: string }> = {
-    '': { label: 'Inicio', icon: 'pi pi-home' },
-    'pets': { label: 'Família', icon: 'pi pi-paw' },
-    'users': { label: 'Usuarios', icon: 'pi pi-users' },
-    'health': { label: 'Veterinario', icon: 'pi pi-user-md' },
-    'vet': { label: 'Veterinario', icon: 'pi pi-user-md' },
-    'appointments': { label: 'Citas', icon: 'pi pi-calendar' },
-    'lostpets': { label: 'Búsquedas', icon: 'pi pi-search' },
-    'adoptions': { label: 'Adopciones', icon: 'pi pi-heart' },
-    'events': { label: 'Eventos', icon: 'pi pi-calendar-times' },
-    'marketplace': { label: 'Mercado', icon: 'pi pi-shopping-cart' },
-    'services': { label: 'Servicios', icon: 'pi pi-briefcase' },
-    'content': { label: 'Publicaciones', icon: 'pi pi-image' },
-    'social': { label: 'Comunidad', icon: 'pi pi-users' },
-    'profile': { label: 'Perfil', icon: 'pi pi-user' },
-    'gamification': { label: 'Logros', icon: 'pi pi-trophy' },
-    'admin': { label: 'Administración', icon: 'pi pi-cog' },
-    'auth': { label: 'Autenticación', icon: 'pi pi-sign-in' }
+    '': { label: 'breadcrumb.home', icon: 'pi pi-home' },
+    'pets': { label: 'breadcrumb.pets', icon: 'pi pi-paw' },
+    'users': { label: 'breadcrumb.users', icon: 'pi pi-users' },
+    'health': { label: 'breadcrumb.health', icon: 'pi pi-user-md' },
+    'vet': { label: 'breadcrumb.health', icon: 'pi pi-user-md' },
+    'appointments': { label: 'breadcrumb.appointments', icon: 'pi pi-calendar' },
+    'lostpets': { label: 'breadcrumb.lostpets', icon: 'pi pi-search' },
+    'adoptions': { label: 'breadcrumb.adoptions', icon: 'pi pi-heart' },
+    'events': { label: 'breadcrumb.events', icon: 'pi pi-calendar-times' },
+    'marketplace': { label: 'breadcrumb.marketplace', icon: 'pi pi-shopping-cart' },
+    'services': { label: 'breadcrumb.services', icon: 'pi pi-briefcase' },
+    'content': { label: 'breadcrumb.content', icon: 'pi pi-image' },
+    'social': { label: 'breadcrumb.social', icon: 'pi pi-users' },
+    'profile': { label: 'breadcrumb.profile', icon: 'pi pi-user' },
+    'gamification': { label: 'breadcrumb.gamification', icon: 'pi pi-trophy' },
+    'admin': { label: 'breadcrumb.admin', icon: 'pi pi-cog' },
+    'auth': { label: 'breadcrumb.auth', icon: 'pi pi-sign-in' }
   };
 
   ngOnInit(): void {
@@ -229,7 +230,7 @@ export class BreadcrumbComponent implements OnInit, OnDestroy {
 
     // Siempre agregar el inicio
     breadcrumbs.push({
-      label: 'Inicio',
+      label: 'breadcrumb.home',
       path: '/',
       icon: 'pi pi-home'
     });

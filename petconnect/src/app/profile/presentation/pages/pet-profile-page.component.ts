@@ -2189,7 +2189,6 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
 
   // Adoption request form config
   adoptionFormConfig: DynamicFormConfig = {
-    title: this.i18n.translate('petProfile.requestAdoption'),
     submitLabel: 'Enviar solicitud',
     showCancel: true,
     fields: [

@@ -146,17 +146,20 @@ export class VetService {
 
 export class Adoption {
   id: string;
+  petId: string;
   name: string;
   breed: string;
   image: string;
 
   constructor(data: {
     id: string;
+    petId: string;
     name: string;
     breed: string;
     image: string;
   }) {
     this.id = data.id;
+    this.petId = data.petId;
     this.name = data.name;
     this.breed = data.breed;
     this.image = data.image;

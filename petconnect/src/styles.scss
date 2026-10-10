@@ -108,7 +108,7 @@
   --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Layout */
-  --max-page-width: 1280px;
+  --max-page-width: 100%;
 }
 
 /* ===== PRIME NG PRIMARY COLOR OVERRIDE (forzar cor do theme) ===== */
@@ -955,7 +955,7 @@ button.primary-button {
     background: var(--surface-card);
     border-bottom: 1px solid var(--surface-border);
     color: var(--text-primary);
-    padding: 1.25rem 1.5rem;
+    padding: 0.25rem 1.5rem;
     border-top-left-radius: var(--radius-lg);
     border-top-right-radius: var(--radius-lg);
   }

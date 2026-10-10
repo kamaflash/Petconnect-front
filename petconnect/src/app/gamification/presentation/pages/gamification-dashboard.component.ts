@@ -17,7 +17,6 @@ import { GamificationService } from '../../infrastructure/services/gamification.
 import {
   Achievement,
   AchievementCategory,
-  CATEGORY_LABELS,
   GamificationSummary,
   Goal,
 } from '../../domain/gamification.models';
@@ -38,6 +37,7 @@ import {
     AvatarModule,
     DividerModule,
     ChipModule,
+    TranslocoModule,
   ],
   providers: [MessageService],
   template: `
@@ -50,23 +50,23 @@ import {
 
       <div class="dashboard-header">
         <div class="dashboard-header-left">
-          <h2>Gamificación</h2>
-          <p>Tu progreso y objetivos en la comunidad</p>
+          <h2>{{ 'gamd.title' | transloco }}</h2>
+          <p>{{ 'gamd.subtitle' | transloco }}</p>
         </div>
         <div class="dashboard-header-stats">
           <div class="header-stat-item">
             <span class="header-stat-value">{{ summary()?.level ?? 0 }}</span>
-            <span class="header-stat-label">Nivel</span>
+            <span class="header-stat-label">{{ 'gamd.level' | transloco }}</span>
           </div>
           <div class="header-stat-divider"></div>
           <div class="header-stat-item">
             <span class="header-stat-value">{{ (summary()?.totalXp ?? 0).toLocaleString() }}</span>
-            <span class="header-stat-label">XP Total</span>
+            <span class="header-stat-label">{{ 'gamd.totalXp' | transloco }}</span>
           </div>
           <div class="header-stat-divider"></div>
           <div class="header-stat-item">
             <span class="header-stat-value">{{ summary()?.streakDays ?? 0 }}</span>
-            <span class="header-stat-label">Racha</span>
+            <span class="header-stat-label">{{ 'gamd.streak' | transloco }}</span>
           </div>
         </div>
       </div>
@@ -82,28 +82,28 @@ import {
               <div class="level-avatar">
                 <span class="level-number">{{ summary()?.level ?? 0 }}</span>
               </div>
-              <span class="level-label">NIVEL</span>
+              <span class="level-label">{{ 'gamd.levelAbbr' | transloco }}</span>
             </div>
             <div class="level-info">
               <div class="level-info-header">
-                <h3>{{ summary()?.rankTitle ?? 'Aprendiz' }}</h3>
+                <h3>{{ rankTitleValue() }}</h3>
                 <span class="level-xp-text">
-                  {{ summary()?.currentLevelXp ?? 0 }} / {{ summary()?.xpToLevel ?? 0 }} XP
+                  {{ summary()?.currentLevelXp ?? 0 }} / {{ summary()?.xpToLevel ?? 0 }} {{ 'gamd.xp' | transloco }}
                 </span>
               </div>
               <p-progressBar [value]="levelProgress()" [showValue]="false" styleClass="level-progress-bar" />
               <div class="level-meta">
                 <span class="level-meta-item">
                   <i class="pi pi-bolt"></i>
-                  {{ (summary()?.totalXp ?? 0).toLocaleString() }} XP total
+                  {{ (summary()?.totalXp ?? 0).toLocaleString() }} {{ 'gamd.xpTotal' | transloco }}
                 </span>
                 <span class="level-meta-item">
                   <i class="pi pi-calendar"></i>
-                  Racha: {{ summary()?.streakDays ?? 0 }} días
+                  {{ 'gamd.streakDays' | transloco: { days: summary()?.streakDays ?? 0 } }}
                 </span>
                 <span class="level-meta-item">
                   <i class="pi pi-sun"></i>
-                  {{ summary()?.dailyXpEarned ?? 0 }}/{{ summary()?.dailyXpLimit ?? 100 }} XP hoy
+                  {{ 'gamd.xpToday' | transloco: { earned: summary()?.dailyXpEarned ?? 0, limit: summary()?.dailyXpLimit ?? 100 } }}
                 </span>
               </div>
             </div>
@@ -128,15 +128,15 @@ import {
         <section class="goals-section">
 
           <div class="section-header">
-            <h3>Objetivos</h3>
-            <p>Completá metas y reclamá tu recompensa XP</p>
+            <h3>{{ 'gamd.goalsTitle' | transloco }}</h3>
+            <p>{{ 'gamd.goalsSubtitle' | transloco }}</p>
           </div>
 
           <!-- Daily Goals -->
           <div class="goals-card">
             <div class="goals-card-header">
-              <span class="goals-card-title">Hoy</span>
-              <span class="goals-card-badge">Diarios</span>
+              <span class="goals-card-title">{{ 'gamd.today' | transloco }}</span>
+              <span class="goals-card-badge">{{ 'gamd.daily' | transloco }}</span>
             </div>
             <div class="goals-list">
               @for (goal of dailyGoals(); track goal.code) {
@@ -148,9 +148,9 @@ import {
                     <div class="goal-name-row">
                       <span class="goal-name">{{ goal.name }}</span>
                       @if (goal.claimed) {
-                        <p-tag value="Reclamado" severity="success" styleClass="goal-tag" />
+                        <p-tag [value]="'gamd.claimed' | transloco" severity="success" styleClass="goal-tag" />
                       } @else if (goal.canClaim) {
-                        <p-tag value="Completado" severity="warn" styleClass="goal-tag" />
+                        <p-tag [value]="'gamd.completed' | transloco" severity="warn" styleClass="goal-tag" />
                       }
                     </div>
                     <div class="goal-progress-row">
@@ -166,12 +166,12 @@ import {
                       (click)="claimGoal(goal.code)"
                     >
                       <i class="pi pi-check"></i>
-                      Reclamar
+                      {{ 'gamd.claim' | transloco }}
                     </button>
                   </div>
                 </div>
               } @empty {
-                <p class="goals-empty">No hay objetivos diarios activos.</p>
+                <p class="goals-empty">{{ 'gamd.noDaily' | transloco }}</p>
               }
             </div>
           </div>
@@ -179,8 +179,8 @@ import {
           <!-- Weekly Goals -->
           <div class="goals-card">
             <div class="goals-card-header">
-              <span class="goals-card-title">Esta semana</span>
-              <span class="goals-card-badge">Semanales</span>
+              <span class="goals-card-title">{{ 'gamd.thisWeek' | transloco }}</span>
+              <span class="goals-card-badge">{{ 'gamd.weekly' | transloco }}</span>
             </div>
             <div class="goals-list">
               @for (goal of weeklyGoals(); track goal.code) {
@@ -192,9 +192,9 @@ import {
                     <div class="goal-name-row">
                       <span class="goal-name">{{ goal.name }}</span>
                       @if (goal.claimed) {
-                        <p-tag value="Reclamado" severity="success" styleClass="goal-tag" />
+                        <p-tag [value]="'gamd.claimed' | transloco" severity="success" styleClass="goal-tag" />
                       } @else if (goal.canClaim) {
-                        <p-tag value="Completado" severity="warn" styleClass="goal-tag" />
+                        <p-tag [value]="'gamd.completed' | transloco" severity="warn" styleClass="goal-tag" />
                       }
                     </div>
                     <div class="goal-progress-row">
@@ -210,12 +210,12 @@ import {
                       (click)="claimGoal(goal.code)"
                     >
                       <i class="pi pi-check"></i>
-                      Reclamar
+                      {{ 'gamd.claim' | transloco }}
                     </button>
                   </div>
                 </div>
               } @empty {
-                <p class="goals-empty">No hay objetivos semanales activos.</p>
+                <p class="goals-empty">{{ 'gamd.noWeekly' | transloco }}</p>
               }
             </div>
           </div>
@@ -229,25 +229,25 @@ import {
         <section class="achievements-section">
 
           <div class="section-header">
-            <h3>Logros</h3>
-            <p>Objetivos permanentes. Se desbloquean automáticamente</p>
+            <h3>{{ 'gamd.achTitle' | transloco }}</h3>
+            <p>{{ 'gamd.achSubtitle' | transloco }}</p>
           </div>
 
           <!-- Filters -->
           <div class="filters-bar">
             <div class="filters-group">
-              <span class="filter-label">Categoría:</span>
+              <span class="filter-label">{{ 'gamd.category' | transloco }}</span>
               @for (cat of categories; track cat) {
                 <button
                   class="filter-chip"
                   [class.active]="selectedCategories().includes(cat)"
                   (click)="toggleCategory(cat)"
                 >
-                  {{ CATEGORY_LABELS[cat] }}
+                  {{ 'gamd.cat.' + cat | transloco }}
                 </button>
               }
               <button class="filter-chip filter-chip-clear" (click)="clearFilters()">
-                <i class="pi pi-times"></i> Limpiar
+                <i class="pi pi-times"></i> {{ 'gamd.clear' | transloco }}
               </button>
             </div>
           </div>
@@ -263,7 +263,7 @@ import {
                   <div class="achievement-top">
                     <h4>{{ a.name }}</h4>
                     <p-tag
-                      [value]="a.state === 'LOCKED' ? 'Bloqueado' : a.state === 'UNLOCKED' ? 'Desbloqueado' : 'Completado'"
+                      [value]="a.state === 'LOCKED' ? ('gamd.locked' | transloco) : a.state === 'UNLOCKED' ? ('gamd.unlocked' | transloco) : ('gamd.completed' | transloco)"
                       [severity]="a.state === 'LOCKED' ? 'secondary' : 'success'"
                       styleClass="achievement-status-tag"
                     />
@@ -274,13 +274,13 @@ import {
                     <span class="achievement-progress-text">{{ a.progress }}/{{ a.targetValue }}</span>
                   </div>
                   <div class="achievement-footer">
-                    <span class="achievement-category">{{ CATEGORY_LABELS[a.category] }}</span>
+                    <span class="achievement-category">{{ 'gamd.cat.' + a.category | transloco }}</span>
                     <span class="achievement-xp">+{{ a.xpReward }} XP</span>
                   </div>
                 </div>
               </div>
             } @empty {
-              <p class="achievements-empty">No hay logros que coincidan con los filtros.</p>
+              <p class="achievements-empty">{{ 'gamd.noAchievements' | transloco }}</p>
             }
           </div>
 
@@ -1025,8 +1025,6 @@ export class GamificationDashboardComponent implements OnInit {
 
   selectedCategories = signal<AchievementCategory[]>([]);
 
-  readonly CATEGORY_LABELS = CATEGORY_LABELS;
-
   // ============================================================
   // COMPUTED
   // ============================================================
@@ -1119,8 +1117,8 @@ export class GamificationDashboardComponent implements OnInit {
     this.selectedCategories.set([]);
     this.messageService.add({
       severity: 'info',
-      summary: 'Filtros limpiados',
-      detail: 'Se han restablecido todos los filtros',
+      summary: this.i18n.translate('gamd.toastCleared'),
+      detail: this.i18n.translate('gamd.toastClearedDetail'),
     });
   }
 
@@ -1136,17 +1134,21 @@ export class GamificationDashboardComponent implements OnInit {
         this.summary.set(res.summary);
         this.messageService.add({
           severity: 'success',
-          summary: 'Recompensa reclamada',
-          detail: `+${res.xpGained} XP agregados`,
+          summary: this.i18n.translate('gamd.toastClaimed'),
+          detail: this.i18n.translate('gamd.toastClaimedDetail', { xp: res.xpGained }),
         });
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
-          summary: 'No se pudo reclamar',
-          detail: this.i18n.translate('gam.tryAgain'),
+          summary: this.i18n.translate('gamd.toastError'),
+          detail: this.i18n.translate('gamd.tryAgain'),
         });
       },
     });
+  }
+
+  rankTitleValue(): string {
+    return this.summary()?.rankTitle || this.i18n.translate('gamd.defaultRank');
   }
 }

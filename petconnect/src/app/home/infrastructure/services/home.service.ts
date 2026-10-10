@@ -90,6 +90,7 @@ export interface VetServiceResponse {
 
 export interface AdoptionResponse {
   id: string;
+  petId: string;
   name: string;
   breed: string;
   image: string;
