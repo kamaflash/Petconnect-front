@@ -13,13 +13,11 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { MenuModule } from 'primeng/menu';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
-import { DynamicFormComponent, DynamicFormConfig, DynamicFormField } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { InfoItemComponent } from '../../../shared/presentation/components/info-item/info-item.component';
 import { StatCardComponent } from '../../../shared/presentation/components/stat-card/stat-card.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { ProfileService, PetResponse } from '../../infrastructure/services/profile.service';
-import { SPECIES_BREEDS } from '../../../pets/domain/species-breeds.model';
-import { PET_COLOR_OPTIONS } from '../../../pets/domain/pet-colors.model';
 import { AdoptionService } from '../../../adoptions/infrastructure/services/adoption.service';
 import { CreateAdoptionRequest } from '../../../adoptions/infrastructure/services/adoption.service';
 import { MessageService } from 'primeng/api';
@@ -34,6 +32,7 @@ import {
   getColorLabel
 } from '../../../shared/utils/pet-label.utils';
 import { CloudinaryService } from '../../../shared/infrastructure/services/cloudinary.service';
+import { buildPetEditorFormConfig, petEditorDataToRequest, petToEditorFormData } from '../../../pets/presentation/forms/pet-editor-form';
 
 interface PetComment {
   id: string;
@@ -205,22 +204,12 @@ interface PetComment {
 
         <!-- Tab Content -->
         <div class="tab-content" *ngIf="!loading() && pet()">
-                    <!-- Info Tab - TODOS LOS DATOS -->
-          <div class="tab-panel" *ngIf="activeTab() === 'info'">
-            <!-- Modo edición (se activa desde el botón Editar del header): formulario dinámico en línea -->
-            <div *ngIf="isEditing()" class="edit-form-wrapper">
-              <app-dynamic-form
-                [config]="currentEditFormConfig()"
-                [formData]="editPetFormData()"
-                (onSubmitClick)="onEditPetSubmit($event)"
-                (onCancel)="cancelEditing()"
-              />
-            </div>
-
+                    <!-- Información pública y ficha privada de salud -->
+          <div class="tab-panel" *ngIf="activeTab() === 'info' || (activeTab() === 'health' && isOwner())">
             <!-- Modo visualización: información estática -->
-            <div class="info-sections" *ngIf="!isEditing()">
+            <div class="info-sections">
               <!-- Información Básica -->
-              <div class="info-section">
+              <div class="info-section" *ngIf="activeTab() === 'info'">
                 <h3 class="section-title">
                   <i class="pi pi-info-circle"></i>
                   Información Básica
@@ -252,25 +241,15 @@ interface PetComment {
                     <span class="info-value">{{ getColorLabelWrapper(pet()?.color) }}</span>
                   </div>
                   <div class="info-row">
-                    <span class="info-icon"><i class="pi pi-qrcode"></i></span>
-                    <span class="info-label">Microchip</span>
-                    <span class="info-value">{{ pet()?.microchipId || '—' }}</span>
-                  </div>
-                  <div class="info-row">
                     <span class="info-icon"><i class="pi pi-weight"></i></span>
                     <span class="info-label">Peso</span>
                     <span class="info-value">{{ pet()?.weight ? pet()!.weight + ' ' + (pet()?.weightUnit || 'kg') : '—' }}</span>
-                  </div>
-                  <div class="info-row full-width">
-                    <span class="info-icon"><i class="pi pi-map-marker"></i></span>
-                    <span class="info-label">Dirección</span>
-                    <span class="info-value">{{ pet()?.lastKnownLocation || '—' }}</span>
                   </div>
                 </div>
               </div>
 
               <!-- Información Médica y de Salud -->
-              <div class="info-section">
+              <div class="info-section" *ngIf="activeTab() === 'health' && isOwner()">
                 <h3 class="section-title">
                   <i class="pi pi-heart"></i>
                   Información Médica y de Salud
@@ -290,6 +269,16 @@ interface PetComment {
                     <span class="info-icon"><i class="pi pi-ambulance"></i></span>
                     <span class="info-label">{{ 'petProfile.medicalConditions' | transloco }}</span>
                     <span class="info-value">{{ pet()?.medicalConditions || '—' }}</span>
+                  </div>
+                  <div class="info-row full-width">
+                    <span class="info-icon"><i class="pi pi-heart"></i></span>
+                    <span class="info-label">Necesidades Especiales</span>
+                    <span class="info-value">{{ pet()?.specialNeeds || '—' }}</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-icon"><i class="pi pi-qrcode"></i></span>
+                    <span class="info-label">{{ 'petProfile.microchip' | transloco }}</span>
+                    <span class="info-value">{{ pet()?.microchipId || '—' }}</span>
                   </div>
                 </div>
 
@@ -347,12 +336,17 @@ interface PetComment {
               </div>
 
               <!-- Información Adicional -->
-              <div class="info-section">
+              <div class="info-section" *ngIf="activeTab() === 'health' && isOwner()">
                 <h3 class="section-title">
                   <i class="pi pi-info"></i>
                   Información Adicional
                 </h3>
                 <div class="info-grid">
+                  <div class="info-row full-width">
+                    <span class="info-icon"><i class="pi pi-map-marker"></i></span>
+                    <span class="info-label">Dirección</span>
+                    <span class="info-value">{{ pet()?.lastKnownLocation || '—' }}</span>
+                  </div>
                   <div class="info-row">
                     <span class="info-icon"><i class="pi pi-phone"></i></span>
                     <span class="info-label">Contacto de Emergencia</span>
@@ -402,7 +396,7 @@ interface PetComment {
               </div>
 
               <!-- Comportamiento y Características -->
-              <div class="info-section">
+              <div class="info-section" *ngIf="activeTab() === 'info'">
                 <h3 class="section-title">
                   <i class="pi pi-smile"></i>
                   Comportamiento y Características
@@ -432,11 +426,6 @@ interface PetComment {
                     <span class="info-icon"><i class="pi pi-apple"></i></span>
                     <span class="info-label">Comida Favorita</span>
                     <span class="info-value">{{ pet()?.favoriteFood || '—' }}</span>
-                  </div>
-                  <div class="info-row full-width">
-                    <span class="info-icon"><i class="pi pi-heart"></i></span>
-                    <span class="info-label">Necesidades Especiales</span>
-                    <span class="info-value">{{ pet()?.specialNeeds || '—' }}</span>
                   </div>
                 </div>
               </div>
@@ -648,6 +637,26 @@ interface PetComment {
 
       <!-- Adoption Request Dialog -->
       <p-dialog
+        [visible]="petEditDialogVisible()"
+        [modal]="true"
+        [header]="'petsPage.editTitle' | transloco"
+        [style]="{ width: 'min(92vw, 48rem)' }"
+        [contentStyle]="{ 'max-height': '70vh', overflow: 'auto' }"
+        [draggable]="false"
+        [resizable]="false"
+        (onHide)="closePetEditDialog()"
+      >
+        <app-dynamic-form
+          *ngIf="petEditDialogVisible()"
+          [config]="petEditorConfig"
+          [formData]="petEditFormData()"
+          [submitting]="savingPet()"
+          (onSubmitClick)="savePetChanges($event)"
+          (onCancel)="closePetEditDialog()"
+        />
+      </p-dialog>
+
+      <p-dialog
         [visible]="showAdoptionDialog"
         [modal]="true"
         [style]="{ width: '90vw', maxWidth: '560px' }"
@@ -663,28 +672,6 @@ interface PetComment {
           (onSubmitClick)="submitAdoptionRequest($event)"
           (onCancel)="showAdoptionDialog = false"
         />
-      </p-dialog>
-
-      <!-- Delete Confirmation -->
-      <p-dialog
-        [visible]="showDeleteDialog"
-        [modal]="true"
-        [style]="{ width: '420px' }"
-        [closable]="true"
-        (onHide)="showDeleteDialog = false"
-        header="Confirmar Eliminación"
-      >
-        <div class="delete-confirmation">
-          <div class="delete-icon">
-            <i class="pi pi-exclamation-triangle"></i>
-          </div>
-          <h3>¿Eliminar a {{ pet()?.name }}?</h3>
-          <p>Esta acción no se puede deshacer. Todos los datos de la mascota serán eliminados permanentemente.</p>
-        </div>
-        <ng-template pTemplate="footer">
-          <button class="btn-secondary" (click)="showDeleteDialog = false">Cancelar</button>
-          <button class="btn-danger" (click)="deletePet()">Eliminar</button>
-        </ng-template>
       </p-dialog>
 
       <!-- Menu -->
@@ -2141,6 +2128,7 @@ interface PetComment {
 })
 export class PetProfilePageComponent implements OnInit, OnDestroy {
   readonly i18n = inject(TranslocoService);
+  readonly petEditorConfig = buildPetEditorFormConfig(this.i18n);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);
@@ -2159,22 +2147,21 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   loading = signal(true);
 
   // Pet data
-  // Pet data
   pet = signal<PetResponse | null>(null);
   petId = signal<string | null>(null);
   petOwnerName = signal<string | null>(null);
   hasPendingRequest = signal(false);
   currentImageIndex = signal(0);
+  petEditDialogVisible = signal(false);
+  petEditFormData = signal<Record<string, unknown>>({});
+  savingPet = signal(false);
 
-    // UI state
+  // UI state
   activeTab = signal('info');
   lightboxVisible = false;
-  showEditDialog = false;
-  showDeleteDialog = false;
   showAdoptionDialog = false;
   postModalVisible = false;
   currentPostIndex = signal(0);
-  isEditing = signal(false);
 
   // Pet data
   petPosts = signal<any[]>([]);
@@ -2183,9 +2170,6 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     likes: 0,
     posts: 0,
   });
-
-  // Edit form data
-  editPetFormData = signal<any>({});
 
   // Adoption request form config
   adoptionFormConfig: DynamicFormConfig = {
@@ -2249,22 +2233,36 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   });
 
   petTabs = computed((): Tab[] => {
-    return [
+    const tabs: Tab[] = [
       { id: 'info', label: this.i18n.translate('petProfile.info'), icon: 'info' },
       { id: 'photos', label: 'Fotos', icon: 'photo_library' },
       { id: 'posts', label: 'Publicaciones', icon: 'photo_library' },
       { id: 'comments', label: 'Comentarios', icon: 'comment' },
       { id: 'history', label: 'Historial', icon: 'history' },
     ];
+
+    if (this.isOwner()) {
+      tabs.splice(1, 0, { id: 'health', label: this.i18n.translate('petProfile.health'), icon: 'health_and_safety' });
+    }
+
+    return tabs;
   });
 
   ngOnInit(): void {
     this.detectDarkMode();
-    this.paramSubscription = this.route.paramMap.subscribe(params => {
+    this.paramSubscription = new Subscription();
+    this.paramSubscription.add(this.route.paramMap.subscribe(params => {
       const id = params.get('id');
       this.petId.set(id);
       if (id) this.loadPetData(id);
-    });
+    }));
+    this.paramSubscription.add(this.route.queryParamMap.subscribe(params => {
+      if (params.get('tab') === 'health' && this.isOwner()) {
+        this.activeTab.set('health');
+      } else if (params.get('tab') !== 'health') {
+        this.activeTab.set('info');
+      }
+    }));
 
     // Refrescar el nombre/avatar del Familia cuando la mascota cambia de propietario
     // (p. ej. al finalizar una adopción desde la administración).
@@ -2297,15 +2295,19 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
 
     this.profileService.getPetById(petId).subscribe({
       next: (pet) => {
-  this.pet.set(pet);
+        this.pet.set(pet);
+        if (
+          this.route.snapshot.queryParamMap.get('tab') === 'health' &&
+          pet.ownerId === this.authService.user()?.id
+        ) {
+          this.activeTab.set('health');
+        }
         this.loadPetOwner(pet.ownerId);
         this.checkExistingRequest(pet.id);
         this.loadPetStats(petId);
         this.loadPetPosts(petId);
         this.loadPetComments(petId);
         this.buildActionMenuItems();
-        this.initEditFormData(pet);
-
         setTimeout(() => {
           this.loading.set(false);
           this.cdr.detectChanges();
@@ -2356,70 +2358,6 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
         this.hasPendingRequest.set(false);
       }
     });
-  }
-
-  private initEditFormData(pet: PetResponse): void {
-    this.editPetFormData.set({
-      name: pet.name,
-      // La API guarda la especie en MAYÚSCULAS (p. ej. "DOG"), pero las opciones
-      // del select y las claves de SPECIES_BREEDS están en minúsculas. Se normaliza
-      // para que el select muestre el valor actual y las razas se resuelvan bien.
-      species: (pet.species || '').toLowerCase(),
-      breed: pet.breed || '',
-      dateOfBirth: this.toDate(pet.dateOfBirth),
-      gender: pet.gender || '',
-      weight: pet.weight ?? null,
-      weightUnit: pet.weightUnit || 'kg',
-      color: pet.color || '',
-      microchipId: pet.microchipId || '',
-      bio: pet.bio || '',
-      bloodType: pet.bloodType || '',
-      allergies: pet.allergies || '',
-      medicalConditions: pet.medicalConditions || '',
-      vetName: pet.vetName || '',
-      vetPhone: pet.vetPhone || '',
-      vetAddress: pet.vetAddress || '',
-      lastVaccinationDate: this.toDate(pet.lastVaccinationDate),
-      nextVaccinationDate: this.toDate(pet.nextVaccinationDate),
-      lastVetVisit: this.toDate(pet.lastVetVisit),
-      insuranceProvider: pet.insuranceProvider || '',
-      insurancePolicyNumber: pet.insurancePolicyNumber || '',
-      emergencyContact: pet.emergencyContact || '',
-      emergencyPhone: pet.emergencyPhone || '',
-      adoptionDate: this.toDate(pet.adoptionDate),
-      adoptionCenter: pet.adoptionCenter || '',
-      registrationNumber: pet.registrationNumber || '',
-      licenseNumber: pet.licenseNumber || '',
-      licenseExpiryDate: this.toDate(pet.licenseExpiryDate),
-      spayedNeutered: !!pet.spayedNeutered,
-      spayedNeuteredDate: this.toDate(pet.spayedNeuteredDate),
-      temperament: pet.temperament || '',
-      energyLevel: pet.energyLevel || '',
-      trainingLevel: pet.trainingLevel || '',
-      favoriteActivities: pet.favoriteActivities || '',
-      favoriteFood: pet.favoriteFood || '',
-      specialNeeds: pet.specialNeeds || ''
-    });
-  }
-
-  /**
-   * Convierte una fecha en formato string (p. ej. "2020-01-15") en un objeto Date
-   * para que los campos de tipo 'date' del formulario puedan mostrarla.
-   */
-  private toDate(value: string | null | undefined): Date | null {
-    if (!value) return null;
-    const date = new Date(value);
-    return isNaN(date.getTime()) ? null : date;
-  }
-
-  /**
-   * Convierte un valor de fecha del formulario en formato ISO (yyyy-MM-dd) para el backend.
-   */
-  private toIsoDate(value: any): string | null {
-    if (!value) return null;
-    const date = value instanceof Date ? value : new Date(value);
-    if (isNaN(date.getTime())) return null;
-    return date.toISOString().split('T')[0];
   }
 
   private loadPetStats(petId: string): void {
@@ -2485,376 +2423,61 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     const pet = this.pet();
     this.actionMenuItems = [
       {
-        label: 'Editar Perfil',
+        label: this.i18n.translate('petsPage.editTitle'),
         icon: 'pi pi-pencil',
-        command: () => this.startEditing()
+        command: () => this.openPetEditDialog()
       },
       {
         label: pet?.availableForAdoption ? this.i18n.translate('petProfile.removeFromAdoption') : this.i18n.translate('petProfile.putForAdoption'),
         icon: pet?.availableForAdoption ? 'pi pi-heart' : 'pi pi-home',
         command: () => this.toggleAdoptionStatus()
-      },
-      {
-        label: 'Eliminar Mascota',
-        icon: 'pi pi-trash',
-        command: () => this.confirmDelete()
       }
     ];
   }
 
-  // Form configurations
-  editPetFormConfig: DynamicFormConfig = {
-    title: this.i18n.translate('petProfile.editInfo'),
-    submitLabel: 'Guardar Cambios',
-    showCancel: true,
-    resolveOptions: (_field, sourceValue) => SPECIES_BREEDS[sourceValue] ?? [],
-    fields: [
-      {
-        key: 'name',
-        label: 'Nombre',
-        type: 'input',
-        placeholder: 'Nombre de la mascota',
-        validation: { required: true, minLength: 2, maxLength: 100 }
+  openPetEditDialog(): void {
+    const pet = this.pet();
+    if (!pet || !this.isOwner()) return;
+    this.petEditFormData.set(petToEditorFormData(pet));
+    this.petEditDialogVisible.set(true);
+  }
+
+  closePetEditDialog(): void {
+    if (this.savingPet()) return;
+    this.petEditDialogVisible.set(false);
+  }
+
+  savePetChanges(data: Record<string, unknown>): void {
+    const pet = this.pet();
+    if (!pet || !this.isOwner() || this.savingPet()) return;
+
+    this.savingPet.set(true);
+    this.profileService.updatePet(pet.id, {
+      ...petEditorDataToRequest(data),
+      avatarUrl: pet.avatarUrl,
+      imageUrls: pet.imageUrls ?? []
+    }).subscribe({
+      next: updatedPet => {
+        this.pet.set(updatedPet);
+        this.savingPet.set(false);
+        this.petEditDialogVisible.set(false);
+        this.buildActionMenuItems();
+        this.messageService.add({
+          severity: 'success',
+          summary: this.i18n.translate('petsPage.savedTitle'),
+          detail: this.i18n.translate('petsPage.updatedDetail', { name: updatedPet.name })
+        });
       },
-      {
-        key: 'species',
-        label: 'Especie',
-        type: 'select',
-        placeholder: 'Seleccione una especie',
-        options: [
-          { label: 'Perro', value: 'dog' },
-          { label: 'Gato', value: 'cat' },
-          { label: 'Ave', value: 'bird' },
-          { label: 'Conejo', value: 'rabbit' },
-          { label: this.i18n.translate('common.hamster'), value: 'hamster' },
-          { label: 'Otro', value: 'other' }
-        ],
-        validation: { required: true }
-      },
-      {
-        key: 'breed',
-        label: 'Raza',
-        type: 'select',
-        dependsOn: 'species',
-        placeholder: 'Seleccione una raza',
-        validation: { maxLength: 100 }
-      },
-      {
-        key: 'dateOfBirth',
-        label: 'Fecha de Nacimiento',
-        type: 'date',
-        placeholder: 'Seleccione la fecha',
-        showIcon: true,
-        dateFormat: 'dd/mm/yy'
-      },
-      {
-        key: 'gender',
-        label: this.i18n.translate('common.gender'),
-        type: 'select',
-        placeholder: this.i18n.translate('common.selectGender'),
-        options: [
-          { label: 'Macho', value: 'male' },
-          { label: 'Hembra', value: 'female' },
-          { label: 'Desconocido', value: 'unknown' }
-        ]
-          },
-      {
-        key: 'color',
-        label: 'Color',
-        type: 'select',
-        placeholder: 'Seleccionar color',
-        showClear: true,
-        options: PET_COLOR_OPTIONS
-      },
-      {
-        key: 'microchipId',
-        label: 'Microchip ID',
-        type: 'input',
-        placeholder: this.i18n.translate('petProfile.microchip'),
-        validation: { maxLength: 100 }
-      },
-      {
-        key: 'weight',
-        label: 'Peso',
-        type: 'number',
-        placeholder: 'Peso',
-        validation: { min: 0.1, max: 200 }
-      },
-      {
-        key: 'weightUnit',
-        label: 'Unidad de Peso',
-        type: 'select',
-        placeholder: 'Seleccione la unidad',
-        options: [
-          { label: 'kg', value: 'kg' },
-          { label: 'lb', value: 'lb' }
-        ]
-      },
-      {
-        key: 'bio',
-        label: this.i18n.translate('common.bio'),
-        type: 'textarea',
-        placeholder: this.i18n.translate('common.bioPlaceholder'),
-        rows: 4,
-        validation: { maxLength: 500 }
+      error: () => {
+        this.savingPet.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: this.i18n.translate('petsPage.updateError')
+        });
       }
-    ]
-  };
-
-  medicalFormConfig: DynamicFormConfig = {
-    title: this.i18n.translate('petProfile.editMedical'),
-    submitLabel: 'Guardar Cambios',
-    showCancel: true,
-    fields: [
-      {
-        key: 'bloodType',
-        label: 'Tipo de Sangre',
-        type: 'input',
-        placeholder: 'Tipo de sangre',
-        validation: { maxLength: 10 }
-      },
-      {
-        key: 'allergies',
-        label: 'Alergias',
-        type: 'textarea',
-        placeholder: 'Alergias conocidas...',
-        rows: 2,
-        validation: { maxLength: 500 }
-      },
-      {
-        key: 'medicalConditions',
-        label: this.i18n.translate('petProfile.medicalConditions'),
-        type: 'textarea',
-        placeholder: this.i18n.translate('petProfile.medicalConditionsPlaceholder'),
-        rows: 2,
-        validation: { maxLength: 500 }
-      },
-      {
-        key: 'vetName',
-        label: 'Nombre del Veterinario',
-        type: 'input',
-        placeholder: 'Nombre del veterinario de confianza',
-        validation: { maxLength: 100 }
-      },
-      {
-        key: 'vetPhone',
-        label: this.i18n.translate('petProfile.vetPhone'),
-        type: 'input',
-        placeholder: this.i18n.translate('petProfile.vetPhonePlaceholder'),
-        validation: { maxLength: 20 }
-      },
-      {
-        key: 'vetAddress',
-        label: this.i18n.translate('petProfile.vetAddress'),
-        type: 'input',
-        placeholder: this.i18n.translate('petProfile.vetAddressPlaceholder'),
-        validation: { maxLength: 255 }
-      },
-      {
-        key: 'lastVaccinationDate',
-        label: this.i18n.translate('petProfile.lastVaccination'),
-        type: 'date',
-        placeholder: this.i18n.translate('petProfile.lastVaccinationPlaceholder'),
-        showIcon: true,
-        dateFormat: 'dd/mm/yy'
-      },
-      {
-        key: 'nextVaccinationDate',
-        label: this.i18n.translate('petProfile.nextVaccination'),
-        type: 'date',
-        placeholder: this.i18n.translate('petProfile.nextVaccinationPlaceholder'),
-        showIcon: true,
-        dateFormat: 'dd/mm/yy'
-      },
-      {
-        key: 'lastVetVisit',
-        label: this.i18n.translate('petProfile.lastVetVisit'),
-        type: 'date',
-        placeholder: this.i18n.translate('petProfile.lastVetVisitPlaceholder'),
-        showIcon: true,
-        dateFormat: 'dd/mm/yy'
-      },
-      {
-        key: 'insuranceProvider',
-        label: 'Aseguradora',
-        type: 'input',
-        placeholder: this.i18n.translate('petProfile.insurance'),
-        validation: { maxLength: 100 }
-      },
-      {
-        key: 'insurancePolicyNumber',
-        label: this.i18n.translate('petProfile.policyNumber'),
-        type: 'input',
-        placeholder: this.i18n.translate('petProfile.policyNumberPlaceholder'),
-        validation: { maxLength: 100 }
-      }
-    ]
-  };
-
-  additionalFormConfig: DynamicFormConfig = {
-    title: this.i18n.translate('petProfile.editAdditional'),
-    submitLabel: 'Guardar Cambios',
-    showCancel: true,
-    fields: [
-      {
-        key: 'emergencyContact',
-        label: 'Contacto de Emergencia',
-        type: 'input',
-        placeholder: 'Nombre del contacto de emergencia',
-        validation: { maxLength: 100 }
-      },
-      {
-        key: 'emergencyPhone',
-        label: this.i18n.translate('petProfile.emergencyPhone'),
-        type: 'input',
-        placeholder: this.i18n.translate('petProfile.emergencyPhonePlaceholder'),
-        validation: { maxLength: 20 }
-      },
-      {
-        key: 'adoptionDate',
-        label: this.i18n.translate('petProfile.adoptionDate'),
-        type: 'date',
-        placeholder: this.i18n.translate('petProfile.adoptionDatePlaceholder'),
-        showIcon: true,
-        dateFormat: 'dd/mm/yy'
-      },
-      {
-        key: 'adoptionCenter',
-        label: this.i18n.translate('petProfile.adoptionCenter'),
-        type: 'input',
-        placeholder: this.i18n.translate('petProfile.adoptionCenterPlaceholder'),
-        validation: { maxLength: 100 }
-      },
-      {
-        key: 'registrationNumber',
-        label: this.i18n.translate('petProfile.registrationNumber'),
-        type: 'input',
-        placeholder: this.i18n.translate('petProfile.registrationNumberPlaceholder'),
-        validation: { maxLength: 50 }
-      },
-      {
-        key: 'licenseNumber',
-        label: this.i18n.translate('petProfile.licenseNumber'),
-        type: 'input',
-        placeholder: this.i18n.translate('petProfile.licenseNumberPlaceholder'),
-        validation: { maxLength: 50 }
-      },
-      {
-        key: 'licenseExpiryDate',
-        label: 'Vencimiento de Licencia',
-        type: 'date',
-        placeholder: 'Fecha de vencimiento',
-        showIcon: true,
-        dateFormat: 'dd/mm/yy'
-      },
-      {
-        key: 'spayedNeutered',
-        label: 'Esterilizado/Castrado',
-        type: 'checkbox'
-      },
-      {
-        key: 'spayedNeuteredDate',
-        label: this.i18n.translate('petProfile.sterilizationDate'),
-        type: 'date',
-        placeholder: this.i18n.translate('petProfile.sterilizationDatePlaceholder'),
-        showIcon: true,
-        dateFormat: 'dd/mm/yy'
-      }
-    ]
-  };
-
-  behaviorFormConfig: DynamicFormConfig = {
-    title: 'Editar Comportamiento',
-    submitLabel: 'Guardar Cambios',
-    showCancel: true,
-    fields: [
-      {
-        key: 'temperament',
-        label: 'Temperamento',
-        type: 'select',
-        placeholder: 'Seleccione el temperamento',
-        options: [
-          { label: 'Tranquilo', value: 'calm' },
-          { label: this.i18n.translate('petProfile.energetic'), value: 'energetic' },
-          { label: this.i18n.translate('petProfile.playful'), value: 'playful' },
-          { label: this.i18n.translate('petProfile.shy'), value: 'shy' },
-          { label: 'Agresivo', value: 'aggressive' },
-          { label: 'Amigable', value: 'friendly' },
-          { label: 'Otro', value: 'other' }
-        ]
-      },
-      {
-        key: 'energyLevel',
-        label: this.i18n.translate('petProfile.energyLevel'),
-        type: 'select',
-        placeholder: this.i18n.translate('petProfile.energyLevelPlaceholder'),
-        options: [
-          { label: 'Bajo', value: 'low' },
-          { label: 'Medio', value: 'medium' },
-          { label: 'Alto', value: 'high' }
-        ]
-      },
-      {
-        key: 'trainingLevel',
-        label: 'Nivel de Entrenamiento',
-        type: 'select',
-        placeholder: 'Seleccione el nivel',
-        options: [
-          { label: 'Ninguno', value: 'none' },
-          { label: this.i18n.translate('petProfile.basic'), value: 'basic' },
-          { label: 'Intermedio', value: 'intermediate' },
-          { label: 'Avanzado', value: 'advanced' }
-        ]
-      },
-      {
-        key: 'favoriteActivities',
-        label: 'Actividades Favoritas',
-        type: 'textarea',
-        placeholder: 'Actividades que le gustan...',
-        rows: 2,
-        validation: { maxLength: 255 }
-      },
-      {
-        key: 'favoriteFood',
-        label: 'Comida Favorita',
-        type: 'input',
-        placeholder: 'Comida favorita',
-        validation: { maxLength: 100 }
-      },
-      {
-        key: 'specialNeeds',
-        label: 'Necesidades Especiales',
-        type: 'textarea',
-        placeholder: this.i18n.translate('petProfile.specialNeedsPlaceholder'),
-        rows: 2,
-        validation: { maxLength: 500 }
-      }
-    ]
-  };
-
-  currentEditCategory: 'basic' | 'medical' | 'additional' | 'behavior' = 'basic';
-
-  /**
-   * Config combinada con TODOS los campos editables del animal
-   * (todos los que se muestran en la vista excepto la ubicación).
-   *
-   * Se expone como un `computed` para que mantenga una referencia estable entre
-   * renders. Si se generara un objeto nuevo en cada detección de cambios, el
-   * DynamicFormComponent reconstruiría el formulario continuamente y "borraría"
-   * la edición del usuario (campos que parecen no editables).
-   */
-  currentEditFormConfig = computed<DynamicFormConfig>(() => ({
-    title: this.i18n.translate('petProfile.editInfo'),
-    submitLabel: 'Guardar Cambios',
-    showCancel: true,
-    resolveOptions: (_field: DynamicFormField, sourceValue: any) => SPECIES_BREEDS[sourceValue] ?? [],
-    fields: [
-      ...this.editPetFormConfig.fields,
-      ...this.medicalFormConfig.fields,
-      ...this.additionalFormConfig.fields,
-      ...this.behaviorFormConfig.fields
-    ]
-  }));
+    });
+  }
 
   // ============================================
   //  ACTIONS
@@ -2865,6 +2488,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   }
 
   onTabChange(tabId: string): void {
+    if (tabId === 'health' && !this.isOwner()) return;
     this.activeTab.set(tabId);
   }
 
@@ -2873,110 +2497,6 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     if (this.actionMenu) {
       this.actionMenu.toggle(event);
     }
-  }
-
-    openEditDialog(category: 'basic' | 'medical' | 'additional' | 'behavior'): void {
-    this.currentEditCategory = category;
-    this.showEditDialog = true;
-  }
-
-  startEditing(): void {
-    const pet = this.pet();
-    if (!pet) return;
-    this.currentEditCategory = 'basic';
-    this.isEditing.set(true);
-    // Cargar los datos del animal en el formulario de edición
-    this.initEditFormData(pet as PetResponse);
-  }
-
-  cancelEditing(): void {
-    this.isEditing.set(false);
-  }
-
-    onEditPetSubmit(data: any): void {
-    const pet = this.pet();
-    if (!pet) return;
-
-    // Construcción del payload para el backend. Se excluyen deliberadamente los
-    // campos de ubicación (lastKnownLocation/lost) porque la ubicación no se edita.
-    const request: any = {
-      name: data?.name || '',
-      species: (data?.species || ''),
-      breed: data?.breed || null,
-      dateOfBirth: this.toIsoDate(data?.dateOfBirth),
-      gender: data?.gender || null,
-      color: data?.color || null,
-      microchipId: data?.microchipId || null,
-      weight: data?.weight != null && data?.weight !== '' ? Number(data.weight) : null,
-      weightUnit: data?.weightUnit || 'kg',
-      bio: data?.bio || null
-    };
-
-    // Información médica y de salud
-    request.bloodType = data?.bloodType || null;
-    request.allergies = data?.allergies || null;
-    request.medicalConditions = data?.medicalConditions || null;
-    request.vetName = data?.vetName || null;
-    request.vetPhone = data?.vetPhone || null;
-    request.vetAddress = data?.vetAddress || null;
-    request.lastVaccinationDate = this.toIsoDate(data?.lastVaccinationDate);
-    request.nextVaccinationDate = this.toIsoDate(data?.nextVaccinationDate);
-    request.lastVetVisit = this.toIsoDate(data?.lastVetVisit);
-    request.insuranceProvider = data?.insuranceProvider || null;
-    request.insurancePolicyNumber = data?.insurancePolicyNumber || null;
-
-    // Información adicional
-    request.emergencyContact = data?.emergencyContact || null;
-    request.emergencyPhone = data?.emergencyPhone || null;
-    request.adoptionDate = this.toIsoDate(data?.adoptionDate);
-    request.adoptionCenter = data?.adoptionCenter || null;
-    request.registrationNumber = data?.registrationNumber || null;
-    request.licenseNumber = data?.licenseNumber || null;
-    request.licenseExpiryDate = this.toIsoDate(data?.licenseExpiryDate);
-    request.spayedNeutered = !!data?.spayedNeutered;
-    request.spayedNeuteredDate = this.toIsoDate(data?.spayedNeuteredDate);
-
-    // Comportamiento y características
-    request.temperament = data?.temperament || null;
-    request.energyLevel = data?.energyLevel || null;
-    request.trainingLevel = data?.trainingLevel || null;
-    request.favoriteActivities = data?.favoriteActivities || null;
-    request.favoriteFood = data?.favoriteFood || null;
-    request.specialNeeds = data?.specialNeeds || null;
-
-    this.profileService.updatePet(pet.id, request).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: this.i18n.translate('common.success'),
-          detail: 'Mascota actualizada correctamente'
-        });
-        this.isEditing.set(false);
-        // Recargar la mascota para reflejar los cambios
-        this.loadPetData(pet.id);
-      },
-      error: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'No se pudo actualizar la mascota'
-        });
-      }
-    });
-  }
-
-  confirmDelete(): void {
-    this.showDeleteDialog = true;
-  }
-
-  deletePet(): void {
-    this.messageService.add({
-      severity: 'success',
-      summary: this.i18n.translate('common.success'),
-      detail: 'Mascota eliminada correctamente'
-    });
-    this.showDeleteDialog = false;
-    this.router.navigate(['/profile']);
   }
 
   toggleAdoptionStatus(): void {

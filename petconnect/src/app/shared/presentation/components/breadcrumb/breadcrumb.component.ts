@@ -200,7 +200,8 @@ export class BreadcrumbComponent implements OnInit, OnDestroy {
     'social': { label: 'breadcrumb.social', icon: 'pi pi-users' },
     'profile': { label: 'breadcrumb.profile', icon: 'pi pi-user' },
     'gamification': { label: 'breadcrumb.gamification', icon: 'pi pi-trophy' },
-    'admin': { label: 'breadcrumb.admin', icon: 'pi pi-cog' },
+    'management': { label: 'breadcrumb.management', icon: 'pi pi-briefcase' },
+    'admin': { label: 'breadcrumb.management', icon: 'pi pi-briefcase' },
     'auth': { label: 'breadcrumb.auth', icon: 'pi pi-sign-in' }
   };
 

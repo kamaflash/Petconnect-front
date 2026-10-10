@@ -31,6 +31,14 @@ export interface TableCardItem {
   breed?: string;
   gender?: string;
   dateOfBirth?: string;
+  petSubtitle?: string;
+  petStatus?: string;
+  petStatusWarning?: boolean;
+  petDetails?: string[];
+  careLabel?: string;
+  careDate?: string | null;
+  careOverdue?: boolean;
+  familyCard?: boolean;
   duration?: number;
   seen?: boolean;
   [key: string]: any;
@@ -135,7 +143,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
             @case ('pet') {
               <div class="card-grid">
                 @for (item of filteredItems(); track item.id; let idx = $index) {
-                  <div class="card-item pet-card" (click)="onPetClick(item)">
+                  <div class="card-item pet-card" [class.family-pet-card]="item.familyCard" (click)="onPetClick(item)">
                     <div class="card-actions-top">
                       <ng-content select="[card-actions]"></ng-content>
                     </div>
@@ -144,6 +152,9 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
                       [style.background-image]="'url(' + getPetImage(item, idx) + ')'"
                     >
                       <div class="pet-image-overlay"></div>
+                      @if (item.petStatus) {
+                        <span class="pet-status-badge" [class.warning]="item.petStatusWarning">{{ item.petStatus }}</span>
+                      }
                       @if (getPetImageCount(item) > 1) {
                         <button class="carousel-btn carousel-prev" (click)="prevPetImage($event, idx, item)">
                           <span class="material-symbols-rounded">chevron_left</span>
@@ -164,10 +175,31 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
                     </div>
                     <div class="pet-info-footer">
                       <div class="pet-name">{{ item.name }}</div>
+                      @if (item.petSubtitle) {
+                        <div class="pet-stat pet-subtitle">{{ item.petSubtitle }}</div>
+                      }
+                      @if (item.petDetails?.length) {
+                        <div class="pet-stats">
+                          @for (detail of item.petDetails; track detail) {
+                            <span class="pet-stat">{{ detail }}</span>
+                          }
+                        </div>
+                      }
+                      @if (item.careLabel) {
+                        <div class="pet-care" [class.overdue]="item.careOverdue">
+                          <i class="pi pi-calendar" aria-hidden="true"></i>
+                          <span>{{ item.careLabel }}</span>
+                          @if (item.careDate) {
+                            <time [attr.datetime]="item.careDate">{{ item.careDate | date:'mediumDate' }}</time>
+                          }
+                        </div>
+                      }
+                      @if (!item.familyCard) {
                       <div class="pet-stats">
                         <span class="pet-stat"><span class="material-symbols-rounded stat-icon">favorite</span> {{ item.likesCount ?? 0 }}</span>
                         <span class="pet-stat"><span class="material-symbols-rounded stat-icon">share</span> {{ item.commentsCount ?? 0 }}</span>
                       </div>
+                      }
                     </div>
                   </div>
                 }
@@ -474,6 +506,10 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
       justify-content: center;
       gap: 1.25rem;
     }
+    .pet-care.overdue { color: #a63131; }
+    .pet-status-badge { position: absolute; top: .75rem; left: .75rem; z-index: 2; padding: .3rem .625rem; border-radius: 999px; background: #e8f6ed; color: #216b3c; }
+    .pet-status-badge.warning { background: #fff2dd; color: #8a4b08; }
+    .family-pet-card .card-actions-top { opacity: 1; }
     .pet-stat {
       font-size: 0.8125rem;
       color: var(--bitbucket-text-secondary);
@@ -764,6 +800,7 @@ export class TableCardComponent implements AfterViewInit, OnDestroy {
   hasMore = input(false);
   loadingMore = input(false);
   type = input<CardType>('post');
+  addLabelText = input<string | undefined>();
 
   searchChange = output<string>();
   filterChange = output<string>();
@@ -781,6 +818,9 @@ export class TableCardComponent implements AfterViewInit, OnDestroy {
   petImageIndexes = signal<number[]>([]);
 
   addLabel = computed(() => {
+    const customLabel = this.addLabelText();
+    if (customLabel) return customLabel;
+
     const labels: Record<CardType, string> = {
       post: 'Nueva publicación',
       pet: 'Nueva mascota',

@@ -5,11 +5,12 @@ import { RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd, Router } fro
 import { FooterComponent } from '../../../shared/presentation/components/footer/footer';
 import { BreadcrumbComponent } from '../../../shared/presentation/components/breadcrumb/breadcrumb.component';
 import { filter } from 'rxjs/operators';
+import { TranslocoModule } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-public-layout',
   standalone: true,
-  imports: [HeaderComponent, SidebarComponent, FooterComponent, BreadcrumbComponent, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [HeaderComponent, SidebarComponent, FooterComponent, BreadcrumbComponent, RouterOutlet, RouterLink, RouterLinkActive, TranslocoModule],
   template: `
     <div class="layout-container">
       <!-- Header -->
@@ -36,20 +37,25 @@ import { filter } from 'rxjs/operators';
 
       <!-- Mobile Bottom Navigation -->
       <nav class="mobile-nav">
-        <a routerLink="/" routerLinkActive="mobile-nav-active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link">
+        <a routerLink="/" routerLinkActive="mobile-nav-active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" [attr.aria-label]="'nav.home' | transloco">
           <span class="material-symbols-rounded">home</span>
+          <span class="mobile-nav-label">{{ 'nav.home' | transloco }}</span>
         </a>
-        <a routerLink="/social" routerLinkActive="mobile-nav-active" class="mobile-nav-link">
-          <span class="material-symbols-rounded">groups</span>
+        <a routerLink="/pets" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.family' | transloco">
+          <span class="material-symbols-rounded">pets</span>
+          <span class="mobile-nav-label">{{ 'nav.family' | transloco }}</span>
         </a>
-        <a routerLink="/vet" routerLinkActive="mobile-nav-active" class="mobile-nav-link">
-          <span class="material-symbols-rounded">favorite</span>
+        <a routerLink="/nearby" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.discover' | transloco">
+          <span class="material-symbols-rounded">explore</span>
+          <span class="mobile-nav-label">{{ 'nav.discover' | transloco }}</span>
         </a>
-        <a routerLink="/marketplace" routerLinkActive="mobile-nav-active" class="mobile-nav-link">
-          <span class="material-symbols-rounded">storefront</span>
-        </a>
-        <a routerLink="/adoptions" routerLinkActive="mobile-nav-active" class="mobile-nav-link">
+        <a routerLink="/adoptions" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.adoptions' | transloco">
           <span class="material-symbols-rounded">pet_supplies</span>
+          <span class="mobile-nav-label">{{ 'nav.adoptions' | transloco }}</span>
+        </a>
+        <a routerLink="/social" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.community' | transloco">
+          <span class="material-symbols-rounded">groups</span>
+          <span class="mobile-nav-label">{{ 'nav.community' | transloco }}</span>
         </a>
       </nav>
     </div>
@@ -123,26 +129,30 @@ import { filter } from 'rxjs/operators';
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 6px 12px;
+      gap: 2px;
+      padding: 6px 4px;
       color: var(--sidebar-text);
       text-decoration: none;
-      font-size: 0.625rem;
+      font-size: 0.6875rem;
       border-radius: var(--radius-md);
       transition: all var(--transition-fast);
-      min-width: 56px;
+      flex: 1;
+      min-width: 0;
       position: relative;
     }
 
-    .mobile-nav-link span {
+    .mobile-nav-link .material-symbols-rounded {
       font-size: 1.5rem;
       width: 1.5rem;
       height: 1.5rem;
-      margin-bottom: 2px;
       transition: all var(--transition-fast);
     }
 
-    .mobile-nav-link span.material-symbols-rounded {
-      font-size: 1.5rem;
+    .mobile-nav-label {
+      overflow: hidden;
+      max-width: 100%;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .mobile-nav-link:hover {
@@ -192,16 +202,12 @@ import { filter } from 'rxjs/operators';
 
     @media (max-width: 480px) {
       .mobile-nav-link {
-        min-width: 48px;
-        padding: 4px 6px;
+        padding: 4px 2px;
+        font-size: 0.625rem;
       }
 
-      .mobile-nav-link span {
+      .mobile-nav-link .material-symbols-rounded {
         font-size: 1.25rem;
-      }
-
-      .mobile-nav-link span {
-        font-size: 0.6rem;
       }
     }
   `]

@@ -38,18 +38,47 @@ export class PetService {
       formData.append('breed', request.breed);
     }
     if (request.dateOfBirth) {
-      // Convert date to ISO format (yyyy-MM-dd)
-      const date = new Date(request.dateOfBirth);
-      formData.append('dateOfBirth', date.toISOString().split('T')[0]);
+      formData.append('dateOfBirth', request.dateOfBirth);
     }
-    if (request.gender) {
-      formData.append('gender', request.gender);
-    }
-    if (request.color) {
-      formData.append('color', request.color);
-    }
-    if (request.microchipId) {
-      formData.append('microchipId', request.microchipId);
+    const optionalFields: Array<keyof CreatePetRequest> = [
+      'gender',
+      'color',
+      'microchipId',
+      'bio',
+      'weight',
+      'weightUnit',
+      'bloodType',
+      'allergies',
+      'medicalConditions',
+      'vetName',
+      'vetPhone',
+      'vetAddress',
+      'lastVaccinationDate',
+      'nextVaccinationDate',
+      'lastVetVisit',
+      'insuranceProvider',
+      'insurancePolicyNumber',
+      'emergencyContact',
+      'emergencyPhone',
+      'adoptionDate',
+      'adoptionCenter',
+      'registrationNumber',
+      'licenseNumber',
+      'licenseExpiryDate',
+      'spayedNeutered',
+      'spayedNeuteredDate',
+      'temperament',
+      'energyLevel',
+      'trainingLevel',
+      'favoriteActivities',
+      'favoriteFood',
+      'specialNeeds'
+    ];
+    for (const field of optionalFields) {
+      const value = request[field];
+      if (value !== null && value !== undefined && value !== '') {
+        formData.append(field, String(value));
+      }
     }
     if (imageFile) {
       formData.append('image', imageFile, imageFile.name);

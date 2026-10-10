@@ -346,6 +346,7 @@ export interface DynamicFormConfig {
               icon="pi pi-times"
               severity="secondary"
               [text]="true"
+              [disabled]="submitting()"
               (onClick)="onCancel.emit()"
               type="button"
             />
@@ -353,7 +354,7 @@ export interface DynamicFormConfig {
           <button
             type="submit"
             class="submit-btn"
-            [disabled]="form().invalid"
+            [disabled]="form().invalid || submitting()"
           >
             <i class="pi pi-check"></i>
             {{ config().submitLabel || 'Guardar' }}
@@ -662,6 +663,7 @@ export class DynamicFormComponent implements OnInit, OnChanges, OnDestroy {
   readonly i18n = inject(TranslocoService);
   // Input para la configuración del formulario
   config = input<DynamicFormConfig>({ fields: [] });
+  submitting = input(false);
 
   // Model para los datos del formulario (two-way binding)
   formData = model<any>({});

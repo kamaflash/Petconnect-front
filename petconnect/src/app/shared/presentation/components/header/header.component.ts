@@ -81,14 +81,14 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 }
               </button>
 
-              <!-- Admin -->
+              <!-- Gestión de la cuenta -->
               <button
                 pButton
-                icon="pi pi-shield"
+                icon="pi pi-briefcase"
                 class="p-button-text p-button-sm header-btn"
                 pTooltip="{{ 'header.tooltipAdmin' | transloco }}"
                 tooltipPosition="bottom"
-                (click)="onAdmin()"
+                (click)="onManagement()"
               ></button>
 
               <!-- User menu -->
@@ -174,11 +174,11 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
               ></button>
               <button
                 pButton
-                icon="pi pi-plus"
+                icon="pi pi-briefcase"
                 class="p-button-text p-button-sm header-btn"
                 pTooltip="{{ 'header.tooltipAdmin' | transloco }}"
                 tooltipPosition="bottom"
-                (click)="onAdmin()"
+                (click)="onManagement()"
               ></button>
               <button
                 pButton
@@ -514,8 +514,8 @@ export class HeaderComponent implements OnInit {
     void this.router.navigate(['/profile']);
   }
 
-    onAdmin(): void {
-    void this.router.navigate(['/admin']);
+    onManagement(): void {
+    void this.router.navigate(['/management']);
   }
 
     onSettings(): void {

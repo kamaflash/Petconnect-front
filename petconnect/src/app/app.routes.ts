@@ -32,8 +32,8 @@ export const routes: Routes = [
       },
       {
         path: 'users',
-        loadChildren: () =>
-          import('./users/users.routes').then(m => m.usersRoutes)
+        redirectTo: 'profile',
+        pathMatch: 'full'
       },
       {
         path: 'health',
@@ -106,9 +106,14 @@ export const routes: Routes = [
           import('./gamification/gamification.routes').then(m => m.gamificationRoutes)
       },
       {
-        path: 'admin',
+        path: 'management',
         loadChildren: () =>
           import('./admin/admin.routes').then(m => m.adminRoutes)
+      },
+      {
+        path: 'admin',
+        redirectTo: '/management',
+        pathMatch: 'full'
       },
       {
         path: 'settings',

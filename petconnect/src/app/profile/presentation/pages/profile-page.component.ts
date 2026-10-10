@@ -2672,7 +2672,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       {
         label: this.transloco.translate('profile.menu.manage'),
         icon: 'pi pi-cog',
-        command: () => this.router.navigate(['/admin'])
+        command: () => this.router.navigate(['/management'])
       }
     ];
   }

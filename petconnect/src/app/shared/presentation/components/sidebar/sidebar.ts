@@ -33,88 +33,56 @@ import { TranslocoModule } from '@jsverse/transloco';
         <span class="nav-text">{{ 'nav.home' | transloco }}</span>
       </a>
 
-      <a
-        routerLink="/social"
-        routerLinkActive="sidebar-link-active"
-        #socialLink="routerLinkActive"
-        class="sidebar-link"
-      >
-        <span class="material-symbols-rounded nav-icon" [class.filled]="socialLink.isActive">groups</span>
-        <span class="nav-text">{{ 'nav.community' | transloco }}</span>
+      <p class="nav-label" style="margin-top: 0.75rem;">{{ 'nav.groupFamily' | transloco }}</p>
+
+      <a routerLink="/pets" routerLinkActive="sidebar-link-active" #petsLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="petsLink.isActive">pets</span>
+        <span class="nav-text">{{ 'nav.family' | transloco }}</span>
       </a>
-
-      <p class="nav-label" style="margin-top: 0.75rem;">{{ 'nav.groupServices' | transloco }}</p>
-
-      <a
-        routerLink="/vet"
-        routerLinkActive="sidebar-link-active"
-        #vetLink="routerLinkActive"
-        class="sidebar-link"
-      >
-        <span class="material-symbols-rounded nav-icon" [class.filled]="vetLink.isActive">favorite</span>
-        <span class="nav-text">{{ 'nav.vet' | transloco }}</span>
+      <a routerLink="/health" routerLinkActive="sidebar-link-active" #healthLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="healthLink.isActive">health_and_safety</span>
+        <span class="nav-text">{{ 'nav.health' | transloco }}</span>
       </a>
-
-      <a
-        routerLink="/marketplace"
-        routerLinkActive="sidebar-link-active"
-        #marketplaceLink="routerLinkActive"
-        class="sidebar-link"
-      >
-        <span class="material-symbols-rounded nav-icon" [class.filled]="marketplaceLink.isActive">storefront</span>
-        <span class="nav-text">{{ 'nav.marketplace' | transloco }}</span>
-      </a>
-
-      <a
-        routerLink="/adoptions"
-        routerLinkActive="sidebar-link-active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        #adoptionsLink="routerLinkActive"
-        class="sidebar-link"
-      >
-        <span class="material-symbols-rounded nav-icon" [class.filled]="adoptionsLink.isActive">pet_supplies</span>
-        <span class="nav-text">{{ 'nav.adoptions' | transloco }}</span>
+      <a routerLink="/appointments" routerLinkActive="sidebar-link-active" #appointmentsLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="appointmentsLink.isActive">calendar_month</span>
+        <span class="nav-text">{{ 'nav.appointments' | transloco }}</span>
       </a>
 
       <p class="nav-label" style="margin-top: 0.75rem;">{{ 'nav.groupDiscover' | transloco }}</p>
 
-      <a
-        routerLink="/events"
-        routerLinkActive="sidebar-link-active"
-        #eventsLink="routerLinkActive"
-        class="sidebar-link"
-      >
+      <a routerLink="/nearby" routerLinkActive="sidebar-link-active" #nearbyLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="nearbyLink.isActive">location_on</span>
+        <span class="nav-text">{{ 'nav.nearby' | transloco }}</span>
+      </a>
+      <a routerLink="/adoptions" routerLinkActive="sidebar-link-active" #adoptionsLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="adoptionsLink.isActive">pet_supplies</span>
+        <span class="nav-text">{{ 'nav.adoptions' | transloco }}</span>
+      </a>
+      <a routerLink="/lostpets" routerLinkActive="sidebar-link-active" #lostpetsLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="lostpetsLink.isActive">search</span>
+        <span class="nav-text">{{ 'nav.lostPets' | transloco }}</span>
+      </a>
+      <a routerLink="/vet" routerLinkActive="sidebar-link-active" #vetLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="vetLink.isActive">medical_services</span>
+        <span class="nav-text">{{ 'nav.vet' | transloco }}</span>
+      </a>
+      <a routerLink="/marketplace" routerLinkActive="sidebar-link-active" #marketplaceLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="marketplaceLink.isActive">storefront</span>
+        <span class="nav-text">{{ 'nav.marketplace' | transloco }}</span>
+      </a>
+      <a routerLink="/events" routerLinkActive="sidebar-link-active" #eventsLink="routerLinkActive" class="sidebar-link">
         <span class="material-symbols-rounded nav-icon" [class.filled]="eventsLink.isActive">event</span>
         <span class="nav-text">{{ 'nav.events' | transloco }}</span>
       </a>
 
-      <a
-        routerLink="/lostpets"
-        routerLinkActive="sidebar-link-active"
-        #lostpetsLink="routerLinkActive"
-        class="sidebar-link"
-      >
-        <span class="material-symbols-rounded nav-icon" [class.filled]="lostpetsLink.isActive">search</span>
-        <span class="nav-text">{{ 'nav.lostPets' | transloco }}</span>
+
+      <p class="nav-label" style="margin-top: 0.75rem;">{{ 'nav.groupCommunity' | transloco }}</p>
+      <a routerLink="/social" routerLinkActive="sidebar-link-active" #socialLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="socialLink.isActive">groups</span>
+        <span class="nav-text">{{ 'nav.community' | transloco }}</span>
       </a>
 
-      <p class="nav-label" style="margin-top: 0.75rem;">{{ 'nav.groupContent' | transloco }}</p>
-
-      <a
-        routerLink="/messages"
-        routerLinkActive="sidebar-link-active"
-        #messagesLink="routerLinkActive"
-        class="sidebar-link"
-      >
-        <span class="material-symbols-rounded nav-icon" [class.filled]="messagesLink.isActive">chat</span>
-        <span class="nav-text">{{ 'nav.messages' | transloco }}</span>
-      </a>
-      <a
-        routerLink="/gamification"
-        routerLinkActive="sidebar-link-active"
-        #gamificationLink="routerLinkActive"
-        class="sidebar-link"
-      >
+      <a routerLink="/gamification" routerLinkActive="sidebar-link-active" #gamificationLink="routerLinkActive" class="sidebar-link">
         <span class="material-symbols-rounded nav-icon" [class.filled]="gamificationLink.isActive">emoji_events</span>
         <span class="nav-text">{{ 'nav.achievements' | transloco }}</span>
       </a>

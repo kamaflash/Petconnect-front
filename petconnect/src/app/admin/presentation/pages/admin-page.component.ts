@@ -15,10 +15,6 @@ import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { SocialService, PostResponse, EventResponse, GroupResponse, StoryResponse } from '../../../social/infrastructure/services/social.service';
-import { PetResponse } from '../../../pets/domain/pet.model';
-import { SPECIES_BREEDS } from '../../../pets/domain/species-breeds.model';
-import { PET_COLOR_OPTIONS } from '../../../pets/domain/pet-colors.model';
-import { PetService } from '../../../pets/infrastructure/services/pet.service';
 import { HomeService, VetServiceResponse } from '../../../home/infrastructure/services/home.service';
 import { MarketplaceService, CreateProductRequest } from '../../../marketplace/infrastructure/services/marketplace.service';
 import { AdoptionService, AdoptionRequest, AdoptionStatus } from '../../../adoptions/infrastructure/services/adoption.service';
@@ -148,35 +144,6 @@ interface ProductItem {
               >
                 <ng-template card-actions let-item>
                   <p-button icon="pi pi-trash" styleClass="p-button-sm p-button-danger" (onClick)="deleteEventById(item.id)" />
-                </ng-template>
-              </app-table-card>
-            </div>
-          </div>
-
-          <!-- Mascotas -->
-          <div class="admin-section" *ngIf="activeTab() === 'pets'">
-            <!-- Formulario de creación -->
-            <div class="form-container" *ngIf="showCreatePetForm()">
-              <app-dynamic-form
-                [config]="petFormConfig"
-                [(formData)]="petFormData"
-                (onSubmitClick)="handleCreatePet($event)"
-                (onCancel)="showCreatePetForm.set(false)"
-              />
-            </div>
-
-            <!-- Lista de mascotas -->
-            <div *ngIf="!showCreatePetForm()">
-              <app-table-card
-              [type]="'pet'"
-                [items]="adminPetItems()"
-                [showSearch]="true"
-                [filteredItems]="adminPetItems()"
-                [editable]="true"
-                (onAdd)="showCreatePetForm.set(true)"
-              >
-                <ng-template card-actions let-item>
-                  <p-button icon="pi pi-trash" styleClass="p-button-sm p-button-danger" (onClick)="deletePetById(item.id)" />
                 </ng-template>
               </app-table-card>
             </div>
@@ -673,7 +640,6 @@ export class AdminPageComponent implements OnInit {
   readonly i18n = inject(TranslocoService);
   private readonly authService = inject(AuthService);
   private readonly socialService = inject(SocialService);
-  private readonly petService = inject(PetService);
   private readonly homeService = inject(HomeService);
   private readonly marketplaceService = inject(MarketplaceService);
   private readonly adoptionService = inject(AdoptionService);
@@ -690,21 +656,18 @@ export class AdminPageComponent implements OnInit {
   // Form states
   showCreatePostForm = signal(false);
   showCreateEventForm = signal(false);
-  showCreatePetForm = signal(false);
   showCreateStoryForm = signal(false);
   showCreateGroupForm = signal(false);
 
   // Form data
   postFormData = signal<any>({});
   eventFormData = signal<any>({});
-  petFormData = signal<any>({});
   storyFormData = signal<any>({});
   groupFormData = signal<any>({});
 
   // Data from backend
   adminPosts = signal<any[]>([]);
   adminEvents = signal<any[]>([]);
-  adminPets = signal<any[]>([]);
   adminStories = signal<any[]>([]);
   adminGroups = signal<any[]>([]);
     adminAdoptions = signal<AdoptionRequest[]>([]);
@@ -783,106 +746,6 @@ export class AdminPageComponent implements OnInit {
         showIcon: true,
         dateFormat: 'dd/mm/yy',
         validation: { required: true }
-      }
-    ]
-  };
-
-  petFormConfig: DynamicFormConfig = {
-    title: this.i18n.translate('admin.createNewPet'),
-    submitLabel: this.i18n.translate('admin.createPet'),
-    showCancel: true,
-    resolveOptions: (_field, sourceValue) => SPECIES_BREEDS[sourceValue] ?? [],
-    fields: [
-      {
-        key: 'name',
-        label: this.i18n.translate('admin.name'),
-        type: 'input',
-        placeholder: this.i18n.translate('admin.petNamePlaceholder'),
-        validation: { required: true, minLength: 2, maxLength: 100 }
-      },
-      {
-        key: 'species',
-        label: this.i18n.translate('common.species'),
-        type: 'select',
-        placeholder: this.i18n.translate('admin.selectSpecies'),
-        options: [
-          { label: this.i18n.translate('common.dog'), value: 'dog' },
-          { label: this.i18n.translate('common.cat'), value: 'cat' },
-          { label: this.i18n.translate('common.bird'), value: 'bird' },
-          { label: this.i18n.translate('common.rabbit'), value: 'rabbit' },
-          { label: this.i18n.translate('common.hamster'), value: 'hamster' },
-          { label: this.i18n.translate('common.other'), value: 'other' }
-        ],
-        validation: { required: true }
-      },
-      {
-        key: 'breed',
-        label: this.i18n.translate('common.breed'),
-        type: 'select',
-        dependsOn: 'species',
-        placeholder: this.i18n.translate('admin.selectBreed'),
-        validation: { maxLength: 100 }
-      },
-      {
-        key: 'dateOfBirth',
-        label: this.i18n.translate('admin.birthDate'),
-        type: 'date',
-        placeholder: 'Seleccione la fecha',
-        showIcon: true,
-        dateFormat: 'dd/mm/yy'
-      },
-      {
-        key: 'gender',
-        label: this.i18n.translate('common.gender'),
-        type: 'select',
-        placeholder: this.i18n.translate('common.selectGender'),
-        options: [
-          { label: this.i18n.translate('common.male'), value: 'male' },
-          { label: this.i18n.translate('common.female'), value: 'female' },
-          { label: this.i18n.translate('admin.unknown'), value: 'unknown' }
-        ]
-            },
-      {
-        key: 'color',
-        label: this.i18n.translate('common.color'),
-        type: 'select',
-        placeholder: this.i18n.translate('admin.selectColor'),
-        showClear: true,
-        options: PET_COLOR_OPTIONS
-      },
-      {
-        key: 'weight',
-        label: this.i18n.translate('admin.weight'),
-        type: 'number',
-        placeholder: this.i18n.translate('admin.weight'),
-        validation: { min: 0.1, max: 200 }
-      },
-      {
-        key: 'weightUnit',
-        label: this.i18n.translate('admin.weightUnit'),
-        type: 'select',
-        placeholder: this.i18n.translate('admin.selectWeightUnit'),
-        options: [
-          { label: 'kg', value: 'kg' },
-          { label: 'lb', value: 'lb' }
-        ]
-      },
-      {
-        key: 'bio',
-        label: this.i18n.translate('common.bio'),
-        type: 'textarea',
-        placeholder: this.i18n.translate('common.bioPlaceholder'),
-        rows: 3,
-        validation: { maxLength: 500 }
-      },
-      {
-        key: 'photos',
-        label: this.i18n.translate('admin.photos'),
-        type: 'file',
-        placeholder: this.i18n.translate('admin.selectPetPhotos'),
-        accept: 'image/*',
-        maxFileSize: 5000000,
-        multiple: true
       }
     ]
   };
@@ -1078,20 +941,6 @@ export class AdminPageComponent implements OnInit {
     }));
   });
 
-  adminPetItems = computed((): TableCardItem[] => {
-    return this.adminPets().map(pet => ({
-      id: pet.id,
-      name: pet.name,
-      avatar: pet.avatarUrl || 'https://placehold.co/150',
-      image: pet.imageUrls?.[0] || pet.avatarUrl || 'https://placehold.co/150',
-      description: `${this.i18n.translate('admin.species')}: ${pet.species}${pet.breed ? ` | ${this.i18n.translate('common.breed')}: ${pet.breed}` : ''}${pet.gender ? ` | ${this.i18n.translate('common.gender')}: ${pet.gender}` : ''}`,
-      species: pet.species,
-      breed: pet.breed,
-      gender: pet.gender,
-      tags: pet.active ? [this.i18n.translate('admin.active')] : [this.i18n.translate('admin.inactive')],
-    }));
-  });
-
   adminStoryItems = computed((): TableCardItem[] => {
     return this.adminStories().map(story => ({
       id: story.id,
@@ -1155,15 +1004,6 @@ export class AdminPageComponent implements OnInit {
       next: (groups) => this.adminGroups.set(groups),
       error: (err) => console.error('Error loading groups:', err)
     });
-    // Get the current user ID (user.id is the authUserId)
-    const user = this.authService.user();
-    const ownerId:string = user?.id || '';
-    // Load all pets (for admin)
-    this.petService.getPetsByOwner(ownerId).subscribe({
-      next: (pets) => this.adminPets.set(pets),
-      error: (err) => console.error('Error loading pets:', err)
-    });
-
     // Load products (for sellers)
     this.marketplaceService.getMyProducts().subscribe({
       next: (products: any[]) => {
@@ -1245,68 +1085,6 @@ export class AdminPageComponent implements OnInit {
       severity: 'success',
       summary: this.i18n.translate('admin.eventCreated'),
       detail: this.i18n.translate('admin.eventCreatedDetail', { name: eventData.title })
-    });
-  }
-
-  handleCreatePet(petData: any) {
-    // Get the photos array from files (uploadedFiles) or from form data
-    const photosArray = petData.files?.photos || petData.photos || [];
-
-    // Debug: Log the received data
-    console.log('handleCreatePet - petData:', petData);
-    console.log('handleCreatePet - photosArray length:', photosArray.length);
-    console.log('handleCreatePet - photosArray:', photosArray);
-
-    // Extract the first image as the main image
-    const imageFile = photosArray[0]?.originalFile;
-
-    // Extract remaining images as additional images
-    const imageFiles: File[] = photosArray
-      .slice(1)
-      .map((photo: any) => photo.originalFile)
-      .filter((file: File | undefined) => file !== undefined) as File[];
-
-    console.log('handleCreatePet - imageFile:', imageFile);
-    console.log('handleCreatePet - imageFiles length:', imageFiles.length);
-    console.log('handleCreatePet - imageFiles:', imageFiles);
-
-    // Get the current user ID (user.id is the authUserId)
-    const user = this.authService.user();
-    const ownerId = user?.id;
-
-    // Create the request for the backend with only fundamental fields
-    const request = {
-      name: petData.name,
-      species: petData.species,
-      breed: petData.breed || null,
-      dateOfBirth: petData.dateOfBirth || null,
-      gender: petData.gender || null,
-      color: petData.color || null,
-      microchipId: null,
-      bio: petData.bio || null,
-      weight: petData.weight ? parseFloat(petData.weight) : null,
-      weightUnit: petData.weightUnit || 'kg'
-    };
-
-    // Send to backend
-    this.petService.createPet(request, imageFile, imageFiles, ownerId).subscribe({
-      next: (response) => {
-        this.adminPets.update(pets => [...pets, response]);
-        this.showCreatePetForm.set(false);
-        this.messageService.add({
-          severity: 'success',
-          summary: this.i18n.translate('admin.petCreated'),
-          detail: this.i18n.translate('admin.petCreatedDetail', { name: petData.name })
-        });
-      },
-      error: (err) => {
-        console.error('Error creating pet:', err);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: this.i18n.translate('admin.petCreateError')
-        });
-      }
     });
   }
 
@@ -1436,11 +1214,6 @@ export class AdminPageComponent implements OnInit {
       { id: 'posts', label: t.translate('admin.tabs.posts'), icon: 'photo_library' },
     ];
 
-    // Add pets tab for all except sellers
-    if (profileType !== 'seller') {
-      tabs.push({ id: 'pets', label: t.translate('admin.tabs.pets'), icon: 'pet_supplies' });
-    }
-
     // Add tabs based on profile type
     if (profileType === 'vet') {
       tabs.push(
@@ -1454,8 +1227,7 @@ export class AdminPageComponent implements OnInit {
       );
     } else if (profileType === 'shelter') {
       tabs.push(
-        { id: 'adoptions', label: t.translate('admin.tabs.adoptions'), icon: 'favorite' },
-        { id: 'shelter-pets', label: t.translate('admin.tabs.shelterPets'), icon: 'pets' }
+        { id: 'adoptions', label: t.translate('admin.tabs.adoptions'), icon: 'favorite' }
       );
     } else if (profileType === 'trainer') {
       tabs.push(
@@ -1612,26 +1384,6 @@ export class AdminPageComponent implements OnInit {
       severity: 'info',
       summary: this.i18n.translate('admin.underDevelopment'),
       detail: this.i18n.translate('admin.deleteEventsSoon')
-    });
-  }
-
-  deletePetById(id: string) {
-    this.petService.deletePet(id).subscribe({
-      next: () => {
-        this.adminPets.update(pets => pets.filter(p => p.id !== id));
-        this.messageService.add({
-          severity: 'success',
-          summary: this.i18n.translate('admin.deleted'),
-          detail: this.i18n.translate('admin.petDeletedDetail')
-        });
-      },
-      error: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: this.i18n.translate('admin.petDeleteError')
-        });
-      }
     });
   }
 
