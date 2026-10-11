@@ -671,6 +671,7 @@ export class DynamicFormComponent implements OnInit, OnChanges, OnDestroy {
   // Outputs
   onSubmitClick = output<any>();
   onCancel = output<void>();
+  formValueChange = output<Record<string, unknown>>();
   // Emitido cuando se confirma una ubicación desde el picker dentro del formulario
   onLocationPicked = output<any>();
 
@@ -763,6 +764,12 @@ export class DynamicFormComponent implements OnInit, OnChanges, OnDestroy {
     this.form.set(this.fb.group(formControls));
 
     this.setupDependencies();
+    this.dependencySubscriptions.push(
+      this.form().valueChanges.subscribe(value => {
+        this.formData.set(value);
+        this.formValueChange.emit(value);
+      })
+    );
   }
 
   // Resuelve las opciones de un campo: si es dependiente usa el resolver del config

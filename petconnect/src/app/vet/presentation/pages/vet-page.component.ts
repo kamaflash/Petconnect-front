@@ -387,7 +387,7 @@ interface Product {
           <div class="form-group">
             <label>Mascota</label>
             <select [(ngModel)]="selectedPet" class="w-full">
-              <option value="">Seleccionar mascota</option>
+              <option value="">Seleccionar compañer@</option>
               <option *ngFor="let option of petOptions" [ngValue]="option.value">{{ option.label }}</option>
             </select>
           </div>

@@ -1723,7 +1723,7 @@ export class HomePageComponent implements OnInit, AfterViewInit, OnDestroy {
      NAVEGACIÓN
      ============================================================ */
 
-  /** Abre el perfil de la mascota seleccionada desde el módulo de adopciones. */
+  /** Abre el perfil de la compañer@ seleccionada desde el módulo de adopciones. */
   openPetProfile(petId: string): void {
     if (!petId) return;
     this.router.navigate(['/profile/pet', petId]);

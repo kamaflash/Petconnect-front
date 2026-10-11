@@ -68,7 +68,7 @@ export class DynamicFormExampleComponent {
         key: 'name',
         label: 'Nombre',
         type: 'input',
-        placeholder: 'Nombre de la mascota',
+        placeholder: 'Nombre de la compañer@',
         validation: { required: true, minLength: 2, maxLength: 50 }
       },
       {
@@ -117,7 +117,7 @@ export class DynamicFormExampleComponent {
         key: 'notes',
         label: 'Notas',
         type: 'textarea',
-        placeholder: 'Información adicional sobre la mascota...',
+        placeholder: 'Información adicional sobre la compañer@...',
         rows: 4
       }
     ]

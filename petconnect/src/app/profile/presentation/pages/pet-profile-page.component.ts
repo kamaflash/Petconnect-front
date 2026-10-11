@@ -113,7 +113,7 @@ interface PetComment {
                   </div>
                 </div>
                 <div class="user-badges">
-                  <!-- Solo se muestra cuando la mascota está en adopción.
+                  <!-- Solo se muestra cuando la compañer@ está en adopción.
                        No se muestra el estado "Adoptado" cuando no lo está. -->
                   <span class="badge badge-success" *ngIf="pet()?.availableForAdoption">🐾 En adopción</span>
                   <span class="badge badge-info" *ngIf="isOwner()">Familia</span>
@@ -2264,7 +2264,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
       }
     }));
 
-    // Refrescar el nombre/avatar del Familia cuando la mascota cambia de propietario
+    // Refrescar el nombre/avatar del Familia cuando la compañer@ cambia de propietario
     // (p. ej. al finalizar una adopción desde la administración).
     effect(() => {
       const changedId = this.petOwnershipEvent.changedPetId();
@@ -2576,7 +2576,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     }
 
     // Enviar únicamente la URL nueva. El backend la añade a imageUrls (con dedupe)
-    // y preserva el resto de campos de la mascota (update parcial).
+    // y preserva el resto de campos de la compañer@ (update parcial).
     this.profileService.updatePet(pet.id, { imageUrls: [imageUrl] }).subscribe({
       next: (updated) => {
         this.uploadingPhoto.set(false);
@@ -2585,7 +2585,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
           summary: this.i18n.translate('petProfile.photoAdded'),
           detail: this.i18n.translate('petProfile.photoAddedDetail')
         });
-        // Refrescar la mascota para mostrar la nueva foto
+        // Refrescar la compañer@ para mostrar la nueva foto
         this.loadPetData(pet.id);
       },
       error: () => {

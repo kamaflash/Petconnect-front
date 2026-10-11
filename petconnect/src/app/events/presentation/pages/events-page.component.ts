@@ -605,7 +605,7 @@ export class EventsPageComponent implements OnInit {
       {
         id: '3',
         title: 'Concurso de Obediencia',
-        description: 'Demuestra las habilidades de tu mascota',
+        description: 'Demuestra las habilidades de tu compañer@',
         date: new Date('2025-08-15T14:00:00'),
         location: 'Arena Canina',
         address: this.i18n.translate('events.sportsCenter'),

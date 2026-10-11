@@ -27,8 +27,7 @@ import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
 import { LocationPickerComponent } from '../../../shared/components/location-picker/location-picker.component';
 import { GeocodingResult } from '../../../shared/services/geolocation.service';
-import { DialogModule } from 'primeng/dialog';
-import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
+import { PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
@@ -155,8 +154,6 @@ interface Pet {
     TabsComponent,
     MenuModule,
     LocationPickerComponent,
-    DialogModule,
-    PostFeedComponent,
     ModalComponent,
     TranslocoModule
   ],
@@ -285,10 +282,18 @@ interface Pet {
 
         <!-- Contenido de tabs -->
         <div class="profile-content">
-          <!-- Publicaciones - Tarjetas estilo mascota -->
+          <!-- Publicaciones - Tarjetas estilo compañer@ -->
           <div class="tab-panel" *ngIf="activeTab() === 'posts'">
             <div class="posts-card-grid" *ngIf="!loading()">
-              <div class="card-item post-card" *ngFor="let post of userPostItems()" (click)="openPost(post)">
+              <div
+                class="card-item post-card"
+                *ngFor="let post of userPostItems()"
+                (click)="openPost(post)"
+                (keydown.enter)="openPost(post)"
+                role="link"
+                tabindex="0"
+                [attr.aria-label]="post.caption || ('post.openPost' | transloco)"
+              >
                 <div
                   class="post-image-section"
                   [style.background-image]="'url(' + post.image + ')'"
@@ -611,26 +616,6 @@ interface Pet {
       <!-- Menu -->
       <p-menu #profileMenu [model]="profileMenuItems" [popup]="true" appendTo="body" />
 
-      <!-- Modal de Publicación -->
-      <p-dialog
-        [visible]="postModalVisible()"
-        [modal]="true"
-        [style]="{ width: '90vw', maxWidth: '620px' }"
-        [closable]="true"
-        (onHide)="closePostModal()"
-        [dismissableMask]="true"
-        styleClass="profile-post-modal"
-        [showHeader]="false"
-      >
-        <ng-container *ngIf="selectedPost()">
-          <app-post-feed
-            [posts]="selectedPostsArray()"
-            [loading]="false"
-            [currentUserId]="selectedPost()?.user?.userId || ''"
-          >
-          </app-post-feed>
-        </ng-container>
-      </p-dialog>
 <!-- Modal de Confirmación de cambios de perfil -->
       <app-modal
         [visible]="showConfirmDialog()"
@@ -1654,10 +1639,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     timestamp: Date;
   }[]>([]);
 
-  // Post seleccionado para el modal
-  postModalVisible = signal(false);
-  selectedPost = signal<PostItem | null>(null);
-
   // Publicaciones construidas como PostItem para el feed
   userPostItems = computed((): PostItem[] => {
     const isOwn = !this.profileId();
@@ -1899,20 +1880,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   }
 
   openPost(post: PostItem): void {
-    this.selectedPost.set(post);
-    this.postModalVisible.set(true);
-    this.cdr.detectChanges();
-  }
-
-  closePostModal(): void {
-    this.postModalVisible.set(false);
-    this.selectedPost.set(null);
-    this.cdr.detectChanges();
-  }
-
-  selectedPostsArray(): PostItem[] {
-    const post = this.selectedPost();
-    return post ? [post] : [];
+    void this.router.navigate(['/social/posts', post.id], {
+      queryParams: { returnTo: this.router.url },
+    });
   }
 
   private loadOwnProfile(authUserId: string): void {

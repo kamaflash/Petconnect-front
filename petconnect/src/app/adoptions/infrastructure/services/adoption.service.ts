@@ -48,7 +48,7 @@ export interface OwnershipChangeEvent {
   newOwnerName?: string;
 }
 
-// CronologÃƒÂ­a de propiedad de una mascota
+// CronologÃƒÂ­a de propiedad de una compañer@
 export interface PetOwnerPeriod {
   ownerId: string;
   ownerName: string | null;
@@ -58,7 +58,7 @@ export interface PetOwnerPeriod {
   adoptionRequestId?: string | null;
 }
 
-// Historial completo de adopciÃƒÂ³n para una mascota
+// Historial completo de adopciÃƒÂ³n para una compañer@
 export interface AdoptionHistory {
   petId: string;
   adoptionRequests: AdoptionHistoryEntry[];
@@ -264,7 +264,7 @@ export class AdoptionService {
     });
   }
 
-  // Obtener el historial completo de adopciÃƒÂ³n de una mascota
+  // Obtener el historial completo de adopciÃƒÂ³n de una compañer@
   // Llama al backend GET /adoptions/{petId}/history y ademÃƒÂ¡s actualiza el
   // historial local (BehaviorSubject) con la respuesta.
   getAdoptionHistory(petId: string): Observable<AdoptionHistory> {
@@ -348,7 +348,7 @@ export class AdoptionService {
     };
   }
 
-  // Obtener los cambios de propiedad de una mascota
+  // Obtener los cambios de propiedad de una compañer@
   getOwnershipChanges(petId: string): Observable<OwnershipChangeEvent[]> {
     return this.adoptionHistory$.pipe(
       map((history) => history.ownershipChanges.filter((c) => c.petId === petId)),

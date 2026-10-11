@@ -31,11 +31,11 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
     TranslocoModule,
   ],
   template: `
-    <header class="app-header">
+    <header class="app-header" [class.has-sidebar]="isLoggedIn()" [class.no-sidebar]="!isLoggedIn()">
       <div class="header-content">
-        <!-- Left: Logo + Navigation -->
+        <!-- Keep the brand in the header only where the desktop sidebar is hidden. -->
         <div class="header-left">
-           <div class="logo-container" routerLink="/" style="cursor: pointer;">
+           <div class="logo-container mobile-header-brand" routerLink="/" style="cursor: pointer;">
                <img src="https://res.cloudinary.com/dxjcjee8f/image/upload/v1784374711/m9caz3kr9yusdgis1k42.png" alt="Petconnect" class="logo-image" />
            </div>
         </div>
@@ -320,6 +320,18 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
       object-fit: contain;
     }
 
+    .mobile-header-brand {
+      display: none;
+    }
+
+    :host ::ng-deep .app-header.no-sidebar .mobile-header-brand {
+      display: flex;
+    }
+
+    :host ::ng-deep .app-header.has-sidebar {
+      padding-left: 88px;
+    }
+
     /* ===== USER MENU ===== */
     :host ::ng-deep .p-menu {
       min-width: 260px !important;
@@ -399,6 +411,14 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 
     /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
+      :host ::ng-deep .app-header.has-sidebar {
+        padding-left: 1.25rem;
+      }
+
+      .mobile-header-brand {
+        display: flex;
+      }
+
       .desktop-actions {
         display: none;
       }

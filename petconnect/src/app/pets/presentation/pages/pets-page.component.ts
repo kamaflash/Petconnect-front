@@ -10,7 +10,7 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { PetResponse, CreatePetRequest } from '../../domain/pet.model';
 import { PetService } from '../../infrastructure/services/pet.service';
-import { DynamicFormComponent } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { buildPetEditorFormConfig, petEditorDataToRequest } from '../forms/pet-editor-form';
 import { TableCardComponent, TableCardItem } from '../../../shared/presentation/components/table-card/table-card.component';
 
@@ -139,21 +139,81 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
     <p-dialog
       [visible]="dialogVisible"
       [modal]="true"
-      [header]="'petsPage.addTitle' | transloco"
-      [style]="{ width: 'min(92vw, 48rem)' }"
-      [contentStyle]="{ 'max-height': '70vh', overflow: 'auto' }"
+      [showHeader]="false"
+      [style]="{ width: 'min(94vw, 56rem)' }"
+      [contentStyle]="{ 'max-height': '86vh', overflow: 'auto', padding: '0' }"
       [draggable]="false"
       [resizable]="false"
       (onHide)="closeDialog()"
     >
-      <app-dynamic-form
-        *ngIf="dialogVisible"
-        [config]="petEditorConfig"
-        [formData]="petFormData()"
-        [submitting]="saving()"
-        (onSubmitClick)="savePet($event)"
-        (onCancel)="closeDialog()"
-      />
+      <div class="pet-wizard">
+        <header class="pet-wizard-header">
+          <div class="pet-wizard-heading">
+            <span class="pet-wizard-icon"><i class="pi pi-heart-fill" aria-hidden="true"></i></span>
+            <div>
+              <span class="pet-wizard-eyebrow">{{ 'petsPage.addTitle' | transloco }}</span>
+              <h2>{{ 'petsPage.wizardTitle' | transloco }}</h2>
+              <p>{{ 'petsPage.wizardSubtitle' | transloco }}</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="pet-wizard-close"
+            [disabled]="saving()"
+            [attr.aria-label]="'petsPage.closeForm' | transloco"
+            (click)="closeDialog()"
+          >
+            <i class="pi pi-times" aria-hidden="true"></i>
+          </button>
+        </header>
+
+        <div class="pet-wizard-progress" aria-hidden="true">
+          <span [style.width.%]="((activePetTab() + 1) / petFormTabs.length) * 100"></span>
+        </div>
+
+        <nav class="pet-wizard-tabs" role="tablist" [attr.aria-label]="'petsPage.formSections' | transloco">
+          @for (tab of petFormTabs; track tab.id; let index = $index) {
+            <button
+              type="button"
+              role="tab"
+              class="pet-wizard-tab"
+              [class.active]="activePetTab() === index"
+              [attr.aria-selected]="activePetTab() === index"
+              [attr.aria-controls]="'pet-wizard-panel'"
+              [disabled]="index > furthestPetTab()"
+              (click)="selectPetTab(index)"
+            >
+              <span class="pet-wizard-tab-icon"><i [class]="tab.icon" aria-hidden="true"></i></span>
+              <span class="pet-wizard-tab-copy">
+                <span class="pet-wizard-tab-step">{{ 'petsPage.step' | transloco:{ current: index + 1, total: petFormTabs.length } }}</span>
+                <span class="pet-wizard-tab-label">{{ tab.labelKey | transloco }}</span>
+              </span>
+              @if (index < petFormTabs.length - 1) {
+                <i class="pi pi-chevron-right pet-wizard-tab-chevron" aria-hidden="true"></i>
+              }
+            </button>
+          }
+        </nav>
+
+        <section class="pet-wizard-panel" id="pet-wizard-panel" role="tabpanel">
+          <div class="pet-wizard-section-heading">
+            <span class="pet-wizard-section-icon"><i [class]="petFormTabs[activePetTab()].icon" aria-hidden="true"></i></span>
+            <div>
+              <h3>{{ petFormTabs[activePetTab()].labelKey | transloco }}</h3>
+              <p>{{ petFormTabs[activePetTab()].descriptionKey | transloco }}</p>
+            </div>
+          </div>
+          <app-dynamic-form
+            *ngIf="dialogVisible"
+            [config]="activePetFormConfig()"
+            [formData]="petFormData()"
+            [submitting]="saving()"
+            (formValueChange)="onPetFormValueChange($event)"
+            (onSubmitClick)="advancePetForm($event)"
+            (onCancel)="closeDialog()"
+          />
+        </section>
+      </div>
     </p-dialog>
   `,
   styles: [`
@@ -191,9 +251,46 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
     .state-card p { max-width: 28rem; margin: 0 0 1rem; color: var(--text-secondary); line-height: 1.5; }
     .no-results { padding: 1.5rem 0; color: var(--text-secondary); text-align: center; }
     .no-results p { margin: .5rem 0 0; }
+    .pet-wizard { overflow: hidden; background: var(--surface-card); color: var(--text-primary); }
+    .pet-wizard-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; padding: 1.5rem 1.75rem 1.25rem; }
+    .pet-wizard-heading { display: flex; align-items: center; gap: 1rem; min-width: 0; }
+    .pet-wizard-icon, .pet-wizard-section-icon { display: grid; flex: 0 0 auto; place-items: center; width: 3rem; height: 3rem; border-radius: 1rem; background: color-mix(in srgb, var(--primary-color) 13%, var(--surface-card)); color: var(--primary-color); font-size: 1.2rem; }
+    .pet-wizard-eyebrow { display: block; margin-bottom: .2rem; color: var(--primary-color); font-size: .7rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+    .pet-wizard-header h2 { margin: 0; color: var(--text-primary); font-size: 1.35rem; font-weight: 750; letter-spacing: -.025em; }
+    .pet-wizard-header p, .pet-wizard-section-heading p { margin: .35rem 0 0; color: var(--text-secondary); font-size: .875rem; line-height: 1.5; }
+    .pet-wizard-close { display: grid; flex: 0 0 auto; place-items: center; width: 2.5rem; height: 2.5rem; border: 1px solid var(--surface-border); border-radius: 50%; background: var(--surface-card); color: var(--text-secondary); cursor: pointer; transition: background .2s, color .2s; }
+    .pet-wizard-close:hover:not(:disabled) { background: var(--surface-hover); color: var(--text-primary); }
+    .pet-wizard-close:disabled { cursor: not-allowed; opacity: .55; }
+    .pet-wizard-progress { height: 3px; background: var(--surface-hover); }
+    .pet-wizard-progress span { display: block; height: 100%; border-radius: 0 99px 99px 0; background: linear-gradient(90deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 68%, #f59e0b)); transition: width .25s ease; }
+    .pet-wizard-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; padding: 1.1rem 1.75rem; border-bottom: 1px solid var(--surface-border); }
+    .pet-wizard-tab { position: relative; display: flex; align-items: center; gap: .65rem; min-width: 0; padding: .7rem .65rem; border: 1px solid transparent; border-radius: .85rem; background: transparent; color: var(--text-secondary); text-align: left; cursor: pointer; transition: background .2s, border-color .2s, color .2s; }
+    .pet-wizard-tab:hover { background: var(--surface-hover); color: var(--text-primary); }
+    .pet-wizard-tab.active { border-color: color-mix(in srgb, var(--primary-color) 35%, var(--surface-border)); background: color-mix(in srgb, var(--primary-color) 8%, var(--surface-card)); color: var(--text-primary); }
+    .pet-wizard-tab-icon { display: grid; flex: 0 0 auto; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: .7rem; background: var(--surface-hover); color: var(--text-secondary); }
+    .pet-wizard-tab.active .pet-wizard-tab-icon { background: var(--primary-color); color: #fff; }
+    .pet-wizard-tab-copy { display: flex; flex-direction: column; gap: .1rem; min-width: 0; }
+    .pet-wizard-tab-step { color: var(--text-secondary); font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .pet-wizard-tab-label { overflow: hidden; color: inherit; font-size: .8rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+    .pet-wizard-tab-chevron { margin-left: auto; color: var(--surface-border); font-size: .65rem; }
+    .pet-wizard-panel { padding: 1.35rem 1.75rem 1.5rem; }
+    .pet-wizard-section-heading { display: flex; align-items: center; gap: .85rem; margin-bottom: .5rem; }
+    .pet-wizard-section-icon { width: 2.6rem; height: 2.6rem; border-radius: .8rem; font-size: 1rem; }
+    .pet-wizard-section-heading h3 { margin: 0; color: var(--text-primary); font-size: 1rem; font-weight: 700; }
+    .pet-wizard-section-heading p { margin-top: .2rem; font-size: .8rem; }
+    :host ::ng-deep .pet-wizard .dynamic-form-container { overflow: visible; border: 0; border-radius: 0; background: transparent; }
+    :host ::ng-deep .pet-wizard .dynamic-form { padding: 1rem 0 0; }
+    :host ::ng-deep .pet-wizard .form-fields { gap: 1rem 1.15rem; }
+    :host ::ng-deep .pet-wizard .field-label { color: var(--text-primary); font-weight: 600; }
+    :host ::ng-deep .pet-wizard .form-actions { margin-top: 1.25rem; padding-top: 1.1rem; }
     @media (max-width: 760px) {
       .care-summary-body { grid-template-columns: 1fr; align-items: start; }
       .care-more { justify-self: start; }
+      .pet-wizard-header { padding: 1.25rem 1.25rem 1rem; }
+      .pet-wizard-tabs { padding: .85rem 1rem; gap: .25rem; }
+      .pet-wizard-tab { flex-direction: column; align-items: flex-start; gap: .35rem; padding: .6rem .45rem; }
+      .pet-wizard-tab-chevron { display: none; }
+      .pet-wizard-panel { padding: 1.1rem 1.25rem 1.25rem; }
     }
     @media (max-width: 600px) {
       .family-page { padding-bottom: 1rem; }
@@ -201,6 +298,18 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
       .pets-panel-header { align-items: flex-start; }
       .care-list a { flex-direction: column; gap: .15rem; }
       .care-date { text-align: left; }
+      .pet-wizard-header { padding: 1rem; }
+      .pet-wizard-heading { gap: .7rem; }
+      .pet-wizard-icon { width: 2.6rem; height: 2.6rem; border-radius: .8rem; }
+      .pet-wizard-header h2 { font-size: 1.15rem; }
+      .pet-wizard-header p { font-size: .8rem; }
+      .pet-wizard-tabs { padding: .7rem .5rem; }
+      .pet-wizard-tab { align-items: center; padding: .55rem .2rem; text-align: center; }
+      .pet-wizard-tab-icon { width: 2rem; height: 2rem; }
+      .pet-wizard-tab-copy { width: 100%; }
+      .pet-wizard-tab-step { font-size: .55rem; }
+      .pet-wizard-tab-label { width: 100%; font-size: .67rem; }
+      .pet-wizard-panel { padding: 1rem; }
     }
   `],
 })
@@ -210,6 +319,49 @@ export class PetsPageComponent implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly i18n = inject(TranslocoService);
   readonly petEditorConfig = buildPetEditorFormConfig(this.i18n);
+  readonly petFormTabs = [
+    {
+      id: 'basics',
+      icon: 'pi pi-user',
+      labelKey: 'petsPage.tabBasics',
+      descriptionKey: 'petsPage.tabBasicsDescription',
+      fields: new Set(['name', 'species', 'breed', 'dateOfBirth', 'gender', 'color', 'microchipId', 'weight', 'weightUnit', 'bio'])
+    },
+    {
+      id: 'health',
+      icon: 'pi pi-heart',
+      labelKey: 'petsPage.tabHealth',
+      descriptionKey: 'petsPage.tabHealthDescription',
+      fields: new Set(['bloodType', 'allergies', 'medicalConditions', 'vetName', 'vetPhone', 'vetAddress', 'lastVaccinationDate', 'nextVaccinationDate', 'lastVetVisit', 'insuranceProvider', 'insurancePolicyNumber', 'emergencyContact', 'emergencyPhone'])
+    },
+    {
+      id: 'records',
+      icon: 'pi pi-id-card',
+      labelKey: 'petsPage.tabRecords',
+      descriptionKey: 'petsPage.tabRecordsDescription',
+      fields: new Set(['adoptionDate', 'adoptionCenter', 'registrationNumber', 'licenseNumber', 'licenseExpiryDate', 'spayedNeutered', 'spayedNeuteredDate'])
+    },
+    {
+      id: 'personality',
+      icon: 'pi pi-sparkles',
+      labelKey: 'petsPage.tabPersonality',
+      descriptionKey: 'petsPage.tabPersonalityDescription',
+      fields: new Set(['temperament', 'energyLevel', 'trainingLevel', 'favoriteActivities', 'favoriteFood', 'specialNeeds'])
+    }
+  ];
+  readonly activePetTab = signal(0);
+  readonly furthestPetTab = signal(0);
+  readonly activePetFormConfig = computed<DynamicFormConfig>(() => {
+    const tab = this.petFormTabs[this.activePetTab()];
+    const isLastTab = this.activePetTab() === this.petFormTabs.length - 1;
+    return {
+      ...this.petEditorConfig,
+      title: undefined,
+      cancelLabel: this.i18n.translate('petsPage.cancel'),
+      submitLabel: this.i18n.translate(isLastTab ? 'petsPage.createPet' : 'petsPage.continue'),
+      fields: this.petEditorConfig.fields.filter(field => tab.fields.has(field.key))
+    };
+  });
 
   readonly pets = signal<PetResponse[]>([]);
   readonly loading = signal(true);
@@ -290,7 +442,30 @@ export class PetsPageComponent implements OnInit {
 
   openCreateDialog(): void {
     this.petFormData.set({});
+    this.activePetTab.set(0);
+    this.furthestPetTab.set(0);
     this.dialogVisible = true;
+  }
+
+  selectPetTab(index: number): void {
+    if (index > this.furthestPetTab()) return;
+    this.activePetTab.set(index);
+  }
+
+  onPetFormValueChange(data: Record<string, unknown>): void {
+    this.petFormData.update(current => ({ ...current, ...data }));
+  }
+
+  advancePetForm(data: Record<string, unknown>): void {
+    this.petFormData.update(current => ({ ...current, ...data }));
+    if (this.activePetTab() < this.petFormTabs.length - 1) {
+      const nextTab = this.activePetTab() + 1;
+      this.furthestPetTab.set(Math.max(this.furthestPetTab(), nextTab));
+      this.activePetTab.set(nextTab);
+      return;
+    }
+
+    this.savePet(this.petFormData());
   }
 
   closeDialog(): void {

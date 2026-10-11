@@ -1336,7 +1336,7 @@ export class AdminPageComponent implements OnInit {
     this.adoptionService.updateAdoptionRequestStatus(req.id, status).subscribe({
       next: (updated) => {
         this.adminAdoptions.update(requests => requests.map(r => r.id === updated.id ? updated : r));
-        // Al finalizar la adopción, notificar cambio de propiedad de la mascota
+        // Al finalizar la adopción, notificar cambio de propiedad de la compañer@
         if (status === 'completed') {
           this.petOwnershipEvent.notify(req.petId, 'adoption_completed', req.id);
         }

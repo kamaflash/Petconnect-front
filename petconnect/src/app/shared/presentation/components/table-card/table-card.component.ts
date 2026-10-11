@@ -49,7 +49,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
 @Component({
   selector: 'app-table-card',
   standalone: true,
-  imports: [TranslocoModule, 
+  imports: [TranslocoModule,
     CommonModule,
     ButtonModule,
     AvatarModule,
@@ -831,7 +831,7 @@ export class TableCardComponent implements AfterViewInit, OnDestroy {
 
     const labels: Record<CardType, string> = {
       post: 'Nueva publicación',
-      pet: 'Nueva mascota',
+      pet: 'Nueva compañer@',
       event: 'Nuevo evento',
       story: 'Nueva historia',
       group: 'Nuevo grupo',

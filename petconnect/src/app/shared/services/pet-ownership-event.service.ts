@@ -9,8 +9,8 @@ export type OwnershipChangeReason =
 
 /**
  * Servicio global (singleton) para notificar que la propiedad de una
- * mascota cambió (p. ej. al finalizar una adopción). Cualquier componente
- * que muestre al Familia de una mascota (como el perfil de animal) se suscribe
+ * compañer@ cambió (p. ej. al finalizar una adopción). Cualquier componente
+ * que muestre al Familia de una compañer@ (como el perfil de animal) se suscribe
  * mediante una `effect` y refresca la información del propietario.
  */
 @Injectable({ providedIn: 'root' })
@@ -22,7 +22,7 @@ export class PetOwnershipEventService {
   private readonly _ownershipChanges = signal<OwnershipChangeEvent[]>([]);
   readonly ownershipChanges = this._ownershipChanges.asReadonly();
 
-  /** Notifica que la mascota con `petId` cambió de propietario. */
+  /** Notifica que la compañer@ con `petId` cambió de propietario. */
   notify(petId: string, reason: OwnershipChangeReason = 'other', adoptionRequestId?: string): void {
     this._changedPetId.set(petId);
     const change: OwnershipChangeEvent = {
@@ -41,7 +41,7 @@ export class PetOwnershipEventService {
     this._ownershipChanges.update((changes) => [change, ...changes].slice(0, 100));
   }
 
-  /** Devuelve el historial de cambios de propiedad de una mascota. */
+  /** Devuelve el historial de cambios de propiedad de una compañer@. */
   getOwnershipChangesForPet(petId: string): OwnershipChangeEvent[] {
     return this._ownershipChanges().filter((c) => c.petId === petId);
   }

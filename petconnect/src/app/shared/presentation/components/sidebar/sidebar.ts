@@ -12,11 +12,18 @@ import { TranslocoModule } from '@jsverse/transloco';
 <aside
   [class]="isHovered() || isOpen() ? 'sidebar-expanded' : 'sidebar-collapsed'"
   class="sidebar-container"
-  style="height: calc(100vh - 64px);"
   (mouseenter)="onMouseEnter()"
   (mouseleave)="onMouseLeave()"
 >
   <div class="sidebar-content">
+    <a class="sidebar-brand" routerLink="/" aria-label="Petconnect">
+      <img
+        src="https://res.cloudinary.com/dxjcjee8f/image/upload/v1784374711/m9caz3kr9yusdgis1k42.png"
+        alt=""
+        class="sidebar-brand-logo"
+      />
+      <span class="sidebar-brand-title">Petconnect</span>
+    </a>
 
     <!-- Navegación principal -->
     <nav class="sidebar-nav">
@@ -101,14 +108,15 @@ import { TranslocoModule } from '@jsverse/transloco';
     .sidebar-container {
       position: fixed;
       left: 0;
-      top: 64px;
+      top: 0;
       bottom: 0;
-      z-index: 50;
+      z-index: 60;
       background-color: var(--sidebar-bg);
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      border-right: 1px solid var(--sidebar-border);
     }
 
     .sidebar-collapsed {
@@ -129,8 +137,57 @@ import { TranslocoModule } from '@jsverse/transloco';
       transition: padding 0.3s ease;
     }
 
+    .sidebar-brand {
+      display: flex;
+      flex: 0 0 56px;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0 0.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--sidebar-text);
+      text-decoration: none;
+      overflow: hidden;
+    }
+
+    .sidebar-brand-logo {
+      display: block;
+      flex: 0 0 40px;
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+    }
+
+    .sidebar-brand-title {
+      overflow: hidden;
+      color: var(--sidebar-text);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      opacity: 0;
+      white-space: nowrap;
+      transition: opacity 0.2s ease;
+    }
+
     .sidebar-collapsed .sidebar-content {
       padding: 0.5rem;
+    }
+
+    .sidebar-collapsed .sidebar-brand {
+      justify-content: center;
+      padding: 0;
+    }
+
+    .sidebar-collapsed .sidebar-brand-logo {
+      transform: translateX(10px);
+    }
+
+    .sidebar-collapsed .sidebar-brand-title {
+      width: 0;
+    }
+
+    .sidebar-expanded .sidebar-brand-title {
+      width: auto;
+      opacity: 1;
     }
 
     /* ===== NAVEGACIÓN ===== */
@@ -298,6 +355,12 @@ import { TranslocoModule } from '@jsverse/transloco';
 
     /* ===== DARK MODE AJUSTES ===== */
   .dark .sidebar-link-active {
+  }
+
+  @media (max-width: 768px) {
+    .sidebar-container {
+      display: none;
+    }
   }
   `]
 })
