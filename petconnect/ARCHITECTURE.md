@@ -1,4 +1,4 @@
-# Arquitectura Frontend - Lumio
+# Arquitectura Frontend - Pawly
 
 ## Principios Aplicados
 

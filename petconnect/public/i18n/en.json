@@ -21,7 +21,6 @@
     "termsShort": "Terms",
     "cookiesShort": "Cookies"
   },
-
   "breadcrumb": {
     "home": "Home",
     "pets": "Family",
@@ -42,7 +41,6 @@
     "management": "Management",
     "auth": "Authentication"
   },
-
   "common": {
     "save": "Save changes",
     "title": "Title",
@@ -96,7 +94,7 @@
     "community": "Community",
     "messages": "Messages",
     "achievements": "Achievements",
-    "version": "Lumio v2.0"
+    "version": "Pawly v2.0"
   },
   "agenda": {
     "title": "Care calendar",
@@ -299,7 +297,7 @@
   },
   "settings": {
     "title": "Settings",
-    "subtitle": "Customize your Lumio experience",
+    "subtitle": "Customize your Pawly experience",
     "appearance": "Appearance",
     "themeColor": "Theme color",
     "themeColorDesc": "Select the app's primary color",
@@ -510,11 +508,15 @@
       "specialty": "Specialty",
       "specialization": "Specialization",
       "licenseNumber": "License number",
-      "licensePlaceholder": "License No.",
+      "licensePlaceholder": "E.g.: M-12345 or COLVET-M-12345",
       "charityNumber": "Registration number",
-      "charityPlaceholder": "Shelter registration No.",
+      "charityPlaceholder": "E.g.: G-12345674 or ASOC-2021-4582",
       "storeName": "Store name",
-      "storePlaceholder": "Your store name"
+      "storePlaceholder": "Your store name",
+      "licenseInvalid": "Invalid license number. Format: M-12345 or COLVET-M-12345.",
+      "licenseInvalidDetail": "Invalid license number. Use the format M-12345 or COLVET-M-12345 with a valid province prefix.",
+      "charityInvalid": "Invalid registration number. Use a valid CIF or the ASOC-2021-4582 format.",
+      "charityInvalidDetail": "Invalid registration number. Use a valid CIF (e.g. G-12345674) or a regional reference (e.g. ASOC-2021-4582)."
     },
     "confirm": {
       "title": "Save changes?",
@@ -545,7 +547,17 @@
       "photoUpdateError": "Could not update the profile photo",
       "coverUpdated": "Cover updated",
       "coverUpdatedDetail": "Your cover image has been updated",
-      "coverUpdateError": "Could not update the cover image"
+      "coverUpdateError": "Could not update the cover image",
+      "typeRequestSent": "Request sent",
+      "typeRequestSentDetail": "Your change to a professional profile is pending approval."
+    },
+    "pending": {
+      "request": "Profile type change request under review",
+      "requestedType": "Requested type",
+      "cancel": "Cancel request",
+      "cancelled": "Request cancelled",
+      "cancelledDetail": "Your profile type remains unchanged.",
+      "error": "Could not process the type change request."
     }
   },
   "adoptions": {
@@ -600,7 +612,8 @@
       "completed": "Adoption completed",
       "rejected": "Request rejected",
       "approved": "Request approved"
-    }
+    },
+    "petsTab": "Animals for adoption"
   },
   "feedGrid": {
     "filters": "Filters",
@@ -703,7 +716,50 @@
     "status": "Status",
     "lost": "Lost",
     "found": "Found",
-    "reunited": "Reunited"
+    "reunited": "Reunited",
+    "closed": "Closed",
+    "filterSpecies": "Species",
+    "filterFrom": "From",
+    "filterTo": "To",
+    "nearby": "Nearby only",
+    "nearbyActive": "Nearby on",
+    "geolocationErrorTitle": "Could not get your location",
+    "emptyTitle": "No reports available",
+    "emptyDescription": "Be the first to report a lost or found pet.",
+    "errorTitle": "Something went wrong",
+    "error": "Reports could not be loaded. Please try again.",
+    "retry": "Retry",
+    "viewDetail": "View details",
+    "share": "Share",
+    "shareText": "{{name}} was last seen in {{area}}. Help us find them.",
+    "shareCopied": "Link copied to clipboard.",
+    "shareCopiedTitle": "Link copied",
+    "edit": "Edit",
+    "reportTitle": "Report Loss",
+    "editTitle": "Edit Report",
+    "save": "Save",
+    "updatedDetail": "The report was updated successfully.",
+    "createdDetail": "The report was created successfully.",
+    "saveError": "The report could not be saved.",
+    "sightings": "sightings",
+    "unknownBreed": "Breed not specified",
+    "lostDate": "Lost date",
+    "lastSeenArea": "Last known location",
+    "lastSeenAreaPlaceholder": "Street, neighborhood or city",
+    "photoUrl": "Photo URL",
+    "back": "Back to reports",
+    "contact": "Contact reporter",
+    "contactError": "Could not start the conversation.",
+    "statusUpdatedDetail": "Status changed to {{status}}.",
+    "statusError": "The status could not be changed.",
+    "sightingsEmpty": "No sightings yet. Be the first to report one!",
+    "sightingTitle": "Add sighting",
+    "sightingDate": "Sighting date",
+    "sightingArea": "Location",
+    "sightingAreaPlaceholder": "Where did you see it?",
+    "sightingSubmit": "Submit sighting",
+    "sightingCreatedDetail": "The sighting was recorded successfully.",
+    "sightingError": "The sighting could not be recorded."
   },
   "services": {
     "title": "Services",
@@ -736,7 +792,6 @@
     "checkout": "Checkout",
     "reviews": "reviews",
     "inStock": "In stock ({count} units)",
-    "outOfStock": "Out of stock",
     "addToCart": "Add to cart",
     "search": "Search",
     "categories": "Categories",
@@ -1025,8 +1080,23 @@
       "trainingServices": "Training Services",
       "sessions": "Sessions",
       "events": "Events",
-      "stories": "Stories"
-    }
+      "stories": "Stories",
+      "typeRequests": "Type requests"
+    },
+    "typeRequestsTitle": "Professional type requests",
+    "typeRequestsSubtitle": "Approve or reject changes to Veterinarian or Shelter.",
+    "typeRequestCurrent": "Current",
+    "typeRequestApproved": "Request approved",
+    "typeRequestApprovedDetail": "The profile type has been updated.",
+    "typeRequestRejected": "Request rejected",
+    "typeRequestRejectedDetail": "The request has been dismissed.",
+    "typeRequestActionError": "Could not process the action.",
+    "typeRequestsError": "Could not load the requests.",
+    "noTypeRequests": "No pending requests",
+    "noTypeRequestsSubtitle": "When a user requests to become Veterinarian or Shelter it will appear here.",
+    "refresh": "Refresh",
+    "approve": "Approve",
+    "error": "An error occurred"
   },
   "vet": {
     "tip1": "Did you know dogs can detect blood sugar changes? They make excellent companions for people with diabetes.",
@@ -1352,6 +1422,28 @@
     "selectedImages": "Selected images",
     "select": "Select",
     "dropImages": "Drag images here to upload"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Stay on top of recent activity in PetConnect",
+    "markAllRead": "Mark all as read",
+    "markRead": "Mark as read",
+    "allMarkedRead": "All notifications marked as read",
+    "errorUpdate": "Could not update notifications",
+    "errorLoad": "Could not load notifications",
+    "retry": "Retry",
+    "empty": "You have no notifications",
+    "emptyDesc": "When something happens in your community, we will let you know here.",
+    "unreadCount": "{{n}} unread",
+    "time": {
+      "moments": "moments ago",
+      "minute": "{{n}} minute ago",
+      "minutes": "{{n}} minutes ago",
+      "hour": "{{n}} hour ago",
+      "hours": "{{n}} hours ago",
+      "day": "{{n}} day ago",
+      "days": "{{n}} days ago"
+    }
   },
   "tableCard": {
     "search": "Search..."

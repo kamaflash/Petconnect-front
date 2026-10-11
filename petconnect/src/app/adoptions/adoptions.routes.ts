@@ -3,6 +3,7 @@ import { AdoptionsPageComponent } from './presentation/pages/adoptions-page.comp
 
 export const adoptionsRoutes: Routes = [
   {
+    // Alias heredado: abre la pestaña "Mis solicitudes" dentro de la página
     path: 'my-requests',
     loadComponent: () =>
       import('./presentation/pages/my-adoption-requests-page.component')

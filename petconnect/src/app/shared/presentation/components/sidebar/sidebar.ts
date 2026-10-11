@@ -16,13 +16,13 @@ import { TranslocoModule } from '@jsverse/transloco';
   (mouseleave)="onMouseLeave()"
 >
   <div class="sidebar-content">
-    <a class="sidebar-brand" routerLink="/" aria-label="Petconnect">
+    <a class="sidebar-brand" routerLink="/" aria-label="Pawly">
       <img
         src="https://res.cloudinary.com/dxjcjee8f/image/upload/v1784374711/m9caz3kr9yusdgis1k42.png"
         alt=""
         class="sidebar-brand-logo"
       />
-      <span class="sidebar-brand-title">Petconnect</span>
+      <span class="sidebar-brand-title">Pawly</span>
     </a>
 
     <!-- Navegación principal -->
@@ -43,7 +43,7 @@ import { TranslocoModule } from '@jsverse/transloco';
       <p class="nav-label" style="margin-top: 0.75rem;">{{ 'nav.groupFamily' | transloco }}</p>
 
       <a routerLink="/pets" routerLinkActive="sidebar-link-active" #petsLink="routerLinkActive" class="sidebar-link">
-        <span class="material-symbols-rounded nav-icon" [class.filled]="petsLink.isActive">pets</span>
+        <span class="material-symbols-rounded nav-icon" [class.filled]="petsLink.isActive">group</span>
         <span class="nav-text">{{ 'nav.family' | transloco }}</span>
       </a>
       <a routerLink="/agenda" routerLinkActive="sidebar-link-active" #agendaLink="routerLinkActive" class="sidebar-link">
@@ -79,10 +79,6 @@ import { TranslocoModule } from '@jsverse/transloco';
       <a routerLink="/events" routerLinkActive="sidebar-link-active" #eventsLink="routerLinkActive" class="sidebar-link">
         <span class="material-symbols-rounded nav-icon" [class.filled]="eventsLink.isActive">event</span>
         <span class="nav-text">{{ 'nav.events' | transloco }}</span>
-      </a>
-      <a routerLink="/messages" routerLinkActive="sidebar-link-active" #messagesLink="routerLinkActive" class="sidebar-link">
-        <span class="material-symbols-rounded nav-icon" [class.filled]="messagesLink.isActive">mail</span>
-        <span class="nav-text">{{ 'nav.messages' | transloco }}</span>
       </a>
     </nav>
 

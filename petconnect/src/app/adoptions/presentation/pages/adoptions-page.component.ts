@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { CheckboxModule } from 'primeng/checkbox';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { AdoptionService } from '../../infrastructure/services/adoption.service';
 import { AvailablePetResponse } from '../../infrastructure/services/adoption.service';
 import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../components/pet-feed-grid/pet-feed-grid.component';
+import { MyAdoptionRequestsComponent } from '../components/my-adoption-requests/my-adoption-requests.component';
+import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
 
 interface Pet {
@@ -38,6 +40,8 @@ interface Pet {
     FormsModule,
     CheckboxModule,
     PetFeedGridComponent,
+    MyAdoptionRequestsComponent,
+    TabsComponent,
     PageHeadingCardComponent,
     TranslocoModule,
     RouterModule,
@@ -49,38 +53,60 @@ interface Pet {
         [subtitle]="'adoptions.subtitle' | transloco"
       />
 
-      <a class="my-requests-link" routerLink="/adoptions/my-requests">
-        <i class="pi pi-list" aria-hidden="true"></i>
-        {{ 'adoptions.myRequests' | transloco }}
-      </a>
-
-      <app-pet-feed-grid
-        [items]="pets()"
-        [itemLabel]="'adoptions.itemLabel' | transloco"
-        itemKeyField="id"
-        [filterConfigs]="petFilterConfigs"
-        [columnConfigs]="petColumnConfigs"
-        [loading]="loading()"
-        [initialFilters]="petFilters()"
-        (filtersChange)="onFiltersChange($event)"
-        (itemClick)="onPetClick($event)"
+      <app-tabs
+        [tabs]="adoptionTabs()"
+        [activeTab]="activeTab()"
+        (tabChange)="onTabChange($event)"
       />
+
+      @if (activeTab() === 'pets') {
+        <app-pet-feed-grid
+          [items]="pets()"
+          [itemLabel]="'adoptions.itemLabel' | transloco"
+          itemKeyField="id"
+          [filterConfigs]="petFilterConfigs"
+          [columnConfigs]="petColumnConfigs"
+          [loading]="loading()"
+          [initialFilters]="petFilters()"
+          (filtersChange)="onFiltersChange($event)"
+          (itemClick)="onPetClick($event)"
+        />
+      } @else {
+        <app-my-adoption-requests />
+      }
     </div>
   `,
   styles: [`
     .adoptions-page { min-height: 100vh; max-width: var(--max-page-width); margin: 0 auto; padding: 0 1rem; box-sizing: border-box; background: var(--surface-bg); }
-    .my-requests-link { display: inline-flex; align-items: center; gap: .5rem; margin: .75rem 0 1rem; padding: .65rem .9rem; border: 1px solid var(--surface-border, #d9e2e8); border-radius: .75rem; color: var(--text-color, #263238); text-decoration: none; background: var(--surface-card, #fff); }
-    .my-requests-link:hover { border-color: var(--primary-color, #4d7c70); }
   `]
 })
 export class AdoptionsPageComponent implements OnInit {
   private adoptionService = inject(AdoptionService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private readonly transloco = inject(TranslocoService);
 
   // Pets data (loaded from backend)
   pets = signal<Pet[]>([]);
   loading = signal(true);
+
+  // Tabs: listado de animales primero, mis solicitudes después
+  activeTab = signal('pets');
+
+  adoptionTabs = computed((): Tab[] => [
+    {
+      id: 'pets',
+      label: this.transloco.translate('adoptions.petsTab'),
+      icon: 'pi-heart',
+      iconType: 'prime' as const,
+    },
+    {
+      id: 'requests',
+      label: this.transloco.translate('adoptions.myRequests'),
+      icon: 'pi-list',
+      iconType: 'prime' as const,
+    },
+  ]);
 
   // Computed
   totalPets = computed(() => this.pets().length);
@@ -172,7 +198,23 @@ export class AdoptionsPageComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    // Soporta enlace profundo ?tab=requests (p. ej. desde la ruta alias my-requests)
+    const initialTab = this.route.snapshot.queryParamMap.get('tab');
+    if (initialTab === 'requests' || initialTab === 'pets') {
+      this.activeTab.set(initialTab);
+    }
     this.loadAvailablePets();
+  }
+
+  onTabChange(tabId: string): void {
+    this.activeTab.set(tabId);
+    // Refleja el tab en la URL sin recargar, para que sea compartible
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: tabId === 'pets' ? {} : { tab: tabId },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   onFiltersChange(filters: Record<string, any>): void {

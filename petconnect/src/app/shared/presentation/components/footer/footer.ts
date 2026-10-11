@@ -17,7 +17,7 @@ import { TranslocoModule } from '@jsverse/transloco';
               <div class="footer-logo-icon">
                 <i class="pi pi-paw text-white text-base"></i>
               </div>
-              <span class="footer-logo-text">Petconnect</span>
+              <span class="footer-logo-text">Pawly</span>
             </div>
             <p class="footer-description">
               {{ 'footer.description' | transloco }}
@@ -76,7 +76,7 @@ import { TranslocoModule } from '@jsverse/transloco';
         <div class="footer-bottom">
           <div class="footer-bottom-content">
             <span class="footer-copyright">
-              &copy; 2026 Petconnect. {{ 'footer.rights' | transloco }}
+              &copy; 2026 Pawly. {{ 'footer.rights' | transloco }}
             </span>
             <div class="footer-bottom-links">
               <a href="#">{{ 'footer.privacyShort' | transloco }}</a>

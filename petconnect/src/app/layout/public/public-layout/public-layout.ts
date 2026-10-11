@@ -42,7 +42,7 @@ import { TranslocoModule } from '@jsverse/transloco';
           <span class="mobile-nav-label">{{ 'nav.home' | transloco }}</span>
         </a>
         <a routerLink="/pets" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.family' | transloco">
-          <span class="material-symbols-rounded">pets</span>
+          <span class="material-symbols-rounded">group</span>
           <span class="mobile-nav-label">{{ 'nav.family' | transloco }}</span>
         </a>
         <a routerLink="/agenda" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.agenda' | transloco">

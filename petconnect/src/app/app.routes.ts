@@ -83,6 +83,11 @@ export const routes: Routes = [
           import('./messages/messages.routes').then(m => m.messagesRoutes)
       },
       {
+        path: 'notifications',
+        loadChildren: () =>
+          import('./notifications/notifications.routes').then(m => m.notificationsRoutes)
+      },
+      {
         path: 'marketplace',
         loadChildren: () =>
           import('./marketplace/marketplace.routes').then(m => m.marketplaceRoutes)

@@ -20,6 +20,7 @@ export interface UserProfileResponse {
   profilePublic: boolean;
   notificationsEnabled: boolean;
   profileType: string;
+  pendingProfileType: string | null;
   specialty: string | null;
   licenseNumber: string | null;
   charityNumber: string | null;
@@ -104,6 +105,24 @@ export class ProfileService {
 
   getProfileByAuthUserId(authUserId: string): Observable<UserProfileResponse> {
     return this.http.get<UserProfileResponse>(`${this.apiUrl}/users/by-auth/${authUserId}`);
+  }
+
+  // ===== Solicitudes de cambio de tipo de perfil (vet/shelter) =====
+
+  getPendingTypeRequests(): Observable<UserProfileResponse[]> {
+    return this.http.get<UserProfileResponse[]>(`${this.apiUrl}/users/profile-type-requests`);
+  }
+
+  approveTypeRequest(profileId: string): Observable<UserProfileResponse> {
+    return this.http.put<UserProfileResponse>(`${this.apiUrl}/users/profile-type-requests/${profileId}/approve`, {});
+  }
+
+  rejectTypeRequest(profileId: string): Observable<UserProfileResponse> {
+    return this.http.put<UserProfileResponse>(`${this.apiUrl}/users/profile-type-requests/${profileId}/reject`, {});
+  }
+
+  cancelPendingTypeRequest(): Observable<UserProfileResponse> {
+    return this.http.delete<UserProfileResponse>(`${this.apiUrl}/users/profile/pending-type`);
   }
 
   getAllProfiles(): Observable<UserProfileResponse[]> {

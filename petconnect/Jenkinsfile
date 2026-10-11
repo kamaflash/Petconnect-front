@@ -1,5 +1,5 @@
 /*
- * Jenkinsfile para Petconnect Front (Angular).
+ * Jenkinsfile para Pawly Front (Angular).
  *
  * NOTA SOBRE Node.js: El plugin "NodeJS" no esta instalado en este Jenkins,
  * por lo que el bloque "tools { nodejs ... }" no es valido (error: Invalid

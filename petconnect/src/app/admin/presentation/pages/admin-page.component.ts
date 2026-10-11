@@ -18,6 +18,7 @@ import { SocialService, PostResponse, EventResponse, GroupResponse, StoryRespons
 import { HomeService, VetServiceResponse } from '../../../home/infrastructure/services/home.service';
 import { MarketplaceService, CreateProductRequest } from '../../../marketplace/infrastructure/services/marketplace.service';
 import { AdoptionService, AdoptionRequest, AdoptionStatus } from '../../../adoptions/infrastructure/services/adoption.service';
+import { ProfileService, UserProfileResponse } from '../../../profile/infrastructure/services/profile.service';
 import { PetOwnershipEventService } from '../../../shared/services/pet-ownership-event.service';
 
 interface AdminTab {
@@ -399,6 +400,65 @@ interface ProductItem {
               </div>
             </div>
           </div>
+          <!-- Solicitudes de cambio de tipo de perfil (solo admin) -->
+          <div class="admin-section" *ngIf="activeTab() === 'type-requests' && isAdmin()">
+            <div class="section-header">
+              <h2>{{ 'admin.typeRequestsTitle' | transloco }}</h2>
+              <p-button
+                label="{{ 'admin.refresh' | transloco }}"
+                icon="pi pi-refresh"
+                styleClass="p-button-sm p-button-secondary"
+                (onClick)="loadTypeRequests()"
+              />
+            </div>
+            <p class="section-subtitle">{{ 'admin.typeRequestsSubtitle' | transloco }}</p>
+
+            <div class="adoptions-empty" *ngIf="typeRequests().length === 0">
+              <i class="pi pi-check-circle"></i>
+              <p>{{ 'admin.noTypeRequests' | transloco }}</p>
+              <span class="empty-subtitle">{{ 'admin.noTypeRequestsSubtitle' | transloco }}</span>
+            </div>
+
+            <div class="adoptions-list" *ngIf="typeRequests().length > 0">
+              <div class="adoption-request-card" *ngFor="let req of typeRequests()">
+                <div class="adoption-request-main">
+                  <p-avatar [image]="req.avatarUrl || 'https://placehold.co/150'" shape="circle" size="large"></p-avatar>
+                  <div class="adoption-request-info">
+                    <div class="adoption-request-title">
+                      <strong>{{ req.firstName }} {{ req.lastName }}</strong>
+                      <p-tag
+                        [value]="typeRequestLabel(req.pendingProfileType)"
+                        severity="warn"
+                        styleClass="adoption-status-tag"
+                      ></p-tag>
+                    </div>
+                    <div class="adoption-request-pet">
+                      <i class="pi pi-id-card"></i>
+                      <span>{{ 'admin.typeRequestCurrent' | transloco }}: {{ typeRequestLabel(req.profileType) }}</span>
+                    </div>
+                    <div class="adoption-request-message" *ngIf="typeRequestDetail(req)">
+                      {{ typeRequestDetail(req) }}
+                    </div>
+                  </div>
+                </div>
+                <div class="adoption-request-actions">
+                  <p-button
+                    label="{{ 'admin.approve' | transloco }}"
+                    icon="pi pi-check"
+                    styleClass="p-button-sm p-button-success"
+                    (onClick)="approveTypeRequest(req)"
+                  />
+                  <p-button
+                    label="{{ 'admin.reject' | transloco }}"
+                    icon="pi pi-times"
+                    styleClass="p-button-sm p-button-danger p-button-outlined"
+                    (onClick)="rejectTypeRequest(req)"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -450,6 +510,12 @@ interface ProductItem {
       font-weight: 600;
       color: var(--bitbucket-text-primary);
       margin: 0;
+    }
+
+    .section-subtitle {
+      margin: 0 0 1rem;
+      color: var(--bitbucket-text-secondary);
+      font-size: 0.9rem;
     }
 
     .form-container {
@@ -641,6 +707,7 @@ export class AdminPageComponent implements OnInit {
   private readonly homeService = inject(HomeService);
   private readonly marketplaceService = inject(MarketplaceService);
   private readonly adoptionService = inject(AdoptionService);
+  private readonly profileService = inject(ProfileService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
   private readonly petOwnershipEvent = inject(PetOwnershipEventService);
@@ -672,6 +739,9 @@ export class AdminPageComponent implements OnInit {
 
   // Solicitudes de adopción enviadas por el usuario actual (solo lectura)
   myAdoptionRequests = signal<AdoptionRequest[]>([]);
+
+  // Solicitudes de cambio de tipo de perfil pendientes (solo admin)
+  typeRequests = signal<UserProfileResponse[]>([]);
 
   // Vet services data
   adminServices = signal<ServiceItem[]>([]);
@@ -912,6 +982,9 @@ export class AdminPageComponent implements OnInit {
     return user?.profileType?.toLowerCase() || 'user';
   });
 
+  // Solo los administradores gestionan solicitudes de cambio de tipo
+  isAdmin = computed(() => this.authService.user()?.role === 'ADMIN');
+
   // Check if user has specific profile
   hasProfile = (profileType: string): boolean => {
     return this.userProfileType() === profileType.toLowerCase();
@@ -1033,6 +1106,11 @@ export class AdminPageComponent implements OnInit {
       next: (requests) => this.myAdoptionRequests.set(requests),
       error: (err) => console.error('Error loading my adoption requests:', err)
     });
+
+    // Solicitudes de cambio de tipo de perfil (solo visibles para admins)
+    if (this.isAdmin()) {
+      this.loadTypeRequests();
+    }
 
     // Set loading to false after a short delay
     setTimeout(() => {
@@ -1212,6 +1290,11 @@ export class AdminPageComponent implements OnInit {
       { id: 'posts', label: t.translate('admin.tabs.posts'), icon: 'photo_library' },
     ];
 
+    // Solicitudes de cambio de tipo de perfil (solo administradores)
+    if (this.isAdmin()) {
+      tabs.push({ id: 'type-requests', label: t.translate('admin.tabs.typeRequests'), icon: 'pending_actions' });
+    }
+
     // Add tabs based on profile type
     if (profileType === 'vet') {
       tabs.push(
@@ -1251,6 +1334,92 @@ export class AdminPageComponent implements OnInit {
 
   onTabChange(tabId: string) {
     this.setActiveTab(tabId);
+  }
+
+  // ========== SOLICITUDES DE TIPO DE PERFIL (solo admin) ==========
+
+  loadTypeRequests(): void {
+    if (!this.isAdmin()) return;
+    this.profileService.getPendingTypeRequests().subscribe({
+      next: (requests) => this.typeRequests.set(requests ?? []),
+      error: (err) => {
+        console.error('Error loading type requests:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.i18n.translate('admin.error'),
+          detail: this.i18n.translate('admin.typeRequestsError')
+        });
+      }
+    });
+  }
+
+  /** Etiqueta traducida de un tipo de perfil (actual o solicitado). */
+  typeRequestLabel(type: string | null | undefined): string {
+    const keys: Record<string, string> = {
+      vet: 'profile.form.vet',
+      shelter: 'profile.form.shelter',
+      user: 'profile.form.user',
+      trainer: 'profile.form.trainer',
+      seller: 'profile.form.seller'
+    };
+    return this.i18n.translate(keys[(type ?? '').toLowerCase()] ?? 'admin.unknownSpecies');
+  }
+
+  /** Detalle acreditativo según el tipo solicitado (nº colegiado / registro). */
+  typeRequestDetail(req: UserProfileResponse): string {
+    const type = (req.pendingProfileType ?? '').toLowerCase();
+    if (type === 'vet' && req.licenseNumber) {
+      return `${this.i18n.translate('profile.form.licenseNumber')}: ${req.licenseNumber}`;
+    }
+    if (type === 'shelter' && req.charityNumber) {
+      return `${this.i18n.translate('profile.form.charityNumber')}: ${req.charityNumber}`;
+    }
+    return '';
+  }
+
+  approveTypeRequest(req: UserProfileResponse): void {
+    this.profileService.approveTypeRequest(req.id).subscribe({
+      next: () => {
+        this.typeRequests.update(list => list.filter(item => item.id !== req.id));
+        this.messageService.add({
+          severity: 'success',
+          summary: this.i18n.translate('admin.typeRequestApproved'),
+          detail: this.i18n.translate('admin.typeRequestApprovedDetail', {
+            name: `${req.firstName} ${req.lastName}`,
+            type: this.typeRequestLabel(req.pendingProfileType)
+          })
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: this.i18n.translate('admin.error'),
+          detail: this.i18n.translate('admin.typeRequestActionError')
+        });
+      }
+    });
+  }
+
+  rejectTypeRequest(req: UserProfileResponse): void {
+    this.profileService.rejectTypeRequest(req.id).subscribe({
+      next: () => {
+        this.typeRequests.update(list => list.filter(item => item.id !== req.id));
+        this.messageService.add({
+          severity: 'success',
+          summary: this.i18n.translate('admin.typeRequestRejected'),
+          detail: this.i18n.translate('admin.typeRequestRejectedDetail', {
+            name: `${req.firstName} ${req.lastName}`
+          })
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: this.i18n.translate('admin.error'),
+          detail: this.i18n.translate('admin.typeRequestActionError')
+        });
+      }
+    });
   }
 
   // ========== ADOPCIONES ==========

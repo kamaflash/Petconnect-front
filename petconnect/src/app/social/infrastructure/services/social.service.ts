@@ -195,6 +195,10 @@ export class SocialService {
     return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts/by-author/${authorId}`);
   }
 
+  getPostsByPet(petId: string): Observable<PostResponse[]> {
+    return this.http.get<PostResponse[]>(`${this.apiUrl}/social/posts/by-pet/${petId}`);
+  }
+
   createPost(request: CreatePostRequest, imageFile?: File): Observable<PostResponse> {
     const formData = new FormData();
     formData.append('authorId', request.authorId);

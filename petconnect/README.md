@@ -1,6 +1,6 @@
-# Lumio Frontend
+# Pawly Frontend
 
-Frontend de la plataforma Lumio desarrollado con Angular siguiendo una arquitectura Feature First basada en DDD y Clean Architecture.
+Frontend de la plataforma Pawly desarrollado con Angular siguiendo una arquitectura Feature First basada en DDD y Clean Architecture.
 
 ## Stack Tecnológico
 

@@ -149,7 +149,7 @@ export interface FilterOptions {
   styles: [`
     :host { display: block; width: 100%; }
     .feed-grid-container { width: 100%; min-width: 0; }
-    .catalog-toolbar { margin: 0 auto 1.25rem; padding: 1rem 1.25rem; border: 1px solid var(--surface-border); border-radius: var(--radius-lg); background: var(--surface-card); }
+    .catalog-toolbar { margin: 0 auto 1.25rem; padding: 1rem 1.25rem; border-radius: var(--radius-lg); background: var(--surface-card); }
     .filters-summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-primary); cursor: pointer; list-style: none; }
     .filters-summary::-webkit-details-marker { display: none; }
     .filters-summary-title, .filters-summary-meta { display: inline-flex; align-items: center; gap: .75rem; }

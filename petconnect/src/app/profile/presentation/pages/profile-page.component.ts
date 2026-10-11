@@ -350,9 +350,23 @@ interface Pet {
 
           <!-- Conóceme - Edición (propio perfil) -->
           <div class="tab-panel" *ngIf="activeTab() === 'knowme' && isOwnProfile() && !loading() && renderForm()">
+            @if (pendingProfileType()) {
+              <div class="pending-type-banner" role="status">
+                <i class="pi pi-hourglass" aria-hidden="true"></i>
+                <span>{{ 'profile.pending.request' | transloco: { type: pendingTypeLabel() } }}</span>
+                <button
+                  pButton
+                  type="button"
+                  class="p-button-outlined p-button-sm"
+                  [label]="'profile.pending.cancel' | transloco"
+                  (click)="cancelPendingTypeRequest()"
+                ></button>
+              </div>
+            }
             <app-dynamic-form
               [config]="profileFormConfig()"
               [formData]="profileFormData()"
+              (formValueChange)="onProfileFormValueChange($event)"
               (onSubmitClick)="onProfileSubmit($event)"
               (onLocationPicked)="onLocationConfirmed($event)"
             />
@@ -1049,6 +1063,28 @@ interface Pet {
     /* ============================================
        TAB CONTENT
     ============================================ */
+    .pending-type-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      padding: 0.75rem 1rem;
+      border: 1px solid color-mix(in srgb, var(--primary-color) 35%, transparent);
+      border-radius: 10px;
+      background: color-mix(in srgb, var(--primary-color) 8%, var(--surface-card));
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+
+    .pending-type-banner i {
+      color: var(--primary-color);
+      font-size: 1.1rem;
+    }
+
+    .pending-type-banner span {
+      flex: 1;
+    }
+
     .tab-panel {
       background: var(--surface-card);
       border-radius: 12px;
@@ -1598,6 +1634,13 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   // Controla la recreación del formulario de edición tras guardar cambios
   renderForm = signal(true);
 
+  // Tipo de perfil seleccionado en el formulario de edición.
+  // null = se usa el tipo guardado en el perfil.
+  selectedProfileType = signal<ProfileType | null>(null);
+
+  // Cambio de tipo (vet/shelter) pendiente de aprobación del administrador
+  pendingProfileType = signal<string | null>(null);
+
   // Modal de confirmación de cambios de perfil
   showConfirmDialog = signal(false);
   pendingProfileData = signal<any>(null);
@@ -1704,7 +1747,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       this.route.queryParams.subscribe(queryParams => {
         const tab = queryParams['tab'];
         if (tab && this.isOwnProfile()) {
-          this.activeTab.set(tab);
+          this.setActiveTab(tab);
         }
       });
 
@@ -1889,6 +1932,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     this.profileService.getProfileByAuthUserId(authUserId).subscribe({
       next: (profile) => {
         const normalizedProfileType = profile.profileType?.toLowerCase() as ProfileType || 'user';
+        this.pendingProfileType.set(profile.pendingProfileType ?? null);
         const baseProfile: BaseProfile = {
           id: profile.id,
           name: profile.firstName + ' ' + profile.lastName,
@@ -2438,7 +2482,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   // ============================================
 
   profileFormConfig = computed(() => {
-    const profileType = this.userProfile()?.type || 'user';
+    // Usa el tipo elegido en el formulario (si lo hay) para mostrar al instante
+    // los campos específicos del tipo; si no, el tipo guardado en el perfil.
+    const profileType = this.selectedProfileType() ?? (this.userProfile()?.type || 'user');
 
     const baseFields = [
       {
@@ -2517,7 +2563,14 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         label: this.transloco.translate('profile.form.licenseNumber'),
         type: 'input' as const,
         placeholder: this.transloco.translate('profile.form.licensePlaceholder'),
-        validation: { maxLength: 50 }
+        validation: {
+          required: true,
+          maxLength: 50,
+          // Estricto de forma (insensible a mayúsculas); el backend además
+          // exige prefijo de provincia válido. Ej.: M-12345, COLVET-M-12345
+          pattern: '^(?:[Cc][Oo][Ll][Vv][Ee][Tt]-)?[A-Za-z]{1,3}-\\d{3,6}$',
+          customMessage: this.transloco.translate('profile.form.licenseInvalid')
+        }
       });
     }
 
@@ -2527,7 +2580,14 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         label: this.transloco.translate('profile.form.charityNumber'),
         type: 'input' as const,
         placeholder: this.transloco.translate('profile.form.charityPlaceholder'),
-        validation: { maxLength: 100 }
+        validation: {
+          required: true,
+          maxLength: 100,
+          // CIF (letra + 7 dígitos + control; el backend verifica el dígito)
+          // o referencia autonómica LETRAS-AAAA-NNN. Ej.: G-12345674, ASOC-2021-4582
+          pattern: '^(?:[A-Za-z]\\d{7}[0-9A-Ja-j]|[A-Za-zÁÉÍÓÚÑáéíóúñ]{2,10}-\\d{4}-\\d{3,8})$',
+          customMessage: this.transloco.translate('profile.form.charityInvalid')
+        }
       });
     }
 
@@ -2625,10 +2685,15 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   // ============================================
 
   onTabChange(tabId: string) {
-    this.activeTab.set(tabId);
+    this.setActiveTab(tabId);
   }
 
   setActiveTab(tab: string) {
+    if (this.activeTab() !== tab) {
+      // Al salir de la pestaña de edición se descarta la selección de tipo sin
+      // guardar; el formulario se recreará con el tipo guardado en el perfil.
+      this.selectedProfileType.set(null);
+    }
     this.activeTab.set(tab);
   }
 
@@ -2754,6 +2819,52 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  // Mantiene sincronizado el tipo de perfil elegido en el formulario para
+  // regenerar la config al instante y mostrar los campos específicos del tipo
+  // (p.ej. el nº de registro de una protectora) sin necesidad de recargar.
+  onProfileFormValueChange(data: Record<string, unknown>): void {
+    const next = (data['profileType'] as ProfileType) || 'user';
+    const current = this.selectedProfileType() ?? (this.userProfile()?.type || 'user');
+    if (next !== current) {
+      this.selectedProfileType.set(next);
+    }
+  }
+
+  /** Etiqueta traducida del tipo de perfil pendiente de aprobación. */
+  pendingTypeLabel = computed(() => {
+    const type = this.pendingProfileType();
+    if (!type) return '';
+    const keys: Record<string, string> = {
+      vet: 'profile.form.vet',
+      shelter: 'profile.form.shelter',
+      user: 'profile.form.user',
+      trainer: 'profile.form.trainer',
+      seller: 'profile.form.seller',
+    };
+    return this.transloco.translate(keys[type] ?? 'profile.form.profileType');
+  });
+
+  /** Cancela la propia solicitud de cambio de tipo pendiente. */
+  cancelPendingTypeRequest(): void {
+    this.profileService.cancelPendingTypeRequest().subscribe({
+      next: (response) => {
+        this.pendingProfileType.set(response.pendingProfileType ?? null);
+        this.messageService.add({
+          severity: 'success',
+          summary: this.transloco.translate('profile.pending.cancelled'),
+          detail: this.transloco.translate('profile.pending.cancelledDetail'),
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: this.transloco.translate('profile.toasts.error'),
+          detail: this.transloco.translate('profile.pending.error'),
+        });
+      },
+    });
+  }
+
   // Confirmación del modal: realiza el guardado real
   confirmSaveProfile(): void {
     const data = this.pendingProfileData();
@@ -2834,20 +2945,32 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         console.log('Profile updated successfully:', response);
         this.pendingProfileData.set(null);
         this.updateOwnProfileFromResponse(response);
+        const typeRequested = !!response.pendingProfileType && response.pendingProfileType === data.profileType;
         this.messageService.add({
           severity: 'success',
-          summary: this.transloco.translate('profile.toasts.profileUpdated'),
-          detail: this.transloco.translate('profile.toasts.profileUpdatedDetail')
+          summary: this.transloco.translate(typeRequested ? 'profile.toasts.typeRequestSent' : 'profile.toasts.profileUpdated'),
+          detail: this.transloco.translate(typeRequested ? 'profile.toasts.typeRequestSentDetail' : 'profile.toasts.profileUpdatedDetail')
         });
         this.loading.set(false);
         this.cdr.detectChanges();
       },
       error: (error: any) => {
         console.error('Error updating profile:', error);
+        // La validación estricta de credenciales (vet/shelter) devuelve 400
+        // con el mensaje en `detail` (ProblemDetail) y el campo en `field`.
+        const backendDetail: string | undefined =
+          error?.error?.detail || error?.error?.message;
+        const invalidField: string | undefined = error?.error?.field;
+        let detailKey = 'profile.toasts.profileUpdateError';
+        if (error?.status === 400 && invalidField === 'licenseNumber') {
+          detailKey = 'profile.form.licenseInvalidDetail';
+        } else if (error?.status === 400 && invalidField === 'charityNumber') {
+          detailKey = 'profile.form.charityInvalidDetail';
+        }
         this.messageService.add({
           severity: 'error',
           summary: this.transloco.translate('profile.toasts.error'),
-          detail: this.transloco.translate('profile.toasts.profileUpdateError')
+          detail: backendDetail || this.transloco.translate(detailKey)
         });
         this.loading.set(false);
         this.cdr.detectChanges();
@@ -2879,6 +3002,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       this.authService.updateUser(updatedUser);
       this.buildOwnProfile(updatedUser, response);
     }
+
+    // Reflejar una posible solicitud de cambio de tipo en curso
+    this.pendingProfileType.set(response.pendingProfileType ?? null);
 
     // Resetear estado de ubicación
     this.locationConfirmed.set(false);

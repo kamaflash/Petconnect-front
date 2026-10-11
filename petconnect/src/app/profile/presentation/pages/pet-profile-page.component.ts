@@ -20,6 +20,7 @@ import { AuthService } from '../../../auth/infrastructure/services/auth.service'
 import { ProfileService, PetResponse } from '../../infrastructure/services/profile.service';
 import { AdoptionService } from '../../../adoptions/infrastructure/services/adoption.service';
 import { CreateAdoptionRequest } from '../../../adoptions/infrastructure/services/adoption.service';
+import { SocialService } from '../../../social/infrastructure/services/social.service';
 import { MessageService } from 'primeng/api';
 import { PetOwnershipEventService } from '../../../shared/services/pet-ownership-event.service';
 import { AdoptionHistoryComponent } from '../../../shared/presentation/components/adoption-history/adoption-history.component';
@@ -435,9 +436,6 @@ interface PetComment {
           <!-- Photos Tab -->
           <div class="tab-panel" *ngIf="activeTab() === 'photos'">
             <!-- Solo el propietario puede añadir nuevas fotos -->
-            <div class="gallery-header" *ngIf="isOwner()">
-              <p class="gallery-hint">Añade una nueva foto a la galería de {{ pet()?.name }}</p>
-            </div>
             <div class="gallery-grid">
               <!-- Tile para añadir nueva foto (solo propietario) -->
               <div class="gallery-item add-photo-item" *ngIf="isOwner()" (click)="!uploadingPhoto() && photoInput.click()">
@@ -1229,7 +1227,7 @@ interface PetComment {
     .gallery-grid,
     .posts-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(6, 1fr);
       gap: 4px;
     }
 
@@ -2024,7 +2022,7 @@ interface PetComment {
 
       .gallery-grid,
       .posts-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(6, 1fr);
         gap: 2px;
       }
 
@@ -2062,7 +2060,7 @@ interface PetComment {
 
       .gallery-grid,
       .posts-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(6, 1fr);
       }
 
       .btn-primary,
@@ -2135,6 +2133,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   private readonly profileService = inject(ProfileService);
   private readonly messageService = inject(MessageService);
   private readonly adoptionService = inject(AdoptionService);
+  private readonly socialService = inject(SocialService);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly petOwnershipEvent = inject(PetOwnershipEventService);
   private readonly cloudinaryService = inject(CloudinaryService);
@@ -2368,32 +2367,24 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
   }
 
   private loadPetPosts(petId: string): void {
-    this.petPosts.set([
-      {
-        id: '1',
-        image: 'https://picsum.photos/400/400?random=10',
-        likesCount: 24,
-        commentsCount: 5,
-        caption: this.i18n.translate('petProfile.memory1'),
-        date: this.i18n.translate('petProfile.twoDaysAgo')
+    if (!petId) return;
+    this.socialService.getPostsByPet(petId).subscribe({
+      next: (posts) => {
+        const mapped = posts.map((post: any) => ({
+          id: post.id?.toString() ?? '',
+          image: post.imageUrl,
+          likesCount: post.likesCount ?? 0,
+          commentsCount: post.commentsCount ?? 0,
+          caption: post.caption,
+          date: post.createdAt,
+        }));
+        this.petPosts.set(mapped);
       },
-      {
-        id: '2',
-        image: 'https://picsum.photos/400/400?random=11',
-        likesCount: 18,
-        commentsCount: 3,
-        caption: this.i18n.translate('petProfile.memory2'),
-        date: this.i18n.translate('petProfile.fiveDaysAgo')
+      error: () => {
+        // Fallback a datos vacíos si el servicio no responde
+        this.petPosts.set([]);
       },
-      {
-        id: '3',
-        image: 'https://picsum.photos/400/400?random=12',
-        likesCount: 32,
-        commentsCount: 8,
-        caption: 'Nuevo juguete favorito 🧸',
-        date: 'Hace 1 semana'
-      },
-    ]);
+    });
   }
 
   private loadPetComments(petId: string): void {

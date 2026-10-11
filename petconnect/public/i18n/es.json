@@ -21,7 +21,6 @@
     "termsShort": "Términos",
     "cookiesShort": "Cookies"
   },
-
   "breadcrumb": {
     "home": "Inicio",
     "pets": "Familia",
@@ -42,7 +41,6 @@
     "management": "Gestión",
     "auth": "Autenticación"
   },
-
   "common": {
     "save": "Guardar cambios",
     "title": "Título",
@@ -96,7 +94,7 @@
     "community": "Comunidad",
     "messages": "Mensajes",
     "achievements": "Logros",
-    "version": "Lumio v2.0"
+    "version": "Pawly v2.0"
   },
   "agenda": {
     "title": "Agenda y cuidados",
@@ -299,7 +297,7 @@
   },
   "settings": {
     "title": "Configuración",
-    "subtitle": "Personaliza tu experiencia en Lumio",
+    "subtitle": "Personaliza tu experiencia en Pawly",
     "appearance": "Apariencia",
     "themeColor": "Color del tema",
     "themeColorDesc": "Selecciona el color principal de la aplicación",
@@ -510,11 +508,15 @@
       "specialty": "Especialidad",
       "specialization": "Especialización",
       "licenseNumber": "Número de colegiado",
-      "licensePlaceholder": "Nº colegiado",
+      "licensePlaceholder": "Ej.: M-12345 o COLVET-M-12345",
       "charityNumber": "Número de registro",
-      "charityPlaceholder": "Nº registro protectora",
+      "charityPlaceholder": "Ej.: G-12345674 o ASOC-2021-4582",
       "storeName": "Nombre de tienda",
-      "storePlaceholder": "Nombre de tu tienda"
+      "storePlaceholder": "Nombre de tu tienda",
+      "licenseInvalid": "Número de colegiado inválido. Formato: M-12345 o COLVET-M-12345.",
+      "licenseInvalidDetail": "Número de colegiado inválido. Usa el formato M-12345 o COLVET-M-12345 con un prefijo de provincia válido.",
+      "charityInvalid": "Número de registro inválido. Usa un CIF válido o el formato ASOC-2021-4582.",
+      "charityInvalidDetail": "Número de registro inválido. Usa un CIF válido (p. ej. G-12345674) o una referencia autonómica (p. ej. ASOC-2021-4582)."
     },
     "confirm": {
       "title": "¿Guardar cambios?",
@@ -545,7 +547,17 @@
       "photoUpdateError": "No se pudo actualizar la foto de perfil",
       "coverUpdated": "Portada actualizada",
       "coverUpdatedDetail": "Tu imagen de portada ha sido actualizada",
-      "coverUpdateError": "No se pudo actualizar la imagen de portada"
+      "coverUpdateError": "No se pudo actualizar la imagen de portada",
+      "typeRequestSent": "Solicitud enviada",
+      "typeRequestSentDetail": "Tu cambio a perfil profesional está pendiente de aprobación."
+    },
+    "pending": {
+      "request": "Solicitud de cambio de tipo en revisión",
+      "requestedType": "Tipo solicitado",
+      "cancel": "Cancelar solicitud",
+      "cancelled": "Solicitud cancelada",
+      "cancelledDetail": "Tu tipo de perfil se mantiene sin cambios.",
+      "error": "No se pudo procesar la solicitud de cambio de tipo."
     }
   },
   "adoptions": {
@@ -600,7 +612,8 @@
       "completed": "Adopción completada",
       "rejected": "Solicitud rechazada",
       "approved": "Solicitud aprobada"
-    }
+    },
+    "petsTab": "Animales en adopción"
   },
   "feedGrid": {
     "filters": "Filtros",
@@ -703,7 +716,50 @@
     "status": "Estado",
     "lost": "Perdido",
     "found": "Encontrado",
-    "reunited": "Reencontrado"
+    "reunited": "Reencontrado",
+    "closed": "Cerrado",
+    "filterSpecies": "Especie",
+    "filterFrom": "Desde",
+    "filterTo": "Hasta",
+    "nearby": "Solo cercanos",
+    "nearbyActive": "Cercanos activos",
+    "geolocationErrorTitle": "No se pudo obtener tu ubicación",
+    "emptyTitle": "No hay avisos disponibles",
+    "emptyDescription": "Sé el primero en reportar una mascota perdida o encontrada.",
+    "errorTitle": "Algo salió mal",
+    "error": "No se pudieron cargar los avisos. Inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "viewDetail": "Ver detalle",
+    "share": "Compartir",
+    "shareText": "{{name}} visto por última vez en {{area}}. Ayúdenos a encontrarlo.",
+    "shareCopied": "Enlace copiado al portapapeles.",
+    "shareCopiedTitle": "Enlace copiado",
+    "edit": "Editar",
+    "reportTitle": "Reportar Pérdida",
+    "editTitle": "Editar Aviso",
+    "save": "Guardar",
+    "updatedDetail": "El aviso se actualizó correctamente.",
+    "createdDetail": "El aviso se creó correctamente.",
+    "saveError": "No se pudo guardar el aviso.",
+    "sightings": "avistamientos",
+    "unknownBreed": "Raza no especificada",
+    "lostDate": "Fecha de pérdida",
+    "lastSeenArea": "Última ubicación conocida",
+    "lastSeenAreaPlaceholder": "Calle, barrio o ciudad",
+    "photoUrl": "URL de la foto",
+    "back": "Volver a avisos",
+    "contact": "Contactar al reportero",
+    "contactError": "No se pudo iniciar la conversación.",
+    "statusUpdatedDetail": "Estado cambiado a {{status}}.",
+    "statusError": "No se pudo cambiar el estado.",
+    "sightingsEmpty": "Todavía no hay avistamientos. ¡Sé el primero en reportar uno!",
+    "sightingTitle": "Añadir avistamiento",
+    "sightingDate": "Fecha del avistamiento",
+    "sightingArea": "Ubicación",
+    "sightingAreaPlaceholder": "¿Dónde lo viste?",
+    "sightingSubmit": "Enviar avistamiento",
+    "sightingCreatedDetail": "El avistamiento se registró correctamente.",
+    "sightingError": "No se pudo registrar el avistamiento."
   },
   "services": {
     "title": "Servicios",
@@ -736,7 +792,6 @@
     "checkout": "Proceder al pago",
     "reviews": "reseñas",
     "inStock": "En stock ({count} unidades)",
-    "outOfStock": "Agotado",
     "addToCart": "Añadir al carrito",
     "search": "Búsqueda",
     "categories": "Categorías",
@@ -1025,8 +1080,23 @@
       "trainingServices": "Servicios de Entrenamiento",
       "sessions": "Sesiones",
       "events": "Eventos",
-      "stories": "Historias"
-    }
+      "stories": "Historias",
+      "typeRequests": "Solicitudes tipo"
+    },
+    "typeRequestsTitle": "Solicitudes de tipo profesional",
+    "typeRequestsSubtitle": "Aprueba o rechaza los cambios a Veterinario o Protectora.",
+    "typeRequestCurrent": "Actual",
+    "typeRequestApproved": "Solicitud aprobada",
+    "typeRequestApprovedDetail": "El tipo de perfil se ha actualizado.",
+    "typeRequestRejected": "Solicitud rechazada",
+    "typeRequestRejectedDetail": "La solicitud se ha descartado.",
+    "typeRequestActionError": "No se pudo procesar la acción.",
+    "typeRequestsError": "No se pudieron cargar las solicitudes.",
+    "noTypeRequests": "No hay solicitudes pendientes",
+    "noTypeRequestsSubtitle": "Cuando un usuario solicite ser Veterinario o Protectora aparecerá aquí.",
+    "refresh": "Actualizar",
+    "approve": "Aprobar",
+    "error": "Se ha producido un error"
   },
   "vet": {
     "tip1": "¿Sabías que los perros pueden detectar cambios en el azúcar de la sangre? Son excelentes compañeros para personas con diabetes.",
@@ -1352,6 +1422,28 @@
     "selectedImages": "Imágenes seleccionadas",
     "select": "Seleccionar",
     "dropImages": "Arrastra imágenes aquí para subir"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "subtitle": "Entérate de la actividad reciente en PetConnect",
+    "markAllRead": "Marcar todo como leído",
+    "markRead": "Marcar como leída",
+    "allMarkedRead": "Todas las notificaciones marcadas como leídas",
+    "errorUpdate": "No se pudieron actualizar las notificaciones",
+    "errorLoad": "No se pudieron cargar las notificaciones",
+    "retry": "Reintentar",
+    "empty": "No tienes notificaciones",
+    "emptyDesc": "Cuando haya novedades en tu comunidad te avisaremos aquí.",
+    "unreadCount": "{{n}} sin leer",
+    "time": {
+      "moments": "hace unos momentos",
+      "minute": "hace {{n}} minuto",
+      "minutes": "hace {{n}} minutos",
+      "hour": "hace {{n}} hora",
+      "hours": "hace {{n}} horas",
+      "day": "hace {{n}} día",
+      "days": "hace {{n}} días"
+    }
   },
   "tableCard": {
     "search": "Buscar..."

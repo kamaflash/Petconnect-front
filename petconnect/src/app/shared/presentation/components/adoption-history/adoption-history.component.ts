@@ -92,7 +92,7 @@ export interface AdoptionHistoryItem {
       }
       @if (owners().length > 0) {
         <div class="owners-section">
-          <h4 class="owners-title"><i class="pi pi-user"></i> Propietarios que ha tenido</h4>
+          <h4 class="owners-title"><i class="pi pi-user"></i> Familias a la que ha pertenecido</h4>
           <div class="owners-timeline">
             @for (owner of owners(); track owner.ownerId + (owner.fromDate ?? '')) {
               <div class="owner-period" [class.current]="owner.toDate === null">

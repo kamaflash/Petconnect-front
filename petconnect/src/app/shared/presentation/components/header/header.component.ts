@@ -36,7 +36,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
         <!-- Keep the brand in the header only where the desktop sidebar is hidden. -->
         <div class="header-left">
            <div class="logo-container mobile-header-brand" routerLink="/" style="cursor: pointer;">
-               <img src="https://res.cloudinary.com/dxjcjee8f/image/upload/v1784374711/m9caz3kr9yusdgis1k42.png" alt="Petconnect" class="logo-image" />
+               <img src="https://res.cloudinary.com/dxjcjee8f/image/upload/v1784374711/m9caz3kr9yusdgis1k42.png" alt="Pawly" class="logo-image" />
            </div>
         </div>
 
