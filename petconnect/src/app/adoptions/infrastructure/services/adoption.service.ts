@@ -20,6 +20,16 @@ export interface AdoptionRequest {
   ownerName?: string;
 }
 
+export interface AdoptionRequestEvent {
+  id: string;
+  requestId: string;
+  actorId: string;
+  actorName: string | null;
+  status: AdoptionStatus;
+  note: string | null;
+  createdAt: string;
+}
+
 // Historial de adopciÃƒÂ³n
 export interface AdoptionHistoryEntry {
   requestId: string;
@@ -179,6 +189,12 @@ export class AdoptionService {
   // Get adoption requests for the current user (as adopter)
   getMyAdoptionRequests(): Observable<AdoptionRequest[]> {
     return this.http.get<AdoptionRequest[]>(`${this.apiUrl}/adoptions/my-requests`);
+  }
+
+  getAdoptionRequestTimeline(requestId: string): Observable<AdoptionRequestEvent[]> {
+    return this.http.get<AdoptionRequestEvent[]>(
+      `${this.apiUrl}/adoptions/${requestId}/timeline`,
+    );
   }
 
   // Get adoption requests for pets owned by the current user (as shelter/owner)

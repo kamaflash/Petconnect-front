@@ -9,6 +9,12 @@ export const routes: Routes = [
       import('./auth/auth.routes').then(m => m.authRoutes)
   },
   {
+    path: 'passport/:token',
+    loadComponent: () =>
+      import('./pets/presentation/pages/public-pet-passport-page.component')
+        .then(m => m.PublicPetPassportPageComponent)
+  },
+  {
     path: '',
     canActivate: [authGuard],
     component: PublicLayout,
@@ -29,6 +35,12 @@ export const routes: Routes = [
         path: 'pets',
         loadChildren: () =>
           import('./pets/pets.routes').then(m => m.petsRoutes)
+      },
+      {
+        path: 'pet-care/invitations',
+        loadComponent: () =>
+          import('./pets/presentation/pages/pet-care-invitations-page.component')
+            .then(m => m.PetCareInvitationsPageComponent)
       },
       {
         path: 'users',

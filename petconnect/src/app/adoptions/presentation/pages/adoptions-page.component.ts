@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { CheckboxModule } from 'primeng/checkbox';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { AdoptionService } from '../../infrastructure/services/adoption.service';
 import { AvailablePetResponse } from '../../infrastructure/services/adoption.service';
@@ -40,6 +40,7 @@ interface Pet {
     PetFeedGridComponent,
     PageHeadingCardComponent,
     TranslocoModule,
+    RouterModule,
   ],
   template: `
     <div class="adoptions-page">
@@ -47,6 +48,11 @@ interface Pet {
         [title]="'adoptions.title' | transloco"
         [subtitle]="'adoptions.subtitle' | transloco"
       />
+
+      <a class="my-requests-link" routerLink="/adoptions/my-requests">
+        <i class="pi pi-list" aria-hidden="true"></i>
+        {{ 'adoptions.myRequests' | transloco }}
+      </a>
 
       <app-pet-feed-grid
         [items]="pets()"
@@ -63,6 +69,8 @@ interface Pet {
   `,
   styles: [`
     .adoptions-page { min-height: 100vh; max-width: var(--max-page-width); margin: 0 auto; padding: 0 1rem; box-sizing: border-box; background: var(--surface-bg); }
+    .my-requests-link { display: inline-flex; align-items: center; gap: .5rem; margin: .75rem 0 1rem; padding: .65rem .9rem; border: 1px solid var(--surface-border, #d9e2e8); border-radius: .75rem; color: var(--text-color, #263238); text-decoration: none; background: var(--surface-card, #fff); }
+    .my-requests-link:hover { border-color: var(--primary-color, #4d7c70); }
   `]
 })
 export class AdoptionsPageComponent implements OnInit {

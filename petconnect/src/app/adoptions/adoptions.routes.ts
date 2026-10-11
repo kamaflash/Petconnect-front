@@ -3,6 +3,12 @@ import { AdoptionsPageComponent } from './presentation/pages/adoptions-page.comp
 
 export const adoptionsRoutes: Routes = [
   {
+    path: 'my-requests',
+    loadComponent: () =>
+      import('./presentation/pages/my-adoption-requests-page.component')
+        .then(m => m.MyAdoptionRequestsPageComponent),
+  },
+  {
     path: '',
     component: AdoptionsPageComponent,
   },

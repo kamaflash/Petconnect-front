@@ -37,6 +37,10 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
           <h1 class="text-2xl font-bold m-0">{{ 'petsPage.title' | transloco }}</h1>
           <p class="page-subtitle">{{ 'petsPage.subtitle' | transloco }}</p>
         </div>
+        <a class="care-invitations-link" routerLink="/pet-care/invitations">
+          <i class="pi pi-users" aria-hidden="true"></i>
+          <span>{{ 'petCare.invitationsTitle' | transloco }}</span>
+        </a>
       </header>
 
       <section class="care-summary card-modern  card-orange-border" *ngIf="!loading() && !loadFailed() && pets().length > 0" aria-labelledby="care-summary-title">
@@ -115,6 +119,16 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
             (onAdd)="openCreateDialog()"
           >
             <ng-template card-actions let-item>
+              <a
+                pButton
+                type="button"
+                icon="pi pi-heart"
+                class="p-button-text p-button-rounded"
+                [routerLink]="['/pets', item.id, 'care']"
+                (click)="$event.stopPropagation()"
+                [attr.aria-label]="'petCare.manageFor' | transloco:{ name: item.name }"
+                [title]="'petCare.manageCare' | transloco"
+              ></a>
               <button
                 pButton
                 type="button"
@@ -221,6 +235,8 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
     .family-page { max-width: var(--max-page-width); margin: 0 auto; padding: 0 0 1.5rem; }
     .page-header { justify-content: space-between; gap: 1rem; }
     .page-subtitle { margin: .5rem 0 0; color: var(--text-secondary); }
+    .care-invitations-link { display: inline-flex; align-items: center; gap: .5rem; color: var(--text-secondary); text-decoration: none; white-space: nowrap; }
+    .care-invitations-link:hover { color: var(--text-primary); }
     .card-modern { overflow: hidden; margin-bottom: 1rem; border-radius: var(--radius-lg); background: var(--surface-card); }
     .card-orange-border { border: 1px solid var(--surface-border) }
     .care-summary { border-color: color-mix(in srgb, var(--primary-color) 32%, var(--surface-border)); background: color-mix(in srgb, var(--primary-color) 5%, var(--surface-card)); }
