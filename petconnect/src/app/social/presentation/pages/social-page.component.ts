@@ -279,22 +279,7 @@ interface Notification {
               <div class="sidebar-header">
                 <h3>{{ 'social.upcomingEvents' | transloco }}</h3>
               </div>
-              <div class="upcoming-event" *ngFor="let event of upcomingEvents()">
-                <div class="event-date">
-                  <span class="event-day">{{ event.date | date:'dd' }}</span>
-                  <span class="event-month">{{ event.date | date:'MMM' }}</span>
-                </div>
-                <div class="event-info">
-                  <span class="event-title">{{ event.title }}</span>
-                  <span class="event-attendees">{{ event.attendees }} {{ 'social.attendees' | transloco }}</span>
-                </div>
-                <p-button
-                  [label]="event.isAttending ? ('social.attending' | transloco) : ('social.attend' | transloco)"
-                  [icon]="event.isAttending ? 'pi pi-check' : 'pi pi-plus'"
-                  styleClass="p-button-sm  p-button-outlined"
-                  (onClick)="toggleEventAttendance(event)"
-                />
-              </div>
+              <a class="events-link" routerLink="/events">{{ 'home.seeAll' | transloco }} <i class="pi pi-arrow-right" aria-hidden="true"></i></a>
             </div>
           </div>
         </div>
@@ -380,61 +365,6 @@ interface Notification {
                       {{ user.isFollowing ? ('social.following' | transloco) : ('social.follow' | transloco) }}
                     </button>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Eventos -->
-        <div class="events-layout" *ngIf="activeTab() === 'events'">
-          <div class="events-header">
-            <h2>{{ 'social.communityEvents' | transloco }}</h2>
-            <p-button
-              icon="pi pi-plus"
-              label="{{ 'social.createEvent' | transloco }}"
-              styleClass="p-button-primary"
-              (onClick)="showCreateEventDialog()"
-            />
-          </div>
-          <div class="events-grid">
-            <div class="event-card" *ngFor="let event of allEvents()">
-              <div class="event-image" [style.background-image]="'url(' + event.image + ')'">
-                <div class="event-category">
-                  <span>{{ event.category }}</span>
-                </div>
-              </div>
-              <div class="event-content">
-                <div class="event-date-badge">
-                  <span class="event-day">{{ event.date | date:'dd' }}</span>
-                  <span class="event-month">{{ event.date | date:'MMM' }}</span>
-                </div>
-                <div class="event-info">
-                  <h3>{{ event.title }}</h3>
-                  <p>{{ event.description }}</p>
-                  <div class="event-meta">
-                    <span><i class="pi pi-map-marker"></i> {{ event.location }}</span>
-                    <span><i class="pi pi-user"></i> {{ event.organizer }}</span>
-                  </div>
-                  <div class="event-attendees">
-                    <p-avatarGroup>
-                      <p-avatar *ngFor="let attendee of event.attendeesList" [image]="attendee" shape="circle" size="normal"></p-avatar>
-                    </p-avatarGroup>
-                    <span>{{ event.attendees }} {{ 'social.attendees' | transloco }}</span>
-                  </div>
-                </div>
-                <div class="event-actions">
-                  <p-button
-                    [label]="event.isAttending ? ('social.cancelAttendance' | transloco) : ('social.attend' | transloco)"
-                    [icon]="event.isAttending ? 'pi pi-times' : 'pi pi-check'"
-                    [ngClass]="event.isAttending ? 'p-button-sm  p-button-outlined' : 'p-button-sm  p-button-outlined'"
-                    (onClick)="toggleEventAttendance(event)"
-                  />
-                  <p-button
-                    icon="pi pi-share-alt"
-                    styleClass="p-button-sm p-button-outlined"
-                    (onClick)="shareEvent(event)"
-                  />
                 </div>
               </div>
             </div>
@@ -911,6 +841,16 @@ interface Notification {
       margin: 0;
       font-size: 0.875rem;
       font-weight: 600;
+    }
+
+    .events-link {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      color: var(--primary-color);
+      font-size: .8125rem;
+      font-weight: 600;
+      text-decoration: none;
     }
 
     .trend-item {
@@ -1811,7 +1751,6 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Load all data in parallel
     this.loadPosts();
-    this.loadEvents();
     this.loadGroups();
     this.loadTrendingTopics();
     this.loadNotifications();
@@ -2279,7 +2218,6 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
     return [
       { id: 'feed', label: t('social.tabs.feed'), icon: 'home', badge: this.unreadNotifications },
       { id: 'following', label: t('social.following'), icon: 'person' },
-      { id: 'events', label: t('social.tabs.events'), icon: 'event' },
       { id: 'groups', label: t('social.tabs.groups'), icon: 'groups' },
       { id: 'notifications', label: t('social.notifications'), icon: 'notifications', badge: this.unreadNotifications },
     ];

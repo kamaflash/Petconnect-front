@@ -46,13 +46,9 @@ import { TranslocoModule } from '@jsverse/transloco';
         <span class="material-symbols-rounded nav-icon" [class.filled]="petsLink.isActive">pets</span>
         <span class="nav-text">{{ 'nav.family' | transloco }}</span>
       </a>
-      <a routerLink="/health" routerLinkActive="sidebar-link-active" #healthLink="routerLinkActive" class="sidebar-link">
-        <span class="material-symbols-rounded nav-icon" [class.filled]="healthLink.isActive">health_and_safety</span>
-        <span class="nav-text">{{ 'nav.health' | transloco }}</span>
-      </a>
-      <a routerLink="/appointments" routerLinkActive="sidebar-link-active" #appointmentsLink="routerLinkActive" class="sidebar-link">
-        <span class="material-symbols-rounded nav-icon" [class.filled]="appointmentsLink.isActive">calendar_month</span>
-        <span class="nav-text">{{ 'nav.appointments' | transloco }}</span>
+      <a routerLink="/agenda" routerLinkActive="sidebar-link-active" #agendaLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="agendaLink.isActive">calendar_month</span>
+        <span class="nav-text">{{ 'nav.agenda' | transloco }}</span>
       </a>
 
       <p class="nav-label" style="margin-top: 0.75rem;">{{ 'nav.groupDiscover' | transloco }}</p>
@@ -69,19 +65,10 @@ import { TranslocoModule } from '@jsverse/transloco';
         <span class="material-symbols-rounded nav-icon" [class.filled]="lostpetsLink.isActive">search</span>
         <span class="nav-text">{{ 'nav.lostPets' | transloco }}</span>
       </a>
-      <a routerLink="/vet" routerLinkActive="sidebar-link-active" #vetLink="routerLinkActive" class="sidebar-link">
-        <span class="material-symbols-rounded nav-icon" [class.filled]="vetLink.isActive">medical_services</span>
-        <span class="nav-text">{{ 'nav.vet' | transloco }}</span>
-      </a>
       <a routerLink="/marketplace" routerLinkActive="sidebar-link-active" #marketplaceLink="routerLinkActive" class="sidebar-link">
         <span class="material-symbols-rounded nav-icon" [class.filled]="marketplaceLink.isActive">storefront</span>
         <span class="nav-text">{{ 'nav.marketplace' | transloco }}</span>
       </a>
-      <a routerLink="/events" routerLinkActive="sidebar-link-active" #eventsLink="routerLinkActive" class="sidebar-link">
-        <span class="material-symbols-rounded nav-icon" [class.filled]="eventsLink.isActive">event</span>
-        <span class="nav-text">{{ 'nav.events' | transloco }}</span>
-      </a>
-
 
       <p class="nav-label" style="margin-top: 0.75rem;">{{ 'nav.groupCommunity' | transloco }}</p>
       <a routerLink="/social" routerLinkActive="sidebar-link-active" #socialLink="routerLinkActive" class="sidebar-link">
@@ -89,9 +76,13 @@ import { TranslocoModule } from '@jsverse/transloco';
         <span class="nav-text">{{ 'nav.community' | transloco }}</span>
       </a>
 
-      <a routerLink="/gamification" routerLinkActive="sidebar-link-active" #gamificationLink="routerLinkActive" class="sidebar-link">
-        <span class="material-symbols-rounded nav-icon" [class.filled]="gamificationLink.isActive">emoji_events</span>
-        <span class="nav-text">{{ 'nav.achievements' | transloco }}</span>
+      <a routerLink="/events" routerLinkActive="sidebar-link-active" #eventsLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="eventsLink.isActive">event</span>
+        <span class="nav-text">{{ 'nav.events' | transloco }}</span>
+      </a>
+      <a routerLink="/messages" routerLinkActive="sidebar-link-active" #messagesLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="messagesLink.isActive">mail</span>
+        <span class="nav-text">{{ 'nav.messages' | transloco }}</span>
       </a>
     </nav>
 

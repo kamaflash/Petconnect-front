@@ -17,6 +17,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
 import { AvatarModule } from 'primeng/avatar';
 import { BadgeModule } from 'primeng/badge';
+import { SkeletonModule } from 'primeng/skeleton';
 import { ScrollPanelModule } from 'primeng/scrollpanel';
 import { ToastModule } from 'primeng/toast';
 import { DialogModule } from 'primeng/dialog';
@@ -35,6 +36,7 @@ import {
   SendMessageRequest
 } from '../../domain/entities/message.model';
 import { Subscription } from 'rxjs';
+import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
 
 @Component({
   selector: 'app-messages-page',
@@ -47,37 +49,60 @@ import { Subscription } from 'rxjs';
     FormsModule,
     AvatarModule,
     BadgeModule,
+    SkeletonModule,
     ScrollPanelModule,
     ToastModule,
     DialogModule,
+    PageHeadingCardComponent,
   ],
   providers: [MessageService],
   template: `
-    <div class="messages-page">
-      <div class="messages-container">
-        <!-- Conversations List -->
-        <div class="conversations-sidebar">
-          <div class="conversations-header">
-            <h1>{{ 'messages.title' | transloco }}</h1>
-            <button class="new-message-btn" (click)="openNewConversationDialog()">
-              <i class="pi pi-pencil"></i>
-            </button>
-          </div>
+    <main class="page-content messages-page">
+      <app-page-heading-card [title]="'messages.title' | transloco">
+        <button
+          page-heading-actions
+          class="new-message-btn"
+          type="button"
+          (click)="openNewConversationDialog()"
+          [attr.aria-label]="'messages.newConversation' | transloco"
+          [title]="'messages.newConversation' | transloco"
+        >
+          <i class="pi pi-pencil" aria-hidden="true"></i>
+        </button>
+      </app-page-heading-card>
 
+      <section class="messages-container card-modern">
+        <!-- Conversations List -->
+        <aside class="conversations-sidebar" [class.mobile-hidden]="showChatOnMobile()">
           <div class="search-bar">
-            <i class="pi pi-search"></i>
+            <i class="pi pi-search" aria-hidden="true"></i>
             <input
               type="text"
               pInputText
               [placeholder]="'messages.searchConversations' | transloco"
               [(ngModel)]="searchQuery"
+              [attr.aria-label]="'messages.searchConversations' | transloco"
             />
           </div>
 
-          <div class="conversations-list">
+          <div class="conversations-list" [attr.aria-busy]="loadingConversations()">
+            @if (loadingConversations()) {
+              <div class="conversation-skeleton-list" aria-hidden="true">
+                @for (placeholder of conversationSkeletons; track placeholder) {
+                  <div class="conversation-skeleton">
+                    <p-skeleton shape="circle" size="3rem" />
+                    <div>
+                      <p-skeleton width="8rem" height=".85rem" />
+                      <p-skeleton width="12rem" height=".7rem" />
+                    </div>
+                  </div>
+                }
+              </div>
+            }
             @for (conversation of filteredConversations(); track conversation.id) {
               <div
                 class="conversation-item"
+                [class.conversation-item-hidden]="loadingConversations()"
                 [class.active]="selectedId() === conversation.id"
                 (click)="selectConversation(conversation)"
               >
@@ -99,15 +124,18 @@ import { Subscription } from 'rxjs';
               </div>
             }
           </div>
-        </div>
+        </aside>
 
         <!-- Chat Area -->
-        <div class="chat-area">
+        <div class="chat-area" [class.mobile-visible]="showChatOnMobile()">
           @if (selectedConversation(); as conversation) {
             <div class="chat-container">
               <!-- Chat Header -->
               <div class="chat-header">
                 <div class="chat-user-info">
+                  <button class="mobile-back-btn" type="button" (click)="showChatOnMobile.set(false)" [attr.aria-label]="'messages.title' | transloco">
+                    <i class="pi pi-arrow-left" aria-hidden="true"></i>
+                  </button>
                   <div class="chat-avatar">
                     <p-avatar [image]="conversation.partnerAvatarUrl ?? undefined" shape="circle"></p-avatar>
                   </div>
@@ -144,8 +172,11 @@ import { Subscription } from 'rxjs';
                 <div class="messages-list">
                   @if (loadingMessages()) {
                     <div class="messages-loading">
-                      <i class="pi pi-spin pi-spinner"></i>
-                      <span>{{ 'messages.loading' | transloco }}</span>
+                      @for (placeholder of messageSkeletons; track placeholder) {
+                        <div class="message-skeleton" [class.sent]="placeholder % 2 === 0">
+                          <p-skeleton width="15rem" height="3.25rem" borderRadius="1rem" />
+                        </div>
+                      }
                     </div>
                   } @else if (messages().length === 0) {
                     <div class="messages-empty">
@@ -167,7 +198,7 @@ import { Subscription } from 'rxjs';
 
               <!-- Message Input -->
               <div class="message-input-container">
-                <button class="attach-btn">
+                <button class="attach-btn" type="button" [attr.aria-label]="'messages.typePlaceholder' | transloco">
                   <i class="pi pi-image"></i>
                 </button>
                 <input
@@ -177,8 +208,9 @@ import { Subscription } from 'rxjs';
                   [(ngModel)]="newMessage"
                   (ngModelChange)="onTypingInput()"
                   (keyup.enter)="sendMessage()"
+                  [attr.aria-label]="'messages.typePlaceholder' | transloco"
                 />
-                <button class="send-btn" (click)="sendMessage()">
+                <button class="send-btn" type="button" (click)="sendMessage()" [attr.aria-label]="'messages.typePlaceholder' | transloco">
                   <i class="pi pi-send"></i>
                 </button>
               </div>
@@ -191,7 +223,7 @@ import { Subscription } from 'rxjs';
             </div>
           }
         </div>
-      </div>
+      </section>
 
       <!-- Nuevo mensaje -->
       <p-dialog
@@ -229,98 +261,94 @@ import { Subscription } from 'rxjs';
           }
         </div>
       </p-dialog>
-    </div>
+    </main>
   `,
   styles: [`
+    :host { display: block; }
     .messages-page {
-      height: 80vh;
-      background: var(--surface-bg);
-      overflow: hidden;
+      box-sizing: border-box;
+      max-width: var(--max-page-width);
+      margin: 0 auto;
+      padding: 0 1rem 1.5rem;
     }
 
     .messages-container {
       display: flex;
-      height: 100%;
-      max-width: var(--max-page-width);
-      margin: 0 auto;
+      height: min(72vh, 760px);
+      min-height: 520px;
+      overflow: hidden;
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
       background: var(--surface-card);
+      box-shadow: var(--shadow-sm, 0 1px 3px rgba(15, 23, 42, .06));
     }
 
     /* Conversations Sidebar */
     .conversations-sidebar {
-      width: 380px;
+      width: min(350px, 36%);
+      min-width: 280px;
       border-right: 1px solid var(--surface-border);
       display: flex;
       flex-direction: column;
       background: var(--surface-card);
     }
 
-    .conversations-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.5rem;
-      border-bottom: 1px solid var(--surface-border);
-    }
-
-    .conversations-header h1 {
-      margin: 0;
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
     .new-message-btn {
-      width: 40px;
-      height: 40px;
-      background: var(--primary-color);
-      color: white;
-      border: none;
+      display: grid;
+      place-items: center;
+      width: 2.75rem;
+      height: 2.75rem;
+      border: 1px solid var(--surface-border);
       border-radius: 50%;
+      background: var(--surface-card);
+      color: var(--text-secondary);
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all var(--transition-fast);
+      transition: background var(--transition-fast), color var(--transition-fast);
     }
 
     .new-message-btn:hover {
-      background: var(--primary-color-dark);
-      transform: scale(1.1);
+      background: var(--surface-hover);
+      color: var(--text-primary);
     }
 
     .search-bar {
-      padding: 1rem 1.5rem;
+      position: relative;
+      padding: 1rem;
       border-bottom: 1px solid var(--surface-border);
     }
 
     .search-bar i {
       position: absolute;
-      left: 2rem;
+      left: 1.85rem;
       top: 50%;
       transform: translateY(-50%);
       color: var(--text-tertiary);
+      pointer-events: none;
     }
 
     .search-bar input {
+      box-sizing: border-box;
       width: 100%;
+      min-height: 2.75rem;
       padding: 0.625rem 1rem 0.625rem 2.5rem;
       border: 1px solid var(--surface-border);
-      border-radius: var(--radius-full);
-      background: var(--surface-hover);
+      border-radius: var(--radius-md);
+      background: var(--surface-card);
       color: var(--text-primary);
     }
 
     .conversations-list {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
     }
 
     .conversation-item {
       display: flex;
-      gap: 1rem;
-      padding: 1rem 1.5rem;
+      gap: 0.85rem;
+      padding: 0.9rem 1rem;
       cursor: pointer;
-      transition: all var(--transition-fast);
+      transition: background var(--transition-fast);
       border-bottom: 1px solid var(--surface-border);
     }
 
@@ -329,8 +357,13 @@ import { Subscription } from 'rxjs';
     }
 
     .conversation-item.active {
-      background: var(--primary-color-light);
+      background: color-mix(in srgb, var(--primary-color) 8%, var(--surface-card));
+      box-shadow: inset 3px 0 var(--primary-color);
     }
+    .conversation-item-hidden { display: none; }
+    .conversation-skeleton-list { display: grid; }
+    .conversation-skeleton { display: flex; align-items: center; gap: .85rem; padding: .9rem 1rem; border-bottom: 1px solid var(--surface-border); }
+    .conversation-skeleton > div { display: grid; gap: .5rem; }
 
     .conversation-avatar {
       position: relative;
@@ -402,6 +435,7 @@ import { Subscription } from 'rxjs';
     /* Chat Area */
     .chat-area {
       flex: 1;
+      min-width: 0;
       display: flex;
       flex-direction: column;
       background: var(--surface-bg);
@@ -418,7 +452,7 @@ import { Subscription } from 'rxjs';
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem 1.5rem;
+      padding: 1rem 1.25rem;
       background: var(--surface-card);
       border-bottom: 1px solid var(--surface-border);
       flex-shrink: 0;
@@ -449,6 +483,7 @@ import { Subscription } from 'rxjs';
       margin: 0;
       font-size: 1rem;
       font-weight: 600;
+      color: var(--text-primary);
     }
 
     .user-status {
@@ -492,6 +527,7 @@ import { Subscription } from 'rxjs';
       display: flex;
       gap: 0.5rem;
     }
+    .mobile-back-btn { display: none; }
 
     .action-btn {
       width: 36px;
@@ -520,7 +556,7 @@ import { Subscription } from 'rxjs';
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      padding: 1.5rem;
+      padding: 1.25rem;
       min-height: 0;
     }
 
@@ -544,6 +580,8 @@ import { Subscription } from 'rxjs';
     .messages-loading i {
       font-size: 1.5rem;
     }
+    .message-skeleton { display: flex; }
+    .message-skeleton.sent { justify-content: flex-end; }
 
     .messages-empty i {
       font-size: 3rem;
@@ -578,8 +616,8 @@ import { Subscription } from 'rxjs';
     }
 
     .message-item.sent .message-bubble {
-      background: var(--primary-color);
-      color: white;
+      background: color-mix(in srgb, var(--primary-color) 12%, var(--surface-card));
+      color: var(--text-primary);
       border-bottom-right-radius: 4px;
     }
 
@@ -602,10 +640,12 @@ import { Subscription } from 'rxjs';
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      padding: 1rem 1.5rem;
+      padding: 1rem 1.25rem;
       background: var(--surface-card);
       border-top: 1px solid var(--surface-border);
       flex-shrink: 0;
+      min-width: 0;
+      box-sizing: border-box;
     }
 
     .attach-btn {
@@ -630,6 +670,8 @@ import { Subscription } from 'rxjs';
 
     .message-input-container input {
       flex: 1;
+      min-width: 0;
+      box-sizing: border-box;
       padding: 0.75rem 1rem;
       border: 1px solid var(--surface-border);
       border-radius: var(--radius-full);
@@ -638,23 +680,26 @@ import { Subscription } from 'rxjs';
     }
 
     .send-btn {
+      display: grid;
+      flex: 0 0 40px;
+      place-items: center;
       width: 40px;
       height: 40px;
-      background: var(--primary-color);
-      color: white;
-      border: none;
+      border: 1px solid var(--surface-border);
       border-radius: 50%;
+      background: var(--surface-hover);
+      color: var(--text-primary);
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all var(--transition-fast);
-      flex-shrink: 0;
+      transition: background var(--transition-fast), color var(--transition-fast);
     }
 
     .send-btn:hover {
-      background: var(--primary-color-dark);
-      transform: scale(1.1);
+      background: var(--surface-border);
+      color: var(--text-primary);
+    }
+    .new-message-btn:focus-visible, .send-btn:focus-visible, .action-btn:focus-visible, .mobile-back-btn:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
     }
 
     /* No Conversation Selected */
@@ -686,23 +731,23 @@ import { Subscription } from 'rxjs';
 
     /* Scrollbar */
     .conversations-list::-webkit-scrollbar,
-    .messages-container::-webkit-scrollbar {
+    .chat-messages::-webkit-scrollbar {
       width: 6px;
     }
 
     .conversations-list::-webkit-scrollbar-track,
-    .messages-container::-webkit-scrollbar-track {
+    .chat-messages::-webkit-scrollbar-track {
       background: transparent;
     }
 
     .conversations-list::-webkit-scrollbar-thumb,
-    .messages-container::-webkit-scrollbar-thumb {
+    .chat-messages::-webkit-scrollbar-thumb {
       background: var(--surface-border);
       border-radius: 10px;
     }
 
     .conversations-list::-webkit-scrollbar-thumb:hover,
-    .messages-container::-webkit-scrollbar-thumb:hover {
+    .chat-messages::-webkit-scrollbar-thumb:hover {
       background: var(--text-tertiary);
     }
 
@@ -764,17 +809,32 @@ import { Subscription } from 'rxjs';
 
     /* Responsive */
     @media (max-width: 768px) {
+      .messages-page { padding: 0 .75rem 1rem; }
+      .messages-container { height: min(74vh, 760px); min-height: 480px; }
       .conversations-sidebar {
         width: 100%;
+        min-width: 0;
+        border-right: 0;
       }
 
-      .chat-area {
-        display: none;
-      }
+      .conversations-sidebar.mobile-hidden, .chat-area:not(.mobile-visible) { display: none; }
+      .chat-area.mobile-visible { display: flex; width: 100%; }
+      .mobile-back-btn { display: grid; flex: 0 0 auto; place-items: center; width: 2.25rem; height: 2.25rem; border: 1px solid var(--surface-border); border-radius: 50%; background: var(--surface-card); color: var(--text-secondary); }
+      .chat-user-info { gap: .65rem; }
+      .chat-actions { display: none; }
 
       .message-bubble {
         max-width: 85%;
       }
+    }
+    @media (max-width: 480px) {
+      .messages-page { padding-inline: .5rem; }
+      .messages-container { min-height: 420px; border-radius: var(--radius-md); }
+      .chat-header { padding-inline: .75rem; }
+      .message-input-container { gap: .4rem; padding: .75rem .5rem; }
+      .attach-btn, .send-btn { flex: 0 0 2.5rem; width: 2.5rem; height: 2.5rem; }
+      .message-input-container input { padding: .65rem .75rem; }
+      .chat-messages { padding: .9rem; }
     }
   `]
 })
@@ -790,11 +850,14 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
   currentUserId = signal('');
   conversations = signal<ConversationDTO[]>([]);
   selectedId = signal('');
+  showChatOnMobile = signal(false);
   messages = signal<Message[]>([]);
   searchQuery = '';
   newMessage = '';
   loadingConversations = signal(false);
   loadingMessages = signal(false);
+  readonly conversationSkeletons = [1, 2, 3, 4, 5, 6];
+  readonly messageSkeletons = [1, 2, 3, 4];
 
   // Diálogo de nueva conversación
   showNewDialog = signal(false);
@@ -900,6 +963,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
     }
 
     this.selectedId.set(conversation.id);
+    this.showChatOnMobile.set(true);
     this.activeConversationId = conversation.id;
     this.messages.set([]);
 

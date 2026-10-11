@@ -1,5 +1,5 @@
 /* eslint-disable import/order */
-import { Component, inject, signal, OnInit, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
@@ -84,16 +84,17 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 }
               </button>
 
-              <!-- Gestión de la cuenta -->
-              <button
-                pButton
-                icon="pi pi-briefcase"
-                class="p-button-text p-button-sm header-btn"
-                pTooltip="{{ 'header.tooltipAdmin' | transloco }}"
-                [attr.aria-label]="'header.tooltipAdmin' | transloco"
-                tooltipPosition="bottom"
-                (click)="onManagement()"
-              ></button>
+              @if (canManageManagement()) {
+                <button
+                  pButton
+                  icon="pi pi-briefcase"
+                  class="p-button-text p-button-sm header-btn"
+                  pTooltip="{{ 'header.tooltipAdmin' | transloco }}"
+                  [attr.aria-label]="'header.tooltipAdmin' | transloco"
+                  tooltipPosition="bottom"
+                  (click)="onManagement()"
+                ></button>
+              }
 
               <!-- User menu -->
               <div class="user-menu-container">
@@ -181,15 +182,17 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                 tooltipPosition="bottom"
                 (click)="onSettings()"
               ></button>
-              <button
-                pButton
-                icon="pi pi-briefcase"
-                class="p-button-text p-button-sm header-btn"
-                pTooltip="{{ 'header.tooltipAdmin' | transloco }}"
-                [attr.aria-label]="'header.tooltipAdmin' | transloco"
-                tooltipPosition="bottom"
-                (click)="onManagement()"
-              ></button>
+              @if (canManageManagement()) {
+                <button
+                  pButton
+                  icon="pi pi-briefcase"
+                  class="p-button-text p-button-sm header-btn"
+                  pTooltip="{{ 'header.tooltipAdmin' | transloco }}"
+                  [attr.aria-label]="'header.tooltipAdmin' | transloco"
+                  tooltipPosition="bottom"
+                  (click)="onManagement()"
+                ></button>
+              }
               <button
                 pButton
                 icon="pi pi-user"
@@ -438,6 +441,11 @@ export class HeaderComponent implements OnInit {
 
   // ===== Estados =====
   isLoggedIn = computed(() => this.authService.isAuthenticated());
+  canManageManagement = computed(() => {
+    const user = this.authService.user();
+    const profileType = user?.profileType?.toLowerCase();
+    return user?.role === 'ADMIN' || ['vet', 'seller', 'shelter', 'trainer'].includes(profileType ?? '');
+  });
   isDarkMode = signal(false);
   showLoginModal = signal(false);
 
@@ -456,10 +464,10 @@ export class HeaderComponent implements OnInit {
   unreadMessagesDisplay = computed(() =>
     this.unreadMessages() > 99 ? '99+' : String(this.unreadMessages())
   );
-
     ngOnInit(): void {
     this.isDarkMode.set(this.themeService.isDarkMode());
     this.updateMenuItems();
+    this.webSocket.connect();
     // Reconstruir el menú cuando cambie el idioma (rustle de texts TS).
     this.transloco.langChanges$.subscribe(() => this.updateMenuItems());
   }

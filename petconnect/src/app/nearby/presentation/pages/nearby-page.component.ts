@@ -5,12 +5,13 @@ import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { SelectModule } from 'primeng/select';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { SkeletonModule } from 'primeng/skeleton';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { GeolocationService, Coordinates, GeocodingResult } from '../../../shared/services/geolocation.service';
 import { MessageService } from 'primeng/api';
 import { Subscription } from 'rxjs';
+import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
 
 interface NearbyService {
   id: string;
@@ -35,26 +36,20 @@ interface NearbyService {
     CardModule,
     TagModule,
     SelectModule,
-    ProgressSpinnerModule,
+    SkeletonModule,
     FormsModule,
-    RouterLink
+    RouterLink,
+    PageHeadingCardComponent
   ],
   providers: [MessageService],
   template: `
     <div class="nearby-page" [class.dark]="isDarkMode()">
       <div class="nearby-container">
         <!-- Header -->
-        <header class="nearby-header page-heading-card">
-          <div class="page-heading-copy">
-            <h1 class="nearby-title">
-              <i class="pi pi-map-marker"></i>
-              Servicios Cercanos
-            </h1>
-            <p class="nearby-subtitle">
-              Encuentra veterinarios, protectoras y eventos cerca de ti
-            </p>
-          </div>
-        </header>
+        <app-page-heading-card
+          title="Servicios cercanos"
+          subtitle="Encuentra veterinarios, protectoras y eventos cerca de ti"
+        />
 
         <!-- Filtros -->
         <div class="nearby-filters">
@@ -92,9 +87,18 @@ interface NearbyService {
         </div>
 
         <!-- Estado de carga -->
-        <div class="nearby-loading" *ngIf="loading()">
-          <p-progressSpinner [style]="{'width': '60px', 'height': '60px'}"></p-progressSpinner>
-          <p>Buscando servicios cercanos...</p>
+        <div class="nearby-loading" *ngIf="loading()" aria-busy="true" aria-label="Buscando servicios cercanos">
+          <div class="nearby-skeleton-grid" aria-hidden="true">
+            <article class="nearby-skeleton-card" *ngFor="let placeholder of [1, 2, 3]">
+              <p-skeleton height="190px" />
+              <div class="nearby-skeleton-content">
+                <p-skeleton width="68%" height="1.1rem" />
+                <p-skeleton width="42%" height=".85rem" />
+                <p-skeleton width="88%" height=".85rem" />
+                <p-skeleton width="58%" height=".85rem" />
+              </div>
+            </article>
+          </div>
         </div>
 
         <!-- Error -->
@@ -211,7 +215,7 @@ interface NearbyService {
     .nearby-container {
       max-width: var(--max-page-width);
       margin: 0 auto;
-      padding: 2rem;
+      padding: 0 1rem 2rem;
     }
 
     /* Header */
@@ -258,19 +262,10 @@ interface NearbyService {
     }
 
     /* Loading */
-    .nearby-loading {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 4rem 2rem;
-      gap: 1.5rem;
-    }
-
-    .nearby-loading p {
-      color: var(--text-secondary);
-      font-size: 1rem;
-    }
+    .nearby-loading { margin-bottom: 2rem; }
+    .nearby-skeleton-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; }
+    .nearby-skeleton-card { overflow: hidden; border: 1px solid var(--surface-border); border-radius: 12px; background: var(--surface-card); }
+    .nearby-skeleton-content { display: grid; gap: .85rem; padding: 1.25rem; }
 
     /* Error */
     .nearby-error {
@@ -539,6 +534,9 @@ interface NearbyService {
       }
 
       .services-grid {
+        grid-template-columns: 1fr;
+      }
+      .nearby-skeleton-grid {
         grid-template-columns: 1fr;
       }
 

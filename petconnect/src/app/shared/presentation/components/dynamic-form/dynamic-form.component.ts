@@ -7,6 +7,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { DatePickerModule } from 'primeng/datepicker';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { TextareaModule } from 'primeng/textarea';
 import { CheckboxModule } from 'primeng/checkbox';
 import { RadioButtonModule } from 'primeng/radiobutton';
@@ -18,7 +19,7 @@ import { BadgeModule } from 'primeng/badge';
 import { LocationPickerComponent } from '../../../components/location-picker/location-picker.component';
 
 // Tipos de campo soportado
-export type FormFieldType = 'input' | 'number' | 'date' | 'select' | 'textarea' | 'checkbox' | 'radio' | 'password' | 'file' | 'location';
+export type FormFieldType = 'input' | 'number' | 'date' | 'select' | 'multiselect' | 'textarea' | 'checkbox' | 'radio' | 'password' | 'file' | 'location';
 
 // Interfaz para opciones de select y radio
 export interface FormFieldOption {
@@ -88,6 +89,7 @@ export interface DynamicFormConfig {
   submitLabel?: string;
   cancelLabel?: string;
   showCancel?: boolean;
+  showSubmit?: boolean;
 }
 
 @Component({
@@ -101,6 +103,7 @@ export interface DynamicFormConfig {
     DatePickerModule,
     InputNumberModule,
     SelectModule,
+    MultiSelectModule,
     TextareaModule,
     CheckboxModule,
     RadioButtonModule,
@@ -193,6 +196,21 @@ export interface DynamicFormConfig {
                     [placeholder]="field.placeholder || this.i18n.translate('dynamicForm.select')"
                     [disabled]="field.disabled || false"
                     [showClear]="field.showClear ?? true"
+                    [class.ng-invalid]="isFieldInvalid(field.key)"
+                    [class.ng-dirty]="isFieldDirty(field.key)"
+                    styleClass="w-full"
+                    appendTo="body"
+                  />
+                }
+                @case ('multiselect') {
+                  <p-multiSelect
+                    [id]="field.key"
+                    [formControlName]="field.key"
+                    [options]="getFieldOptions(field)"
+                    optionLabel="label"
+                    optionValue="value"
+                    [placeholder]="field.placeholder || this.i18n.translate('dynamicForm.select')"
+                    [disabled]="field.disabled || false"
                     [class.ng-invalid]="isFieldInvalid(field.key)"
                     [class.ng-dirty]="isFieldDirty(field.key)"
                     styleClass="w-full"
@@ -339,27 +357,31 @@ export interface DynamicFormConfig {
           }
         </div>
 
-        <div class="form-actions">
-          @if (config().showCancel) {
-            <p-button
-              [label]="config().cancelLabel || 'Cancelar'"
-              icon="pi pi-times"
-              severity="secondary"
-              [text]="true"
-              [disabled]="submitting()"
-              (onClick)="onCancel.emit()"
-              type="button"
-            />
-          }
-          <button
-            type="submit"
-            class="submit-btn"
-            [disabled]="form().invalid || submitting()"
-          >
-            <i class="pi pi-check"></i>
-            {{ config().submitLabel || 'Guardar' }}
-          </button>
-        </div>
+        @if (config().showCancel || config().showSubmit !== false) {
+          <div class="form-actions">
+            @if (config().showCancel) {
+              <p-button
+                [label]="config().cancelLabel || 'Cancelar'"
+                icon="pi pi-times"
+                severity="secondary"
+                [text]="true"
+                [disabled]="submitting()"
+                (onClick)="onCancel.emit()"
+                type="button"
+              />
+            }
+            @if (config().showSubmit !== false) {
+              <button
+                type="submit"
+                class="submit-btn"
+                [disabled]="form().invalid || submitting()"
+              >
+                <i class="pi pi-check"></i>
+                {{ config().submitLabel || 'Guardar' }}
+              </button>
+            }
+          </div>
+        }
       </form>
     </div>
   `,
@@ -715,6 +737,8 @@ export class DynamicFormComponent implements OnInit, OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['config'] && !changes['config'].firstChange) {
       this.buildForm();
+    } else if (changes['formData'] && !changes['formData'].firstChange) {
+      this.form().patchValue(this.formData(), { emitEvent: false });
     }
   }
 
@@ -829,6 +853,8 @@ export class DynamicFormComponent implements OnInit, OnChanges, OnDestroy {
     switch (type) {
       case 'checkbox':
         return false;
+      case 'multiselect':
+        return [];
       case 'number':
         return null;
       case 'date':
@@ -840,6 +866,9 @@ export class DynamicFormComponent implements OnInit, OnChanges, OnDestroy {
 
   // Maneja el envío del formulario
   onSubmit(): void {
+    if (this.config().showSubmit === false) {
+      return;
+    }
     if (this.form().valid) {
       // Incluir archivos subidos en el evento
       const formValue = {

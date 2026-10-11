@@ -37,13 +37,18 @@ export const routes: Routes = [
       },
       {
         path: 'health',
-        loadChildren: () =>
-          import('./health/health.routes').then(m => m.healthRoutes)
+        redirectTo: '/agenda',
+        pathMatch: 'full'
       },
       {
         path: 'appointments',
-        loadChildren: () =>
-          import('./appointments/appointments.routes').then(m => m.appointmentsRoutes)
+        redirectTo: '/agenda',
+        pathMatch: 'full'
+      },
+      {
+        path: 'agenda',
+        loadComponent: () =>
+          import('./agenda/presentation/pages/agenda-page.component').then(m => m.AgendaPageComponent)
       },
       {
         path: 'lostpets',
@@ -72,13 +77,13 @@ export const routes: Routes = [
       },
       {
         path: 'services',
-        loadChildren: () =>
-          import('./services/services.routes').then(m => m.servicesRoutes)
+        redirectTo: '/nearby',
+        pathMatch: 'full'
       },
       {
         path: 'content',
-        loadChildren: () =>
-          import('./content/content.routes').then(m => m.contentRoutes)
+        redirectTo: '/social',
+        pathMatch: 'full'
       },
       {
         path: 'social',
@@ -87,8 +92,8 @@ export const routes: Routes = [
       },
       {
         path: 'vet',
-        loadChildren: () =>
-          import('./vet/vet.routes').then(m => m.vetRoutes)
+        redirectTo: '/nearby',
+        pathMatch: 'full'
       },
       {
         path: 'profile',

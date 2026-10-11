@@ -18,6 +18,7 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
 import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../../../adoptions/presentation/components/pet-feed-grid/pet-feed-grid.component';
 import { MarketplaceService, ProductResponse } from '../../infrastructure/services/marketplace.service';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
+import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
 
 interface Product {
   id: string;
@@ -61,31 +62,26 @@ interface CartItem {
     RouterLink,
     ModalComponent,
     PetFeedGridComponent,
+    PageHeadingCardComponent,
     TranslocoModule,
   ],
   providers: [MessageService],
   template: `
     <div class="marketplace-page">
       <!-- Header -->
-      <header class="marketplace-header page-heading-card">
-        <div class="header-content">
-          <div class="header-left page-heading-copy">
-            <h1>{{ 'marketplace.title' | transloco }}</h1>
-            <p>{{ 'marketplace.subtitle' | transloco }}</p>
-          </div>
-          <div class="header-right">
-            <div class="search-bar">
-              <i class="pi pi-search"></i>
-              <input
-                type="text"
-                pInputText
-                placeholder="{{ 'marketplace.searchPlaceholder' | transloco }}"
-                [(ngModel)]="searchQuery"
-              />
-            </div>
-            <button class="cart-button" (click)="toggleCart()">
-              <i class="pi pi-shopping-cart"></i>
-              <span>{{ 'marketplace.cart' | transloco }}</span>
+      <app-page-heading-card
+        [title]="'marketplace.title' | transloco"
+        [subtitle]="'marketplace.subtitle' | transloco"
+      >
+        <div page-heading-actions class="marketplace-heading-actions">
+            <button
+              class="cart-button"
+              type="button"
+              (click)="toggleCart()"
+              [attr.aria-label]="'marketplace.cart' | transloco"
+              [title]="'marketplace.cart' | transloco"
+            >
+              <i class="pi pi-shopping-cart" aria-hidden="true"></i>
               @if (cartItems().length > 0) {
                 <span class="cart-badge">{{ cartItems().length }}</span>
               }
@@ -99,16 +95,16 @@ interface CartItem {
                 <span>{{ 'marketplace.createProduct' | transloco }}</span>
               </button>
             }
-          </div>
         </div>
-      </header>
+      </app-page-heading-card>
 
       <app-pet-feed-grid
-        [items]="filteredProducts()"
+        [items]="products()"
         [itemLabel]="'marketplace.itemLabel' | transloco"
         itemKeyField="id"
         [filterConfigs]="productFilterConfigs"
         [columnConfigs]="productColumnConfigs"
+        [loading]="loading()"
         [initialFilters]="productFilters()"
         (filtersChange)="onFiltersChange($event)"
         (itemClick)="openProductDetail($event)"
@@ -222,71 +218,39 @@ interface CartItem {
   styles: [`
     .marketplace-page {
       min-height: 100vh;
+      max-width: var(--max-page-width);
+      margin: 0 auto;
+      padding: 0 1rem;
+      box-sizing: border-box;
       background: var(--surface-bg);
     }
 
-    /* Header */
-    .marketplace-header {
-      gap: 1rem;
-    }
-
-    .header-content {
-      width: 100%;
+    .marketplace-heading-actions {
       display: flex;
-      justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .header-right {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .search-bar {
-      position: relative;
-      width: 300px;
-    }
-
-    .search-bar i {
-      position: absolute;
-      left: 1rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-tertiary);
-    }
-
-    .search-bar input {
-      width: 100%;
-      padding: 0.625rem 1rem 0.625rem 2.5rem;
-      border: 1px solid var(--surface-border);
-      border-radius: var(--radius-full);
-      background: var(--surface-hover);
-      color: var(--text-primary);
+      gap: .75rem;
     }
 
     .cart-button {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.625rem 1.25rem;
-      background: var(--primary-color);
-      color: white;
-      border: none;
-      border-radius: var(--radius-full);
+      display: grid;
+      place-items: center;
+      width: 2.75rem;
+      height: 2.75rem;
+      background: var(--surface-card);
+      color: var(--text-secondary);
+      border: 1px solid var(--surface-border);
+      border-radius: 50%;
       cursor: pointer;
-      font-weight: 600;
       transition: all var(--transition-fast);
       position: relative;
     }
 
     .cart-button:hover {
-      background: var(--primary-color-dark);
-      transform: translateY(-2px);
+      background: var(--surface-hover);
+      color: var(--text-primary);
     }
+    .cart-button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
 
     .cart-badge {
       position: absolute;
@@ -669,8 +633,8 @@ export class MarketplacePageComponent implements OnInit {
 
   // Products data
   products = signal<Product[]>([]);
+  loading = signal(true);
   cartItems = signal<CartItem[]>([]);
-  searchQuery = '';
   cartOpen = signal(false);
 
   // Product Detail
@@ -686,11 +650,12 @@ export class MarketplacePageComponent implements OnInit {
       type: 'text',
       key: 'search',
       label: this.transloco.translate('marketplace.search'),
-      placeholder: this.transloco.translate('marketplace.searchPlaceholder')
+      placeholder: this.transloco.translate('marketplace.searchPlaceholder'),
+      searchFields: ['name', 'description']
     },
     {
-      type: 'checkbox',
-      key: 'categories',
+      type: 'select',
+      key: 'category',
       label: this.transloco.translate('marketplace.categories'),
       options: [
         { label: this.transloco.translate('marketplace.food'), value: 'Alimento' },
@@ -700,8 +665,8 @@ export class MarketplacePageComponent implements OnInit {
       ]
     },
     {
-      type: 'checkbox',
-      key: 'brands',
+      type: 'select',
+      key: 'brand',
       label: this.transloco.translate('marketplace.categoryBrand'),
       options: [
         { label: 'Marca A', value: 'Marca A' },
@@ -710,12 +675,17 @@ export class MarketplacePageComponent implements OnInit {
       ]
     },
     {
-      type: 'checkbox',
-      key: 'inStock',
+      type: 'select',
+      key: 'stock',
       label: this.transloco.translate('marketplace.availability'),
       options: [
-        { label: this.transloco.translate('marketplace.inStockOnly'), value: 'true' }
-      ]
+        { label: this.transloco.translate('marketplace.inStockOnly'), value: 'in-stock' },
+        { label: this.transloco.translate('marketplace.outOfStock'), value: 'out-of-stock' }
+      ],
+      matchValue: (item, value) => {
+        const stock = (item as Product).stock;
+        return value === 'in-stock' ? stock > 0 : stock === 0;
+      }
     }
   ];
 
@@ -749,19 +719,6 @@ export class MarketplacePageComponent implements OnInit {
   ];
 
   // Computed
-  filteredProducts = computed(() => {
-    const allProducts = this.products();
-    const search = this.searchQuery.toLowerCase();
-
-    return allProducts.filter(product => {
-      const matchesSearch = !search ||
-        product.name.toLowerCase().includes(search) ||
-        product.description.toLowerCase().includes(search);
-
-      return matchesSearch;
-    });
-  });
-
   isSeller = computed(() => this.authService.user()?.profileType?.toLowerCase() === 'seller');
 
   ngOnInit(): void {
@@ -796,9 +753,11 @@ export class MarketplacePageComponent implements OnInit {
           tags: p.tags ? p.tags.split(',') : undefined,
           discount: p.discount || undefined
         })));
+        this.loading.set(false);
       },
       error: (error) => {
         console.error('Error loading products:', error);
+        this.loading.set(false);
         this.messageService.add({
           severity: 'error',
           summary: this.transloco.translate('marketplace.error'),

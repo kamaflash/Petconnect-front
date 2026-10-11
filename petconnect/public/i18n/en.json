@@ -25,6 +25,7 @@
   "breadcrumb": {
     "home": "Home",
     "pets": "Family",
+    "agenda": "Care calendar",
     "users": "Users",
     "health": "Vet",
     "appointments": "Appointments",
@@ -80,6 +81,7 @@
     "home": "Home",
     "groupFamily": "MY PETS",
     "family": "My pets",
+    "agenda": "Care calendar",
     "health": "Health & care",
     "appointments": "Appointments",
     "discover": "Nearby",
@@ -95,6 +97,25 @@
     "messages": "Messages",
     "achievements": "Achievements",
     "version": "Lumio v2.0"
+  },
+  "agenda": {
+    "title": "Care calendar",
+    "subtitle": "Keep your pets' upcoming care dates close at hand.",
+    "loading": "Loading your family's care dates...",
+    "errorTitle": "We couldn't load the calendar",
+    "error": "Check your connection and try again.",
+    "retry": "Try again",
+    "vaccinationsTitle": "Vaccinations",
+    "vaccinationsDescription": "Dates saved in your pets' health records.",
+    "overdue": "Due date passed",
+    "nextVaccination": "Next vaccination",
+    "emptyTitle": "No vaccination dates yet",
+    "emptyDescription": "Add the next date from each pet's health record to see it here.",
+    "goToFamily": "Go to My pets",
+    "openPetHealth": "Open {{name}}'s health record",
+    "appointmentsTitle": "Appointments with professionals",
+    "appointmentsDescription": "Appointment management isn't available yet. In the meantime, you can find nearby professionals.",
+    "findProfessionals": "Find professionals"
   },
   "petsPage": {
     "eyebrow": "Your care space",
@@ -433,6 +454,8 @@
     }
   },
   "adoptions": {
+    "title": "Adoptions",
+    "subtitle": "Meet a companion looking for a home and learn their story.",
     "itemLabel": "animals",
     "search": "Search",
     "searchPlaceholder": "Search by name or breed...",
@@ -549,6 +572,10 @@
     "sportsCenter": "Sports Center"
   },
   "lostPets": {
+    "subtitle": "Browse reports of lost and found pets near you.",
+    "itemLabel": "reports",
+    "search": "Search",
+    "searchPlaceholder": "Name, species, breed, or location",
     "title": "Lost Pets",
     "report": "Report Loss",
     "pet": "Pet",
@@ -579,6 +606,7 @@
     "hours": "Tue-Sat 10:00-17:00"
   },
   "marketplace": {
+    "outOfStock": "Out of stock",
     "title": "Pet Store",
     "subtitle": "Everything your pet needs",
     "searchPlaceholder": "Search products...",

@@ -25,6 +25,7 @@
   "breadcrumb": {
     "home": "Inicio",
     "pets": "Familia",
+    "agenda": "Agenda y cuidados",
     "users": "Usuarios",
     "health": "Veterinario",
     "appointments": "Citas",
@@ -80,6 +81,7 @@
     "home": "Inicio",
     "groupFamily": "MI FAMILIA",
     "family": "Mi familia",
+    "agenda": "Agenda y cuidados",
     "health": "Salud y cuidados",
     "appointments": "Citas",
     "groupDiscover": "DESCUBRIR",
@@ -95,6 +97,25 @@
     "messages": "Mensajes",
     "achievements": "Logros",
     "version": "Lumio v2.0"
+  },
+  "agenda": {
+    "title": "Agenda y cuidados",
+    "subtitle": "Ten a mano las próximas fechas importantes de tus mascotas.",
+    "loading": "Cargando los cuidados de tu familia...",
+    "errorTitle": "No hemos podido cargar la agenda",
+    "error": "Comprueba tu conexión e inténtalo de nuevo.",
+    "retry": "Reintentar",
+    "vaccinationsTitle": "Vacunación",
+    "vaccinationsDescription": "Fechas registradas en las fichas de salud de tus mascotas.",
+    "overdue": "Fecha pendiente",
+    "nextVaccination": "Próxima vacuna",
+    "emptyTitle": "Aún no hay fechas de vacunación",
+    "emptyDescription": "Añade la próxima fecha desde la ficha de salud de cada mascota para verla aquí.",
+    "goToFamily": "Ir a Mi familia",
+    "openPetHealth": "Abrir la ficha de salud de {{name}}",
+    "appointmentsTitle": "Citas con profesionales",
+    "appointmentsDescription": "La gestión de citas todavía no está disponible. Mientras tanto, puedes consultar los profesionales cercanos.",
+    "findProfessionals": "Buscar profesionales"
   },
   "petsPage": {
     "eyebrow": "Tu espacio de cuidados",
@@ -433,6 +454,8 @@
     }
   },
   "adoptions": {
+    "title": "Adopciones",
+    "subtitle": "Encuentra un compañero que busca un hogar y conoce su historia.",
     "itemLabel": "animales",
     "search": "Búsqueda",
     "searchPlaceholder": "Buscar por nombre o raza...",
@@ -549,6 +572,10 @@
     "sportsCenter": "Polígono Deportivo"
   },
   "lostPets": {
+    "subtitle": "Consulta avisos de mascotas perdidas y encontradas cerca de ti.",
+    "itemLabel": "avisos",
+    "search": "Buscar",
+    "searchPlaceholder": "Nombre, especie, raza o ubicación",
     "title": "Mascotas Perdidas",
     "report": "Reportar Pérdida",
     "pet": "Mascota",
@@ -579,6 +606,7 @@
     "hours": "Mar-Sáb 10:00-17:00"
   },
   "marketplace": {
+    "outOfStock": "Agotado",
     "title": "Tienda de Mascotas",
     "subtitle": "Todo lo que tu compañer@ necesita",
     "searchPlaceholder": "Buscar productos...",

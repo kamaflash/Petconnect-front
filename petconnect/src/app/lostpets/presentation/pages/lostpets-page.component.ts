@@ -1,15 +1,9 @@
 import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { FormsModule } from '@angular/forms';
-import { SelectModule } from 'primeng/select';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
-import { TableComponent, TableColumn } from '../../../shared/presentation/components/table/table.component';
+import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
+import { ColumnConfig, FilterConfig, PetFeedGridComponent } from '../../../adoptions/presentation/components/pet-feed-grid/pet-feed-grid.component';
 
 interface LostPet {
   id: string;
@@ -18,8 +12,10 @@ interface LostPet {
   breed: string;
   lastSeen: string;
   location: string;
+  speciesBreed: string;
   reward: number;
   status: 'lost' | 'found' | 'reunited';
+  statusLabel: string;
 }
 
 @Component({
@@ -28,70 +24,89 @@ interface LostPet {
   imports: [
     CommonModule,
     ButtonModule,
-    CardModule,
-    TableModule,
-    TagModule,
-    DialogModule,
-    InputTextModule,
-    FormsModule,
-    SelectModule,
-    TableComponent,
+    PageHeadingCardComponent,
+    PetFeedGridComponent,
     TranslocoModule,
   ],
   template: `
     <div class="page-content">
-      <header class="page-heading-card">
-        <div class="page-heading-copy">
-          <h1>{{ 'lostPets.title' | transloco }}</h1>
-        </div>
-        <p-button
-          label="{{ 'lostPets.report' | transloco }}"
-          icon="pi pi-plus"
-          (onClick)="showAddDialog()"
-        />
-      </header>
+      <app-page-heading-card
+        [title]="'lostPets.title' | transloco"
+        [subtitle]="'lostPets.subtitle' | transloco"
+      >
+        <button
+          page-heading-actions
+          type="button"
+          class="report-button"
+          [attr.aria-label]="'lostPets.report' | transloco"
+          [title]="'lostPets.report' | transloco"
+          (click)="showAddDialog()"
+        >
+          <i class="pi pi-plus" aria-hidden="true"></i>
+        </button>
+      </app-page-heading-card>
 
-      <p-card>
-        <app-table
-          [data]="lostPets()"
-          [columns]="lostPetColumns"
-          [rows]="10"
-        />
-      </p-card>
+      <app-pet-feed-grid
+        [items]="lostPets()"
+        [itemLabel]="'lostPets.itemLabel' | transloco"
+        itemKeyField="id"
+        [filterConfigs]="lostPetFilters"
+        [columnConfigs]="lostPetColumns"
+      />
     </div>
   `,
   styles: [`
+    .report-button {
+      display: grid;
+      place-items: center;
+      width: 2.75rem;
+      height: 2.75rem;
+      border: 1px solid var(--surface-border);
+      border-radius: 50%;
+      background: var(--surface-card);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+    }
+    .report-button:hover { background: var(--surface-hover); color: var(--text-primary); }
+    .report-button:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
     .page-content {
       max-width: var(--max-page-width);
       margin: 0 auto;
-      padding: 0;
+      padding: 0 1rem;
     }
   `],
 })
 export class LostPetsPageComponent {
   private readonly transloco = inject(TranslocoService);
 
-  lostPetColumns: TableColumn[] = [
-    { field: 'name', header: this.transloco.translate('lostPets.pet'), sortable: true },
+  lostPetFilters: FilterConfig[] = [
     {
-      field: 'species',
-      header: this.transloco.translate('lostPets.speciesBreed'),
-      format: (value: string, row: LostPet) => `${row.species} - ${row.breed}`,
-    },
-    { field: 'lastSeen', header: this.transloco.translate('lostPets.lastSeen'), sortable: true },
-    { field: 'location', header: this.transloco.translate('lostPets.location'), sortable: true },
-    {
-      field: 'reward',
-      header: this.transloco.translate('lostPets.reward'),
-      format: (value: number) => `${value} €`,
+      type: 'text',
+      key: 'search',
+      label: this.transloco.translate('lostPets.search'),
+      placeholder: this.transloco.translate('lostPets.searchPlaceholder'),
+      searchFields: ['name', 'species', 'breed', 'lastSeen', 'location']
     },
     {
-      field: 'status',
-      header: this.transloco.translate('lostPets.status'),
-      type: 'status',
-      format: (value: string) => this.getStatusLabel(value),
-      statusSeverity: (value: string) => this.getStatusSeverity(value),
-    },
+      type: 'select',
+      key: 'status',
+      label: this.transloco.translate('lostPets.status'),
+      options: [
+        { label: this.transloco.translate('lostPets.lost'), value: 'lost' },
+        { label: this.transloco.translate('lostPets.found'), value: 'found' },
+        { label: this.transloco.translate('lostPets.reunited'), value: 'reunited' }
+      ]
+    }
+  ];
+
+  lostPetColumns: ColumnConfig[] = [
+    { key: 'name', label: this.transloco.translate('lostPets.pet'), type: 'text' },
+    { key: 'speciesBreed', label: this.transloco.translate('lostPets.speciesBreed'), type: 'text', icon: 'pi-paw' },
+    { key: 'lastSeen', label: this.transloco.translate('lostPets.lastSeen'), type: 'text', icon: 'pi-calendar' },
+    { key: 'location', label: this.transloco.translate('lostPets.location'), type: 'text', icon: 'pi-map-marker' },
+    { key: 'reward', label: this.transloco.translate('lostPets.reward'), type: 'price' },
+    { key: 'statusLabel', label: this.transloco.translate('lostPets.status'), type: 'badge' },
   ];
 
   lostPets = signal<LostPet[]>([
@@ -104,6 +119,8 @@ export class LostPetsPageComponent {
       location: 'Parque Central',
       reward: 100,
       status: 'lost',
+      statusLabel: this.getStatusLabel('lost'),
+      speciesBreed: 'Perro - Bulldog',
     },
     {
       id: '2',
@@ -114,6 +131,8 @@ export class LostPetsPageComponent {
       location: 'Calle Mayor',
       reward: 50,
       status: 'found',
+      statusLabel: this.getStatusLabel('found'),
+      speciesBreed: 'Gato - Persa',
     },
   ]);
 
@@ -134,16 +153,4 @@ export class LostPetsPageComponent {
     }
   }
 
-  getStatusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' {
-    switch (status) {
-      case 'lost':
-        return 'danger';
-      case 'found':
-        return 'warn';
-      case 'reunited':
-        return 'success';
-      default:
-        return 'info';
-    }
-  }
 }

@@ -8,6 +8,7 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { AdoptionService } from '../../infrastructure/services/adoption.service';
 import { AvailablePetResponse } from '../../infrastructure/services/adoption.service';
 import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../components/pet-feed-grid/pet-feed-grid.component';
+import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
 
 interface Pet {
   id: string;
@@ -37,15 +38,15 @@ interface Pet {
     FormsModule,
     CheckboxModule,
     PetFeedGridComponent,
+    PageHeadingCardComponent,
     TranslocoModule,
   ],
   template: `
     <div class="adoptions-page">
-      <header class="page-heading-card">
-        <div class="page-heading-copy">
-          <h1>{{ 'breadcrumb.adoptions' | transloco }}</h1>
-        </div>
-      </header>
+      <app-page-heading-card
+        [title]="'adoptions.title' | transloco"
+        [subtitle]="'adoptions.subtitle' | transloco"
+      />
 
       <app-pet-feed-grid
         [items]="pets()"
@@ -53,6 +54,7 @@ interface Pet {
         itemKeyField="id"
         [filterConfigs]="petFilterConfigs"
         [columnConfigs]="petColumnConfigs"
+        [loading]="loading()"
         [initialFilters]="petFilters()"
         (filtersChange)="onFiltersChange($event)"
         (itemClick)="onPetClick($event)"
@@ -60,7 +62,7 @@ interface Pet {
     </div>
   `,
   styles: [`
-    .adoptions-page { min-height: 100vh; background: var(--surface-bg); }
+    .adoptions-page { min-height: 100vh; max-width: var(--max-page-width); margin: 0 auto; padding: 0 1rem; box-sizing: border-box; background: var(--surface-bg); }
   `]
 })
 export class AdoptionsPageComponent implements OnInit {
@@ -70,6 +72,7 @@ export class AdoptionsPageComponent implements OnInit {
 
   // Pets data (loaded from backend)
   pets = signal<Pet[]>([]);
+  loading = signal(true);
 
   // Computed
   totalPets = computed(() => this.pets().length);
@@ -84,11 +87,12 @@ export class AdoptionsPageComponent implements OnInit {
       type: 'text',
       key: 'searchQuery',
       label: this.transloco.translate('adoptions.search'),
-      placeholder: this.transloco.translate('adoptions.searchPlaceholder')
+      placeholder: this.transloco.translate('adoptions.searchPlaceholder'),
+      searchFields: ['name', 'species', 'breed', 'location']
     },
     {
-      type: 'checkbox',
-      key: 'selectedSpecies',
+      type: 'select',
+      key: 'species',
       label: this.transloco.translate('adoptions.species'),
       options: [
         { label: this.transloco.translate('adoptions.dog'), value: 'Perro' },
@@ -99,8 +103,8 @@ export class AdoptionsPageComponent implements OnInit {
       ]
     },
     {
-      type: 'checkbox',
-      key: 'selectedGenders',
+      type: 'select',
+      key: 'gender',
       label: this.transloco.translate('adoptions.gender'),
       options: [
         { label: this.transloco.translate('adoptions.male'), value: 'male' },
@@ -108,14 +112,25 @@ export class AdoptionsPageComponent implements OnInit {
       ]
     },
     {
-      type: 'checkbox',
+      type: 'select',
       key: 'vaccinated',
       label: this.transloco.translate('adoptions.characteristics'),
-      options: [
-        { label: this.transloco.translate('adoptions.vaccinated'), value: 'true' },
-        { label: this.transloco.translate('adoptions.sterilized'), value: 'sterilized' },
-        { label: this.transloco.translate('adoptions.microchip'), value: 'microchipped' }
-      ]
+      options: [{ label: this.transloco.translate('adoptions.vaccinated'), value: 'true' }],
+      matchValue: (item, value) => String((item as Pet).vaccinated) === value
+    },
+    {
+      type: 'select',
+      key: 'sterilized',
+      label: this.transloco.translate('adoptions.sterilized'),
+      options: [{ label: this.transloco.translate('adoptions.sterilized'), value: 'true' }],
+      matchValue: (item, value) => String((item as Pet).sterilized) === value
+    },
+    {
+      type: 'select',
+      key: 'microchipped',
+      label: this.transloco.translate('adoptions.microchip'),
+      options: [{ label: this.transloco.translate('adoptions.microchip'), value: 'true' }],
+      matchValue: (item, value) => String((item as Pet).microchipped) === value
     }
   ];
 
@@ -168,9 +183,11 @@ export class AdoptionsPageComponent implements OnInit {
           .filter(p => p.pet.availableForAdoption)
           .map(p => this.mapPetResponseToPet(p));
         this.pets.set(mappedPets);
+        this.loading.set(false);
       },
       error: (err) => {
         console.error('Error loading available pets:', err);
+        this.loading.set(false);
       }
     });
   }

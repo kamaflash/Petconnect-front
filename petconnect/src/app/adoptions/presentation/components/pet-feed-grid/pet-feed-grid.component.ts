@@ -1,10 +1,8 @@
-import { Component, signal, computed, inject, OnInit, EventEmitter, Output, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, signal, computed, OnInit, EventEmitter, Output, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { InputTextModule } from 'primeng/inputtext';
-import { FormsModule } from '@angular/forms';
-import { CheckboxModule } from 'primeng/checkbox';
-import { Router } from '@angular/router';
 import { TranslocoModule } from '@jsverse/transloco';
+import { SkeletonModule } from 'primeng/skeleton';
+import { DynamicFormComponent, DynamicFormConfig } from '../../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 
 export interface FilterConfig {
   type: 'text' | 'checkbox' | 'select' | 'range';
@@ -12,6 +10,8 @@ export interface FilterConfig {
   label: string;
   placeholder?: string;
   options?: { label: string; value: string }[];
+  searchFields?: string[];
+  matchValue?: (item: unknown, value: string) => boolean;
 }
 
 export interface ColumnConfig {
@@ -30,87 +30,56 @@ export interface FilterOptions {
   standalone: true,
   imports: [
     CommonModule,
-    InputTextModule,
-    FormsModule,
-    CheckboxModule,
     TranslocoModule,
+    SkeletonModule,
+    DynamicFormComponent,
   ],
   template: `
     <div class="feed-grid-container">
-      <!-- Mobile Filters Toggle -->
-      <div class="mobile-filters-header">
-        <button class="filters-toggle-btn" (click)="toggleFilters()">
-          <i class="pi pi-sliders-h"></i>
-          <span>{{ 'feedGrid.filters' | transloco }}</span>
-          @if (hasActiveFilters()) {
-            <span class="filter-badge">{{ getActiveFilterCount() }}</span>
-          }
-        </button>
-        <div class="results-count-mobile">
-          {{ filteredItems().length }} {{ 'feedGrid.results' | transloco }}{{ filteredItems().length !== 1 ? 's' : '' }}
-        </div>
-      </div>
-
-      <div class="feed-container">
-        <!-- Filters Sidebar -->
-        <aside class="filters-sidebar" [class.collapsed]="filtersCollapsed()">
-          <div class="filter-header">
-            <h3>{{ 'feedGrid.filters' | transloco }}</h3>
-            <button class="close-filters-btn" (click)="toggleFilters()">
-              <i class="pi pi-times"></i>
-            </button>
-          </div>
-
-          @for (filter of filterConfigs; track filter.key) {
-            <div class="filter-section">
-              <h3>{{ filter.label }}</h3>
-
-              @if (filter.type === 'text') {
-                <div class="search-filter">
-                  <i class="pi pi-search"></i>
-                  <input
-                    type="text"
-                    pInputText
-                    [placeholder]="filter.placeholder"
-                    [(ngModel)]="localFilters[filter.key]"
-                    (ngModelChange)="onFilterChange()"
-                  />
-                </div>
-              }
-
-              @if (filter.type === 'checkbox' && filter.options) {
-                <div class="filter-options">
-                  @for (option of filter.options; track option.value) {
-                    <div class="filter-option">
-                      <p-checkbox
-                        [inputId]="filter.key + '-' + option.value"
-                        [value]="option.value"
-                        [(ngModel)]="localFilters[filter.key]"
-                        (onChange)="onFilterChange()"
-                      />
-                      <label [for]="filter.key + '-' + option.value">{{ option.label }}</label>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          }
-
-          <button class="clear-filters-btn" (click)="clearFilters()">
-            <i class="pi pi-times"></i>
-            {{ 'feedGrid.clear' | transloco }}
-          </button>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="items-main">
-          <!-- Results count -->
-          <div class="results-header">
-            <div class="results-count">
+      <details class="catalog-toolbar">
+        <summary class="filters-summary">
+          <span class="filters-summary-title">
+            <i class="pi pi-sliders-h" aria-hidden="true"></i>
+            {{ 'feedGrid.filters' | transloco }}
+          </span>
+          <span class="filters-summary-meta">
+            <span class="results-count">
               {{ filteredItems().length }} {{ itemLabel }} {{ 'feedGrid.found' | transloco }}{{ filteredItems().length !== 1 ? 's' : '' }}
-            </div>
-          </div>
+            </span>
+            <i class="pi pi-chevron-down accordion-chevron" aria-hidden="true"></i>
+          </span>
+        </summary>
+        <div class="filter-panel">
+          <app-dynamic-form
+            class="catalog-filters-form"
+            [config]="filterFormConfig"
+            [formData]="localFilters"
+            (formValueChange)="onFilterValuesChange($event)"
+          />
+          @if (hasActiveFilters()) {
+            <button type="button" class="clear-filters-btn" (click)="clearFilters()" [attr.aria-label]="'feedGrid.clear' | transloco">
+              <i class="pi pi-times" aria-hidden="true"></i>
+              {{ 'feedGrid.clear' | transloco }}
+            </button>
+          }
+        </div>
+      </details>
 
+      <main class="items-main" [attr.aria-busy]="loading">
+        @if (loading) {
+          <div class="items-grid skeleton-grid" aria-hidden="true">
+            @for (placeholder of skeletonItems; track placeholder) {
+              <article class="item-card skeleton-item">
+                <p-skeleton height="250px" />
+                <div class="item-content skeleton-item-content">
+                  <p-skeleton width="68%" height="1rem" />
+                  <p-skeleton width="44%" height=".85rem" />
+                  <p-skeleton width="82%" height=".85rem" />
+                </div>
+              </article>
+            }
+          </div>
+        } @else {
           <!-- Items Grid -->
           <div class="items-grid">
             @for (item of filteredItems(); track $any(item)[itemKeyField]) {
@@ -173,131 +142,34 @@ export interface FilterOptions {
               </button>
             </div>
           }
-        </main>
-      </div>
+        }
+      </main>
     </div>
   `,
   styles: [`
-    .feed-grid-container { min-height: 100vh; background: var(--surface-bg); }
-
-    /* Mobile Filters Header */
-    .mobile-filters-header {
-      display: none;
-      padding: 1rem;
-      background: var(--surface-card);
-      border-bottom: 1px solid var(--surface-border);
-      position: sticky;
-      top: 350px;
-      z-index: 100;
-      gap: 1rem;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .filters-toggle-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.625rem 1rem;
-      background: var(--primary-color);
-      color: white;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-weight: 600;
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      position: relative;
-    }
-
-    .filters-toggle-btn:hover {
-      background: var(--primary-color-dark);
-      transform: translateY(-1px);
-    }
-
-    .filter-badge {
-      background: white;
-      color: var(--primary-color);
-      border-radius: var(--radius-full);
-      padding: 0.125rem 0.5rem;
-      font-size: 0.75rem;
-      font-weight: 700;
-      min-width: 1.25rem;
-      text-align: center;
-    }
-
-    .results-count-mobile {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-
-    /* Container */
-    .feed-container { max-width: var(--max-page-width); margin: 0 auto; padding: 0 2rem 2rem; display: grid; grid-template-columns: 280px 1fr; gap: 2rem; }
-
-    /* Filters Sidebar */
-    .filters-sidebar {
-      background: var(--surface-card);
-      border-radius: var(--radius-md);
-      padding: 1.5rem;
-      height: fit-content;
-      position: sticky;
-      top: 1rem;
-      max-height: calc(100vh - 2rem);
-      overflow-y: auto;
-    }
-
-    .filter-header {
-      display: none;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 1.5rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--surface-border);
-    }
-
-    .filter-header h3 {
-      margin: 0;
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .close-filters-btn {
-      background: none;
-      border: none;
-      color: var(--text-secondary);
-      cursor: pointer;
-      padding: 0.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: var(--radius-sm);
-      transition: all var(--transition-fast);
-    }
-
-    .close-filters-btn:hover {
-      background: var(--surface-hover);
-      color: var(--text-primary);
-    }
-
-    .filter-section { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--surface-border); }
-    .filter-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-    .filter-section h3 { margin: 0 0 1rem; font-size: 0.875rem; font-weight: 600; color: var(--text-primary); }
-    .search-filter { position: relative; }
-    .search-filter i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); }
-    .search-filter input { width: 100%; padding: 0.625rem 1rem 0.625rem 2.5rem; border: 1px solid var(--surface-border); border-radius: var(--radius-sm); background: var(--surface-hover); color: var(--text-primary); }
-    .filter-options { display: flex; flex-direction: column; gap: 0.75rem; }
-    .filter-option { display: flex; align-items: center; gap: 0.5rem; }
-    .filter-option label { font-size: 0.875rem; color: var(--text-secondary); cursor: pointer; }
-    .clear-filters-btn { width: 100%; padding: 0.75rem; background: none; border: 1px solid var(--surface-border); border-radius: var(--radius-sm); color: var(--text-secondary); cursor: pointer; transition: all var(--transition-fast); display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
+    :host { display: block; width: 100%; }
+    .feed-grid-container { width: 100%; min-width: 0; }
+    .catalog-toolbar { margin: 0 auto 1.25rem; padding: 1rem 1.25rem; border: 1px solid var(--surface-border); border-radius: var(--radius-lg); background: var(--surface-card); }
+    .filters-summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-primary); cursor: pointer; list-style: none; }
+    .filters-summary::-webkit-details-marker { display: none; }
+    .filters-summary-title, .filters-summary-meta { display: inline-flex; align-items: center; gap: .75rem; }
+    .filters-summary-title { font-weight: 650; }
+    .filters-summary-title > i { color: var(--primary-color); }
+    .accordion-chevron { color: var(--text-secondary); transition: transform var(--transition-fast); }
+    .catalog-toolbar[open] .accordion-chevron { transform: rotate(180deg); }
+    .filter-panel { display: grid; gap: .75rem; padding-top: 1rem; }
+    :host ::ng-deep .catalog-filters-form .dynamic-form-container { background: transparent; }
+    :host ::ng-deep .catalog-filters-form .dynamic-form { padding: 0; }
+    :host ::ng-deep .catalog-filters-form .form-fields { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .85rem; }
+    :host ::ng-deep .catalog-filters-form .field-label { color: var(--text-secondary); font-size: .8rem; font-weight: 650; }
+    :host ::ng-deep .catalog-filters-form .form-field { gap: .4rem; }
+    .clear-filters-btn { min-height: 2.75rem; padding: .65rem .8rem; border: 1px solid var(--surface-border); border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
     .clear-filters-btn:hover { background: var(--surface-hover); color: var(--text-primary); }
-
-    /* Main Content */
-    .items-main { min-height: 600px; }
-    .results-header { margin-bottom: 1.5rem; }
-    .results-count { font-size: 0.875rem; color: var(--text-secondary); }
-
-    /* Items Grid */
-    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+    .results-count { color: var(--text-secondary); font-size: .85rem; white-space: nowrap; }
+    .items-main { min-height: 300px; }
+    .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
+    .skeleton-item { cursor: default; }
+    .skeleton-item-content { display: grid; gap: .8rem; }
     .item-card { background: var(--surface-card); border-radius: var(--radius-md); overflow: hidden; transition: all var(--transition-fast); cursor: pointer; }
     .item-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
     .item-image-container { position: relative; width: 100%; height: 250px; overflow: hidden; background: var(--surface-hover); }
@@ -319,46 +191,15 @@ export interface FilterOptions {
     .no-items i { font-size: 3rem; color: var(--text-tertiary); margin-bottom: 1rem; }
     .no-items p { font-size: 1.125rem; color: var(--text-secondary); margin: 0 0 1rem; }
 
-    /* Tablet */
-    @media (max-width: 1024px) {
-      .feed-container { grid-template-columns: 1fr; }
-      .filters-sidebar {
-        display: block;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 1000;
-        border-radius: 0;
-        max-height: 100vh;
-        transform: translateX(-100%);
-        transition: transform var(--transition-normal);
-      }
-
-      .filters-sidebar:not(.collapsed) {
-        transform: translateX(0);
-      }
-
-      .filter-header {
-        display: flex;
-      }
-
-      .mobile-filters-header {
-        display: flex;
-      }
-    }
-
-    /* Mobile */
     @media (max-width: 768px) {
-      .feed-container { padding: 0 1rem 2rem; }
       .items-grid { grid-template-columns: 1fr; }
+      .catalog-toolbar { padding: 1rem; }
+      .filters-summary-meta { gap: .5rem; }
+      .results-count { white-space: normal; text-align: right; }
     }
   `]
 })
 export class PetFeedGridComponent<T = any> implements OnInit, OnChanges {
-  private router = inject(Router);
-
   // Generic inputs
   @Input() items: T[] = [];
   @Input() itemLabel = 'elementos';
@@ -366,12 +207,14 @@ export class PetFeedGridComponent<T = any> implements OnInit, OnChanges {
   @Input() filterConfigs: FilterConfig[] = [];
   @Input() columnConfigs: ColumnConfig[] = [];
   @Input() initialFilters: FilterOptions = {};
+  @Input() loading = false;
 
   // Internal state
   private itemsSignal = signal<T[]>([]);
+  private filtersSignal = signal<FilterOptions>({});
   localFilters: FilterOptions = {};
-
-  filtersCollapsed = signal(true);
+  filterFormConfig: DynamicFormConfig = { fields: [], showSubmit: false };
+  readonly skeletonItems = [1, 2, 3, 4, 5, 6];
 
   // Outputs
   @Output() filtersChange = new EventEmitter<FilterOptions>();
@@ -380,7 +223,7 @@ export class PetFeedGridComponent<T = any> implements OnInit, OnChanges {
   ngOnInit(): void {
     // Initialize local filters from config
     this.filterConfigs.forEach(config => {
-      if (config.type === 'checkbox' && config.options) {
+      if ((config.type === 'checkbox' || config.type === 'range') && config.options) {
         this.localFilters[config.key] = [];
       } else {
         this.localFilters[config.key] = '';
@@ -391,17 +234,30 @@ export class PetFeedGridComponent<T = any> implements OnInit, OnChanges {
     if (Object.keys(this.initialFilters).length > 0) {
       this.localFilters = { ...this.initialFilters };
     }
+    this.filtersSignal.set({ ...this.localFilters });
+    this.filterFormConfig = this.createFilterFormConfig();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['items']) {
       this.itemsSignal.set(this.items || []);
     }
+    if (changes['filterConfigs'] && !changes['filterConfigs'].firstChange) {
+      const nextFilters: FilterOptions = {};
+      this.filterConfigs.forEach(config => {
+        nextFilters[config.key] = this.localFilters[config.key]
+          ?? (config.type === 'checkbox' || config.type === 'range' ? [] : '');
+      });
+      this.localFilters = nextFilters;
+      this.filterFormConfig = this.createFilterFormConfig();
+      this.filtersSignal.set({ ...this.localFilters });
+    }
   }
 
   // Computed
   filteredItems = computed(() => {
     const currentItems = this.itemsSignal();
+    const currentFilters = this.filtersSignal();
     if (!currentItems || currentItems.length === 0) {
       return [];
     }
@@ -409,31 +265,59 @@ export class PetFeedGridComponent<T = any> implements OnInit, OnChanges {
     let result = [...currentItems];
 
     // Apply filters
-    Object.keys(this.localFilters).forEach(key => {
-      const filterValue = this.localFilters[key];
+    Object.keys(currentFilters).forEach(key => {
+      const filterValue = currentFilters[key];
 
       if (Array.isArray(filterValue) && filterValue.length > 0) {
-        // Multi-select filter
-        result = result.filter((item: any) => filterValue.includes(item[key]));
-      } else if (filterValue && typeof filterValue === 'string') {
-        // Text search filter
-        const query = filterValue.toLowerCase();
         result = result.filter((item: any) => {
-          const value = item[key];
-          return value && value.toString().toLowerCase().includes(query);
+          const config = this.filterConfigs.find(candidate => candidate.key === key);
+          return filterValue.some((value: string) => this.matchesFilter(item, config, value));
         });
+      } else if (filterValue && typeof filterValue === 'string') {
+        const config = this.filterConfigs.find(candidate => candidate.key === key);
+        result = result.filter(item => this.matchesFilter(item, config, filterValue));
       }
     });
 
     return result;
   });
 
-  toggleFilters(): void {
-    this.filtersCollapsed.update(value => !value);
+  onFilterValuesChange(values: Record<string, unknown>): void {
+    this.localFilters = { ...values };
+    this.filtersSignal.set(this.localFilters);
+    this.filtersChange.emit({ ...this.localFilters });
   }
 
-  onFilterChange(): void {
-    this.filtersChange.emit({ ...this.localFilters });
+  private createFilterFormConfig(): DynamicFormConfig {
+    return {
+      showSubmit: false,
+      fields: this.filterConfigs
+        .filter(filter => filter.type !== 'range')
+        .map(filter => ({
+          key: filter.key,
+          label: filter.label,
+          type: filter.type === 'text' ? 'input' as const : filter.type === 'checkbox' ? 'multiselect' as const : 'select' as const,
+          placeholder: filter.placeholder || filter.label,
+          showClear: true,
+          defaultValue: filter.type === 'checkbox' ? [] : '',
+          options: filter.options,
+        })),
+    };
+  }
+
+  private matchesFilter(item: unknown, config: FilterConfig | undefined, value: string): boolean {
+    if (config?.matchValue) {
+      return config.matchValue(item, value);
+    }
+    if (config?.searchFields) {
+      const record = item as Record<string, unknown>;
+      const query = value.toLocaleLowerCase();
+      return config.searchFields.some(field =>
+        String(record[field] ?? '').toLocaleLowerCase().includes(query)
+      );
+    }
+    const record = item as Record<string, unknown>;
+    return String(record[config?.key ?? ''] ?? '').toLocaleLowerCase() === value.toLocaleLowerCase();
   }
 
   hasActiveFilters(): boolean {
@@ -445,26 +329,16 @@ export class PetFeedGridComponent<T = any> implements OnInit, OnChanges {
     });
   }
 
-  getActiveFilterCount(): number {
-    let count = 0;
-    Object.values(this.localFilters).forEach(value => {
-      if (Array.isArray(value)) {
-        count += value.length;
-      } else if (value) {
-        count++;
-      }
-    });
-    return count;
-  }
-
   clearFilters(): void {
     this.filterConfigs.forEach(config => {
-      if (config.type === 'checkbox' && config.options) {
+      if ((config.type === 'checkbox' || config.type === 'range') && config.options) {
         this.localFilters[config.key] = [];
       } else {
         this.localFilters[config.key] = '';
       }
     });
+    this.localFilters = { ...this.localFilters };
+    this.filtersSignal.set(this.localFilters);
     this.filtersChange.emit({ ...this.localFilters });
   }
 

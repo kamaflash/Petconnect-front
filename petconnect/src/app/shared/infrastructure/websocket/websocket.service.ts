@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { MessagesApiService } from '../../../messages/infrastructure/services/messages-api.service';
 import { environment } from '../../../../environments/environment';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, interval, Observable, Subscription } from 'rxjs';
 import { Message, NotificationDTO } from '../../../messages/domain/entities/message.model';
 
 @Injectable({
@@ -19,6 +19,8 @@ export class WebSocketService {
 
   private client: Client | null = null;
   private subscriptions: Map<string, StompSubscription> = new Map();
+  private unreadCountSync?: Subscription;
+  private unreadCountRequest?: Subscription;
 
   // Conversaciones cuya suscripción al topic quedó pendiente hasta que el
   // WebSocket termine de conectar (así no se pierde el tiempo real si se
@@ -50,15 +52,30 @@ export class WebSocketService {
   private notificationSubject = new BehaviorSubject<NotificationDTO>(null as any);
 
   constructor() {
-    // Reconectar automáticamente cuando el token cambie
+    // Mantener el contador global sincronizado mientras haya una sesión activa.
     effect(() => {
       const token = this.authService.token();
-      if (token && !this._connected()) {
+      if (token) {
+        this.refreshUnreadCount();
+        this.startUnreadCountSync();
         this.connect();
-      } else if (!token && this._connected()) {
-        this.disconnect();
+      } else {
+        this.stopUnreadCountSync();
+        this.unreadCountRequest?.unsubscribe();
+        this.resetUnreadCount();
+        if (this.client) this.disconnect();
       }
     });
+  }
+
+  private startUnreadCountSync(): void {
+    if (this.unreadCountSync) return;
+    this.unreadCountSync = interval(15000).subscribe(() => this.refreshUnreadCount());
+  }
+
+  private stopUnreadCountSync(): void {
+    this.unreadCountSync?.unsubscribe();
+    this.unreadCountSync = undefined;
   }
 
   connect(): void {
@@ -116,6 +133,7 @@ export class WebSocketService {
       // Solo contabilizamos los mensajes nuevos como "no leídos".
       if (notification.type === 'NEW_MESSAGE') {
         this._unreadCount.update(count => count + 1);
+        this.refreshUnreadCount();
       }
     });
 
@@ -210,7 +228,8 @@ export class WebSocketService {
 
   /** Recarga el total de mensajes no leídos directamente desde el backend. */
   refreshUnreadCount(): void {
-    this.messagesApi.getUnreadCount().subscribe({
+    this.unreadCountRequest?.unsubscribe();
+    this.unreadCountRequest = this.messagesApi.getUnreadCount().subscribe({
       next: (count) => this._unreadCount.set(count),
       error: (err) => console.error('Error cargando contador de mensajes no leídos', err)
     });
