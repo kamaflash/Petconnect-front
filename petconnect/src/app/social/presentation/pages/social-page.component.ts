@@ -6,7 +6,6 @@ import { TagModule } from 'primeng/tag';
 import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { InputTextModule } from 'primeng/inputtext';
-import { DialogModule } from 'primeng/dialog';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
@@ -161,7 +160,6 @@ interface Notification {
     AvatarModule,
     AvatarGroupModule,
     InputTextModule,
-    DialogModule,
     FormsModule,
     ReactiveFormsModule,
     RouterLink,
@@ -452,15 +450,18 @@ interface Notification {
     </div>
 
     <!-- Diálogo de creación de publicación -->
-    <p-dialog
-      [(visible)]="createPostDialogVisible"
-      [modal]="true"
+    <app-modal
+      [visible]="createPostDialogVisible()"
       [style]="{width: '600px'}"
       [draggable]="false"
       [resizable]="false"
       [showHeader]="false"
       [contentStyle]="{'padding': '0'}"
+      [noPadding]="true"
+      [showCancel]="false"
+      [showConfirm]="false"
       styleClass="create-post-dialog-container"
+      (onHide)="closeCreatePostDialog()"
     >
       <div class="dialog-header-minimal">
         <h3 class="dialog-title-minimal">{{ 'social.createPost' | transloco }}</h3>
@@ -475,16 +476,18 @@ interface Notification {
           (onCancel)="closeCreatePostDialog()"
         />
       </div>
-    </p-dialog>
+    </app-modal>
 
     <!-- Visor de imágenes -->
-    <p-dialog
-      header="{{ 'social.imageViewer' | transloco }}"
-      [(visible)]="imageViewerVisible"
-      [modal]="true"
+    <app-modal
+      [header]="'social.imageViewer' | transloco"
+      [visible]="imageViewerVisible()"
       [style]="{width: '90vw', 'max-width': '1200px'}"
       [draggable]="false"
       [resizable]="false"
+      [showCancel]="false"
+      [showConfirm]="false"
+      (onHide)="imageViewerVisible.set(false)"
     >
       <div class="image-viewer">
         <img [src]="currentImage()" alt="Imagen" class="viewer-image" />
@@ -502,7 +505,7 @@ interface Notification {
           />
         </div>
       </div>
-    </p-dialog>
+    </app-modal>
   `,
   styles: [`
     .social-page {

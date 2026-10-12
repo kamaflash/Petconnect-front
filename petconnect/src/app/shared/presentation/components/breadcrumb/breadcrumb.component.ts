@@ -4,11 +4,17 @@ import { Router, NavigationEnd, RouterModule } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { TranslocoModule } from '@jsverse/transloco';
+import { ProfileService } from '../../../../profile/infrastructure/services/profile.service';
 
 interface BreadcrumbItem {
   label: string;
   path: string;
   icon?: string;
+  /**
+   * Si es `false`, la etiqueta se muestra tal cual (ya resuelta, p.ej. el nombre
+   * de una mascota) en lugar de pasarse por el pipe `transloco`.
+   */
+  translate?: boolean;
 }
 
 @Component({
@@ -26,14 +32,18 @@ interface BreadcrumbItem {
               [class.has-icon]="item.icon"
             >
               <i *ngIf="item.icon" class="{{ item.icon }} breadcrumb-icon"></i>
-              <span class="breadcrumb-text">{{ item.label | transloco }}</span>
+              <span class="breadcrumb-text">{{
+                item.translate === false ? item.label : (item.label | transloco)
+              }}</span>
             </a>
             <i class="pi pi-chevron-right breadcrumb-separator"></i>
           </ng-container>
           <ng-template #lastItem>
             <span class="breadcrumb-current" [class.has-icon]="item.icon">
               <i *ngIf="item.icon" class="{{ item.icon }} breadcrumb-icon"></i>
-              <span class="breadcrumb-text">{{ item.label | transloco }}</span>
+              <span class="breadcrumb-text">{{
+                item.translate === false ? item.label : (item.label | transloco)
+              }}</span>
             </span>
           </ng-template>
         </li>
@@ -179,9 +189,13 @@ interface BreadcrumbItem {
 })
 export class BreadcrumbComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
+  private readonly profileService = inject(ProfileService);
 
   breadcrumbs = signal<BreadcrumbItem[]>([]);
   private subscription = new Subscription();
+  // Suscripción a la carga del nombre de la entidad del perfil actual
+  // (mascota en /profile/pet/:id o usuario en /profile/:id).
+  private profileNameSub?: Subscription;
 
   // Mapeo de rutas a claves i18n e iconos
   private readonly routeLabels: Record<string, { label: string; icon?: string }> = {
@@ -199,6 +213,7 @@ export class BreadcrumbComponent implements OnInit, OnDestroy {
     'content': { label: 'breadcrumb.content', icon: 'pi pi-image' },
     'social': { label: 'breadcrumb.social', icon: 'pi pi-users' },
     'profile': { label: 'breadcrumb.profile', icon: 'pi pi-user' },
+    'pet': { label: 'breadcrumb.companion', icon: 'pi pi-paw' },
     'gamification': { label: 'breadcrumb.gamification', icon: 'pi pi-trophy' },
     'management': { label: 'breadcrumb.management', icon: 'pi pi-briefcase' },
     'admin': { label: 'breadcrumb.management', icon: 'pi pi-briefcase' },
@@ -221,10 +236,11 @@ export class BreadcrumbComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subscription.unsubscribe();
+    this.profileNameSub?.unsubscribe();
   }
 
   private updateBreadcrumbs(): void {
-    const currentUrl = this.router.url;
+    const currentUrl = this.router.url.split('?')[0];
     const segments = currentUrl.split('/').filter(segment => segment);
 
     const breadcrumbs: BreadcrumbItem[] = [];
@@ -254,6 +270,66 @@ export class BreadcrumbComponent implements OnInit, OnDestroy {
     });
 
     this.breadcrumbs.set(breadcrumbs);
+
+    // En los perfiles mostramos el nombre real en lugar del id de la URL:
+    //  - Mascota: /profile/pet/:id  -> nombre de la mascota.
+    //  - Usuario: /profile/:id       -> nombre y apellidos del usuario.
+    this.resolveProfileName(segments, breadcrumbs);
+  }
+
+  /**
+   * Si la ruta actual es un perfil, sustituye el último segmento (el id) por el
+   * nombre real obtenido del backend:
+   *  - /profile/pet/:id -> nombre de la mascota.
+   *  - /profile/:id      -> "nombre apellidos" del usuario.
+   */
+  private resolveProfileName(segments: string[], breadcrumbs: BreadcrumbItem[]): void {
+    // Cancelar cualquier petición previa en vuelo.
+    this.profileNameSub?.unsubscribe();
+
+    // Perfil de mascota: /profile/pet/:id
+    const isPetProfile =
+      segments.length === 3 &&
+      segments[0] === 'profile' &&
+      segments[1] === 'pet';
+
+    // Perfil de usuario: /profile/:id (y no es el de mascota).
+    const isUserProfile =
+      segments.length === 2 &&
+      segments[0] === 'profile';
+
+    if (!isPetProfile && !isUserProfile) return;
+
+    const id = segments[segments.length - 1];
+    const lastIndex = breadcrumbs.length - 1;
+    const lastItem = breadcrumbs[lastIndex];
+    if (!lastItem || !id) return;
+
+    const applyName = (name: string): void => {
+      if (!name) return;
+      this.breadcrumbs.update((items) => {
+        const updated = [...items];
+        updated[lastIndex] = { ...lastItem, label: name, translate: false };
+        return updated;
+      });
+    };
+
+    if (isPetProfile) {
+      this.profileNameSub = this.profileService.getPetById(id).subscribe({
+        next: (pet) => applyName(pet?.name ?? ''),
+        error: () => {
+          // Si falla la carga, dejamos el id formateado como estaba.
+        }
+      });
+    } else {
+      this.profileNameSub = this.profileService.getProfileByAuthUserId(id).subscribe({
+        next: (profile) =>
+          applyName(`${profile?.firstName ?? ''} ${profile?.lastName ?? ''}`.trim()),
+        error: () => {
+          // Si falla la carga, dejamos el id formateado como estaba.
+        }
+      });
+    }
   }
 
   private formatLabel(segment: string): string {

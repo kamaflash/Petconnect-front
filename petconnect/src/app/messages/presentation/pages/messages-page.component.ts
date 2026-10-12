@@ -20,7 +20,6 @@ import { BadgeModule } from 'primeng/badge';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ScrollPanelModule } from 'primeng/scrollpanel';
 import { ToastModule } from 'primeng/toast';
-import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
 
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
@@ -37,6 +36,7 @@ import {
 } from '../../domain/entities/message.model';
 import { Subscription } from 'rxjs';
 import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
+import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 
 @Component({
   selector: 'app-messages-page',
@@ -52,8 +52,8 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
     SkeletonModule,
     ScrollPanelModule,
     ToastModule,
-    DialogModule,
     PageHeadingCardComponent,
+    ModalComponent,
   ],
   providers: [MessageService],
   template: `
@@ -226,12 +226,14 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
       </section>
 
       <!-- Nuevo mensaje -->
-      <p-dialog
+      <app-modal
         [header]="'messages.newConversation' | transloco"
         [visible]="showNewDialog()"
-        (visibleChange)="showNewDialog.set($event)"
+        (onHide)="showNewDialog.set(false)"
         [style]="{ width: '420px' }"
-        [modal]="true"
+        [showCancel]="false"
+        [showConfirm]="false"
+        [closable]="true"
         [dismissableMask]="true"
       >
         <div class="new-message-search">
@@ -260,7 +262,7 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
             </div>
           }
         </div>
-      </p-dialog>
+      </app-modal>
     </main>
   `,
   styles: [`

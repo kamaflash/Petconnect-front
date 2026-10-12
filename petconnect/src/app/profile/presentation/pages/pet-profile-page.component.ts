@@ -4,7 +4,6 @@ import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { AvatarModule } from 'primeng/avatar';
 import { TagModule } from 'primeng/tag';
-import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -14,6 +13,7 @@ import { Subscription } from 'rxjs';
 import { MenuModule } from 'primeng/menu';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { InfoItemComponent } from '../../../shared/presentation/components/info-item/info-item.component';
 import { StatCardComponent } from '../../../shared/presentation/components/stat-card/stat-card.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
@@ -54,7 +54,6 @@ interface PetComment {
     ButtonModule,
     AvatarModule,
     TagModule,
-    DialogModule,
     ToastModule,
     ProgressBarModule,
     SkeletonModule,
@@ -65,6 +64,7 @@ interface PetComment {
     InfoItemComponent,
     StatCardComponent,
     AdoptionHistoryComponent,
+    ModalComponent,
   ],
   providers: [MessageService],
   template: `
@@ -195,7 +195,7 @@ interface PetComment {
         </div>
 
         <!-- Tabs -->
-        <div class="tabs-container" *ngIf="!loading() && pet()">
+        <div class="tabs-container" *ngIf="!loading() && pet() && !petEditDialogVisible()">
           <app-tabs
             [tabs]="petTabs()"
             [activeTab]="activeTab()"
@@ -204,7 +204,7 @@ interface PetComment {
         </div>
 
         <!-- Tab Content -->
-        <div class="tab-content" *ngIf="!loading() && pet()">
+        <div class="tab-content" *ngIf="!loading() && pet() && !petEditDialogVisible()">
                     <!-- Información pública y ficha privada de salud -->
           <div class="tab-panel" *ngIf="activeTab() === 'info' || (activeTab() === 'health' && isOwner())">
             <!-- Modo visualización: información estática -->
@@ -521,16 +521,42 @@ interface PetComment {
             <app-adoption-history [petId]="pet()?.id || ''" />
           </div>
         </div>
+
+        <!-- Edición de la información (modo inline, como una vista, no modal) -->
+        <div class="tab-content pet-edit-section" *ngIf="petEditDialogVisible() && pet()">
+          <div class="edit-form-wrapper">
+            <div class="edit-section-header">
+              <button type="button" class="edit-back-btn" (click)="closePetEditDialog()">
+                <i class="pi pi-arrow-left"></i>
+                <span>{{ 'petsPage.cancel' | transloco }}</span>
+              </button>
+              <h3 class="section-title">
+                <i class="pi pi-pencil"></i>
+                {{ 'petsPage.editTitle' | transloco }}
+              </h3>
+            </div>
+            <app-dynamic-form
+              [config]="petEditorConfig()"
+              [formData]="petEditFormData()"
+              [submitting]="savingPet()"
+              (onSubmitClick)="savePetChanges($event)"
+              (onCancel)="closePetEditDialog()"
+            />
+          </div>
+        </div>
       </div>
 
       <!-- Lightbox Modal -->
-      <p-dialog
+      <app-modal
         [visible]="lightboxVisible"
-        [modal]="true"
         [style]="{ width: '90vw', maxWidth: '900px' }"
         [closable]="true"
         (onHide)="closeLightbox()"
         [dismissableMask]="true"
+        [noPadding]="true"
+        [showCancel]="false"
+        [showConfirm]="false"
+        [hideFooter]="true"
         styleClass="lightbox-dialog"
         [showHeader]="false"
       >
@@ -562,21 +588,27 @@ interface PetComment {
             ></span>
           </div>
         </div>
-      </p-dialog>
+      </app-modal>
 
       <!-- Post Modal -->
-      <p-dialog
+      <app-modal
         [visible]="postModalVisible"
-        [modal]="true"
         [style]="{ width: '95vw', maxWidth: '1200px' }"
         [closable]="true"
         (onHide)="closePostModal()"
         [dismissableMask]="true"
+        [noPadding]="true"
+        [showCancel]="false"
+        [showConfirm]="false"
+        [hideFooter]="true"
         styleClass="post-modal-dialog"
         [showHeader]="false"
       >
         <div class="post-modal" *ngIf="currentPost()">
           <div class="post-modal-image">
+            <button class="post-modal-close" (click)="closePostModal()">
+              <i class="pi pi-times"></i>
+            </button>
             <button
               class="modal-arrow modal-arrow-left"
               *ngIf="petPosts().length > 1"
@@ -631,36 +663,18 @@ interface PetComment {
             </div>
           </div>
         </div>
-            </p-dialog>
+      </app-modal>
 
-      <!-- Adoption Request Dialog -->
-      <p-dialog
-        [visible]="petEditDialogVisible()"
-        [modal]="true"
-        [header]="'petsPage.editTitle' | transloco"
-        [style]="{ width: 'min(92vw, 48rem)' }"
-        [contentStyle]="{ 'max-height': '70vh', overflow: 'auto' }"
-        [draggable]="false"
-        [resizable]="false"
-        (onHide)="closePetEditDialog()"
-      >
-        <app-dynamic-form
-          *ngIf="petEditDialogVisible()"
-          [config]="petEditorConfig"
-          [formData]="petEditFormData()"
-          [submitting]="savingPet()"
-          (onSubmitClick)="savePetChanges($event)"
-          (onCancel)="closePetEditDialog()"
-        />
-      </p-dialog>
+      <!-- La edición de la mascota se muestra inline (no modal) en .pet-edit-section -->
 
-      <p-dialog
+      <app-modal
         [visible]="showAdoptionDialog"
-        [modal]="true"
         [style]="{ width: '90vw', maxWidth: '560px' }"
         [closable]="true"
         (onHide)="showAdoptionDialog = false"
         [dismissableMask]="true"
+        [showCancel]="false"
+        [showConfirm]="false"
         styleClass="adoption-dialog"
         [header]="('petProfile.requestAdoptionOf' | transloco) + (pet()?.name || '')"
       >
@@ -670,7 +684,7 @@ interface PetComment {
           (onSubmitClick)="submitAdoptionRequest($event)"
           (onCancel)="showAdoptionDialog = false"
         />
-      </p-dialog>
+      </app-modal>
 
       <!-- Menu -->
       <p-menu #actionMenu [model]="actionMenuItems" [popup]="true" />
@@ -1150,6 +1164,67 @@ interface PetComment {
       padding: 1rem;
     }
 
+    /* Sección de edición inline (como una vista, no modal) */
+    .pet-edit-section {
+      max-width: 48rem;
+      margin: 0 auto;
+    }
+
+    .edit-section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .edit-back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface-hover);
+      border: 1px solid var(--surface-border);
+      color: var(--text-primary);
+      padding: 6px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .edit-back-btn:hover {
+      background: var(--surface-border);
+    }
+
+    .edit-section-header .section-title {
+      margin: 0;
+    }
+
+    /* Botón de cierre del modal de publicaciones */
+    .post-modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 12;
+      background: rgba(0, 0, 0, 0.6);
+      border: none;
+      color: #fff;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .post-modal-close:hover {
+      background: rgba(0, 0, 0, 0.8);
+      transform: scale(1.05);
+    }
+
     .section-title {
       display: flex;
       align-items: center;
@@ -1533,8 +1608,7 @@ interface PetComment {
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 80vh;
-      padding: 20px;
+      height: 82vh;
     }
 
     .lightbox-close {
@@ -1566,7 +1640,7 @@ interface PetComment {
 
     .lightbox-image {
       max-width: 100%;
-      max-height: 85vh;
+      max-height: 100%;
       object-fit: contain;
       border-radius: 4px;
     }
@@ -2126,7 +2200,14 @@ interface PetComment {
 })
 export class PetProfilePageComponent implements OnInit, OnDestroy {
   readonly i18n = inject(TranslocoService);
-  readonly petEditorConfig = buildPetEditorFormConfig(this.i18n);
+  // Reactivo al idioma: las etiquetas se (re)traducen cuando los JSON de i18n
+  // ya están cargados o cuando el usuario cambia de idioma. Al ser un computed
+  // perezoso, se evalúa al abrir el diálogo, evitando capturar claves crudas
+  // (p.ej. "petsPage.nameLabel") si se construyera antes de cargar traducciones.
+  readonly petEditorConfig = computed<DynamicFormConfig>(() => {
+    this.i18n.activeLang();
+    return buildPetEditorFormConfig(this.i18n);
+  });
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly authService = inject(AuthService);

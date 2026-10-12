@@ -188,7 +188,9 @@ export class AdoptionService {
 
   // Get adoption requests for the current user (as adopter)
   getMyAdoptionRequests(): Observable<AdoptionRequest[]> {
-    return this.http.get<AdoptionRequest[]>(`${this.apiUrl}/adoptions/my-requests`);
+    return this.http.get<AdoptionRequest[]>(`${this.apiUrl}/adoptions/my-requests`).pipe(
+      map((requests) => (requests ?? []).map((r) => this.normalizeRequest(r))),
+    );
   }
 
   getAdoptionRequestTimeline(requestId: string): Observable<AdoptionRequestEvent[]> {
@@ -199,7 +201,9 @@ export class AdoptionService {
 
   // Get adoption requests for pets owned by the current user (as shelter/owner)
   getAdoptionRequestsForMyPets(): Observable<AdoptionRequest[]> {
-    return this.http.get<AdoptionRequest[]>(`${this.apiUrl}/adoptions/my-pets-requests`);
+    return this.http.get<AdoptionRequest[]>(`${this.apiUrl}/adoptions/my-pets-requests`).pipe(
+      map((requests) => (requests ?? []).map((r) => this.normalizeRequest(r))),
+    );
   }
 
   // Update adoption request status (advance stage / approve / reject)
@@ -324,6 +328,13 @@ export class AdoptionService {
           return mapped;
         }),
       );
+  }
+
+  // Normaliza una solicitud devuelta por el backend: el estado llega en
+  // MAYÃƒÅ¡SCULAS y hay que pasarlo a minÃƒÂºsculas para que coincida con los
+  // literales del front y las traducciones.
+  private normalizeRequest(request: AdoptionRequest): AdoptionRequest {
+    return { ...request, status: this.normalizeStatus(request.status) };
   }
 
   // Normaliza el estado devuelto por el backend (MAYÃƒÅ¡SCULAS) al formato del front

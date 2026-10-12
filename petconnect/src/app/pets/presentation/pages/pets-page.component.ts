@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
 import { SkeletonModule } from 'primeng/skeleton';
 import { ToastModule } from 'primeng/toast';
 import { RouterLink } from '@angular/router';
@@ -11,6 +10,7 @@ import { AuthService } from '../../../auth/infrastructure/services/auth.service'
 import { PetResponse, CreatePetRequest } from '../../domain/pet.model';
 import { PetService } from '../../infrastructure/services/pet.service';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { buildPetEditorFormConfig, petEditorDataToRequest } from '../forms/pet-editor-form';
 import { TableCardComponent, TableCardItem } from '../../../shared/presentation/components/table-card/table-card.component';
 
@@ -20,13 +20,13 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
   imports: [
     CommonModule,
     ButtonModule,
-    DialogModule,
     SkeletonModule,
     ToastModule,
     TranslocoModule,
     RouterLink,
     DynamicFormComponent,
     TableCardComponent,
+    ModalComponent,
   ],
   providers: [MessageService],
   template: `
@@ -150,14 +150,16 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
       </section>
     </main>
 
-    <p-dialog
+    <app-modal
       [visible]="dialogVisible"
-      [modal]="true"
       [showHeader]="false"
       [style]="{ width: 'min(94vw, 56rem)' }"
       [contentStyle]="{ 'max-height': '86vh', overflow: 'auto', padding: '0' }"
+      [noPadding]="true"
       [draggable]="false"
       [resizable]="false"
+      [showCancel]="false"
+      [showConfirm]="false"
       (onHide)="closeDialog()"
     >
       <div class="pet-wizard">
@@ -228,7 +230,7 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
           />
         </section>
       </div>
-    </p-dialog>
+    </app-modal>
   `,
   styles: [`
     :host { display: block; }
@@ -334,7 +336,14 @@ export class PetsPageComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly messageService = inject(MessageService);
   private readonly i18n = inject(TranslocoService);
-  readonly petEditorConfig = buildPetEditorFormConfig(this.i18n);
+  // Reactivo al idioma: las etiquetas se (re)traducen cuando los JSON de i18n
+  // ya están cargados o cuando el usuario cambia de idioma. Al ser un computed
+  // perezoso, se evalúa al abrir el diálogo, evitando capturar claves crudas
+  // (p.ej. "petsPage.nameLabel") si se construyera antes de cargar traducciones.
+  readonly petEditorConfig = computed<DynamicFormConfig>(() => {
+    this.i18n.activeLang();
+    return buildPetEditorFormConfig(this.i18n);
+  });
   readonly petFormTabs = [
     {
       id: 'basics',
@@ -370,12 +379,13 @@ export class PetsPageComponent implements OnInit {
   readonly activePetFormConfig = computed<DynamicFormConfig>(() => {
     const tab = this.petFormTabs[this.activePetTab()];
     const isLastTab = this.activePetTab() === this.petFormTabs.length - 1;
+    const editorConfig = this.petEditorConfig();
     return {
-      ...this.petEditorConfig,
+      ...editorConfig,
       title: undefined,
       cancelLabel: this.i18n.translate('petsPage.cancel'),
       submitLabel: this.i18n.translate(isLastTab ? 'petsPage.createPet' : 'petsPage.continue'),
-      fields: this.petEditorConfig.fields.filter(field => tab.fields.has(field.key))
+      fields: editorConfig.fields.filter(field => tab.fields.has(field.key))
     };
   });
 

@@ -216,6 +216,10 @@ interface Event {
   styles: [`
     .events-page {
       min-height: 100vh;
+      max-width: var(--max-page-width);
+      margin: 0 auto;
+      padding: 0 1rem;
+      box-sizing: border-box;
       background: var(--surface-bg);
     }
 

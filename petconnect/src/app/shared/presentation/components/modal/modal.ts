@@ -30,6 +30,7 @@ export interface ModalButton {
       [header]="header()"
       [visible]="visible()"
       [style]="getDialogStyle()"
+      [contentStyle]="contentStyle()"
       [modal]="true"
       [closable]="closable()"
       [dismissableMask]="dismissableMask()"
@@ -37,11 +38,14 @@ export interface ModalButton {
       [draggable]="draggable()"
       [resizable]="resizable()"
       [blockScroll]="true"
+      [maximizable]="maximizable()"
       [styleClass]="getDialogClass()"
       [position]="position()"
       [showHeader]="showHeader()"
       (onHide)="onHide.emit()"
       (onShow)="onShow.emit()"
+      (onMaximize)="onMaximize.emit()"
+      (onUnmaximize)="onUnmaximize.emit()"
     >
       <!-- Header personalizado -->
       <ng-container *ngIf="customHeader">
@@ -53,9 +57,11 @@ export interface ModalButton {
         <ng-content></ng-content>
       </div>
 
-      <!-- Footer -->
-      <ng-template pTemplate="footer">
-        <div class="modal-footer" *ngIf="!hideFooter()">
+      <!-- Footer (solo se registra en PrimeNG cuando NO está oculto, así se
+           evita que quede un footer vacío reservando padding y borde) -->
+      <ng-container *ngIf="!hideFooter()">
+        <ng-template pTemplate="footer">
+          <div class="modal-footer">
           <!-- Botones dinámicos -->
           <div class="modal-actions" [class]="getButtonPositionClass()">
             <!-- Botón Cancelar -->
@@ -110,8 +116,9 @@ export interface ModalButton {
           <ng-container *ngIf="customFooter">
             <ng-container *ngTemplateOutlet="customFooter"></ng-container>
           </ng-container>
-        </div>
-      </ng-template>
+          </div>
+        </ng-template>
+      </ng-container>
     </p-dialog>
   `,
     styles: [`
@@ -154,7 +161,7 @@ export interface ModalButton {
       :host ::ng-deep .p-dialog-header {
         background: var(--surface-card);
         border-bottom: 1px solid var(--surface-border);
-        padding: 1.25rem 1.5rem;
+        padding: 0.25rem 1.25rem;
         color: var(--text-primary);
         font-weight: 600;
         font-size: 1.125rem;
@@ -200,6 +207,21 @@ export interface ModalButton {
         color: var(--text-secondary);
         line-height: 1.6;
         font-size: 0.95rem;
+      }
+
+      /* Modo "a sangre" (noPadding): el contenido controla su propio tamaño,
+         así que eliminamos el padding y el scroll del content para que la
+         imagen/contenido ocupe todo el modal sin marcos ni barras. */
+      :host ::ng-deep .p-dialog.modal-no-padding .p-dialog-content {
+        padding: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      :host ::ng-deep .p-dialog.modal-no-padding .p-dialog-content > .modal-body {
+        flex: 1;
+        min-height: 0;
       }
 
       /* ===== FOOTER ===== */
@@ -270,6 +292,11 @@ export interface ModalButton {
 
       .modal-body.no-padding {
         padding: 0 !important;
+        /* En modo a sangre (sin padding) el contenido controla su propio
+           scroll/tamaño (p.ej. lightbox, wizard, visor de imágenes), por lo que
+           no imponemos la restricción de altura del body por defecto. */
+        max-height: none;
+        overflow: visible;
       }
 
       .modal-body::-webkit-scrollbar {
@@ -448,6 +475,16 @@ export class ModalComponent {
   showHeader = input<boolean>(true);
   noPadding = input<boolean>(false);
 
+  // ===== Passthrough a p-dialog (para migraciones 1:1) =====
+  /** Estilos inline del diálogo (p.ej. ancho personalizado). */
+  style = input<{ [key: string]: string }>({});
+  /** Clases CSS adicionales para el contenedor del diálogo. */
+  styleClass = input<string>('');
+  /** Estilos inline del contenido del diálogo. */
+  contentStyle = input<{ [key: string]: string } | null>(null);
+  /** Permite maximizar el diálogo. */
+  maximizable = input<boolean>(false);
+
   // ===== Botón Confirmar =====
   showConfirm = input<boolean>(true);
   confirmLabel = input<string>('Confirmar');
@@ -491,6 +528,8 @@ export class ModalComponent {
   onCancel = output<void>();
   onHide = output<void>();
   onShow = output<void>();
+  onMaximize = output<void>();
+  onUnmaximize = output<void>();
 
   // ===== Templates personalizados =====
   @ContentChild('header') customHeader!: TemplateRef<any>;
@@ -509,11 +548,14 @@ export class ModalComponent {
       style['max-width'] = '90vw';
     }
 
-    return style;
+    // Permite override total del style (útil para anchos personalizados).
+    return { ...style, ...this.style() };
   }
 
   getDialogClass(): string {
-    return `dialog-${this.size()}`;
+    const extra = this.styleClass()?.trim();
+    const base = `dialog-${this.size()}${this.noPadding() ? ' modal-no-padding' : ''}`;
+    return extra ? `${base} ${extra}` : base;
   }
 
   getButtonPositionClass(): string {
