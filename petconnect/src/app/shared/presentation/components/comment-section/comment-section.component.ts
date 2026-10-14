@@ -49,8 +49,10 @@ import { SocialService, CommentResponse } from '../../../../social/infrastructur
               [comment]="comment"
               [currentUserId]="currentUserId()"
               [postAuthorId]="postAuthorId()"
+              [canModerateSolution]="canModerateSolutions()"
               (replyRequested)="startReply($event)"
               (deleteRequested)="deleteComment($event)"
+              (solutionToggled)="toggleSolution($event)"
             />
           }
         }
@@ -120,15 +122,32 @@ export class CommentSectionComponent {
   currentUserId = input.required<string>();
   postAuthorId = input<string>('');
   showForm = input(true);
+  /** El post es una pregunta: habilita marcar respuestas como solución. */
+  isQuestion = input(false);
+  /** La pregunta ya tiene una respuesta marcada como solución. */
+  isSolved = input(false);
 
   // Outputs
   commentsChanged = output<number>();
+  /** Avisa de que cambió el estado de solución para refrescar el badge del post. */
+  solutionChanged = output<{ solved: boolean; solutionCommentId: string | null }>();
 
   // State
   comments = signal<CommentResponse[]>([]);
   loading = signal(false);
   replyingToId = signal<string | null>(null);
   replyingToName = signal('');
+  solutionBusy = signal<string | null>(null);
+
+  /** El usuario actual es el autor del post y por tanto puede elegir solución. */
+  readonly canModerateSolutions = computed(
+    () => this.isQuestion() && !!this.postAuthorId() && this.postAuthorId() === this.currentUserId()
+  );
+
+  /** Id del comentario marcado como solución, si lo hay. */
+  readonly solutionCommentId = computed(
+    () => this.comments().find(c => c.solution)?.id ?? null
+  );
 
   ngOnInit(): void {
     this.loadComments();
@@ -237,6 +256,45 @@ export class CommentSectionComponent {
         console.error('Error deleting comment:', err);
         alert(this.i18n.translate('commentSection.deleteError'));
       }
+    });
+  }
+
+  /**
+   * Marca o retira la solución. El backend es la autoridad: valida que el
+   * llamante sea el autor de la pregunta y que el post sea realmente una
+   * pregunta. En errores se recarga el estado real desde el servidor.
+   */
+  toggleSolution(comment: CommentResponse): void {
+    if (!this.canModerateSolutions() || this.solutionBusy()) {
+      return;
+    }
+
+    const wasSolution = comment.solution === true;
+    this.solutionBusy.set(comment.id);
+
+    const request = wasSolution
+      ? this.socialService.clearCommentSolution(this.targetId())
+      : this.socialService.markCommentAsSolution(this.targetId(), comment.id);
+
+    request.subscribe({
+      next: () => {
+        // El backend deja una única solución activa: reconstruimos la marca.
+        this.comments.update(list =>
+          list.map(c => ({ ...c, solution: wasSolution ? false : c.id === comment.id }))
+        );
+        this.solutionBusy.set(null);
+        this.solutionChanged.emit({
+          solved: !wasSolution,
+          solutionCommentId: wasSolution ? null : comment.id,
+        });
+      },
+      error: (err) => {
+        console.error('Error updating solution:', err);
+        this.solutionBusy.set(null);
+        alert(this.i18n.translate('post.postIntent.solutionError'));
+        // Recargar para no dejar la interfaz en un estado inventado.
+        this.loadComments();
+      },
     });
   }
 

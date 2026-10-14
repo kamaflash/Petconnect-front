@@ -7,7 +7,7 @@ import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { DividerModule } from 'primeng/divider';
@@ -16,14 +16,14 @@ import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
 import { MenuModule } from 'primeng/menu';
 import { ProgressBarModule } from 'primeng/progressbar';
-import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { DynamicFormComponent, DynamicFormConfig, FormFieldOption } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { CloudinaryService, CloudinaryUploadResponse } from '../../../shared/infrastructure/services/cloudinary.service';
-import { SocialService, PostResponse, EventResponse, GroupResponse, NotificationResponse, TrendingTopicResponse, FollowResponse, UserProfileResponse, PageResponse } from '../../infrastructure/services/social.service';
+import { SocialService, PostResponse, EventResponse, GroupResponse, NotificationResponse, TrendingTopicResponse, FollowResponse, UserProfileResponse, PageResponse, PostIntent, DEFAULT_POST_INTENT, resolveIntent } from '../../infrastructure/services/social.service';
 import { LikeService } from '../../../shared/infrastructure/services/like.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -85,6 +85,10 @@ interface CommunityPost {
   saved: boolean;
   likeAvatars?: string[];
   tags?: string[];
+  /** Intención declarada en el backend. Puede faltar en publicaciones antiguas. */
+  intent?: PostIntent;
+  /** Solo significativo en preguntas. */
+  solved?: boolean;
   type?: 'update' | 'question' | 'event' | 'tip' | 'milestone';
   petMention?: {
     id: string;
@@ -217,6 +221,34 @@ interface Notification {
                 <i class="pi pi-smile"></i>
               </div>
             </div>
+
+            <!-- Filtro por intención -->
+            <div class="intent-filter-bar" role="group" [attr.aria-label]="'post.postIntent.filterLabel' | transloco">
+              <button
+                type="button"
+                class="intent-chip"
+                [class.active]="!intentFilter()"
+                [attr.aria-pressed]="!intentFilter()"
+                (click)="intentFilter.set(null)"
+              >
+                {{ 'post.postIntent.filterAll' | transloco }}
+              </button>
+              @for (option of intentOptions; track option.value) {
+                <button
+                  type="button"
+                  class="intent-chip"
+                  [class.active]="intentFilter() === option.value"
+                  [attr.aria-pressed]="intentFilter() === option.value"
+                  (click)="intentFilter.set(option.value)"
+                >
+                  {{ 'post.postIntent.' + option.key | transloco }}
+                </button>
+              }
+            </div>
+
+            @if (intentFilter() && filteredFeedPosts().length === 0) {
+              <p class="intent-filter-empty">{{ 'post.postIntent.emptyFiltered' | transloco }}</p>
+            }
 
             <app-post-feed
               [posts]="postItems()"
@@ -373,12 +405,20 @@ interface Notification {
         <div class="groups-layout" *ngIf="activeTab() === 'groups'">
           <div class="groups-header">
             <h2>{{ 'social.interestGroups' | transloco }}</h2>
-            <p-button
-              icon="pi pi-plus"
-              label="{{ 'social.createGroup' | transloco }}"
-              styleClass="p-button-primary"
-              (onClick)="showCreateGroupDialog()"
-            />
+            <div class="groups-header-actions">
+              <p-button
+                icon="pi pi-compass"
+                label="{{ 'social.communities.viewAll' | transloco }}"
+                styleClass="p-button-outlined"
+                routerLink="/social/communities"
+              />
+              <p-button
+                icon="pi pi-plus"
+                label="{{ 'social.createGroup' | transloco }}"
+                styleClass="p-button-primary"
+                (onClick)="showCreateGroupDialog()"
+              />
+            </div>
           </div>
           <div class="groups-grid">
             <div class="group-card" *ngFor="let group of allGroups()">
@@ -540,6 +580,51 @@ interface Notification {
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
+    }
+
+    /* Intent filter chips */
+    .intent-filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .intent-chip {
+      border: 1px solid var(--surface-border);
+      background: var(--surface-card);
+      color: var(--text-secondary);
+      border-radius: var(--radius-full, 999px);
+      padding: 0.3rem 0.75rem;
+      font-size: 0.8125rem;
+      cursor: pointer;
+      transition: all var(--transition-normal, 0.2s ease);
+    }
+
+    .intent-chip:hover {
+      background: var(--surface-hover);
+      color: var(--text-primary);
+    }
+
+    .intent-chip.active {
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+      color: var(--primary-color-text, #fff);
+    }
+
+    .intent-chip:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
+    .intent-filter-empty {
+      margin: 0;
+      padding: 1rem;
+      text-align: center;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      background: var(--surface-card);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
     }
 
     /* Infinite scroll sentinel */
@@ -1249,6 +1334,13 @@ interface Notification {
       font-size: 1.25rem;
     }
 
+    .groups-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
     .groups-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -1594,6 +1686,7 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
   private messageService = inject(MessageService);
   private transloco = inject(TranslocoService);
   private authService = inject(AuthService);
+  private router = inject(Router);
   private cloudinaryService = inject(CloudinaryService);
   private socialService = inject(SocialService);
   private likeService = inject(LikeService);
@@ -1638,6 +1731,13 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
       showCancel: false,
       fields: [
         {
+          key: 'intent',
+          label: this.transloco.translate('post.postIntent.label'),
+          type: 'select',
+          options: this.intentFormOptions(),
+          validation: { required: true, customMessage: this.transloco.translate('post.postIntent.required') }
+        },
+        {
           key: 'images',
           label: this.transloco.translate('social.form.images'),
           type: 'file',
@@ -1666,6 +1766,14 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       ]
     };
+  }
+
+  /** Opciones traducidas del selector de intención al crear una publicación. */
+  intentFormOptions(): FormFieldOption[] {
+    return this.intentOptions.map(option => ({
+      label: this.transloco.translate(`post.postIntent.${option.key}`),
+      value: option.value
+    }));
   }
 
   // Comments
@@ -1719,8 +1827,30 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
   notifications = signal<Notification[]>([]);
 
   // Computed
+  /**
+   * Filtro de intención del feed. `null` muestra todos los tipos, que es el
+   * comportamiento anterior a esta funcionalidad.
+   */
+  intentFilter = signal<PostIntent | null>(null);
+
+  /** Opciones del selector de intención, en el orden que se muestra al usuario. */
+  readonly intentOptions: { value: PostIntent; key: string }[] = [
+    { value: 'UPDATE', key: 'UPDATE' },
+    { value: 'QUESTION', key: 'QUESTION' },
+    { value: 'RECOMMENDATION', key: 'RECOMMENDATION' },
+    { value: 'ACHIEVEMENT', key: 'ACHIEVEMENT' },
+    { value: 'MEETUP', key: 'MEETUP' },
+    { value: 'URGENT_LOST', key: 'URGENT_LOST' },
+  ];
+
   filteredFeedPosts = computed(() => {
-    return this.communityPosts().sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    const filter = this.intentFilter();
+    const sorted = this.communityPosts().sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    if (!filter) {
+      return sorted;
+    }
+    // Las publicaciones antiguas sin intención se tratan como actualización.
+    return sorted.filter(post => resolveIntent(post.intent) === filter);
   });
 
   // Convert CommunityPost[] to PostItem[] for the shared component
@@ -1739,6 +1869,8 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
       comments: post.comments,
       liked: post.liked,
       saved: post.saved,
+      intent: post.intent,
+      solved: post.solved,
       likeAvatars: post.likeAvatars,
       timestamp: post.timestamp
     }));
@@ -2136,6 +2268,8 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
       shares: 0,
       liked: false,
       saved: false,
+      intent: post.intent,
+      solved: post.solved,
       tags: tags
     };
   }
@@ -2440,12 +2574,13 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /**
+   * El formulario de círculos vive en /social/communities, así que el botón
+   * navega allí y le pide que abra el diálogo con `crear=1`. Si no hay sesión,
+   * la página de destino avisa en lugar de abrir el formulario.
+   */
   showCreateGroupDialog() {
-    this.messageService.add({
-      severity: 'info',
-      summary: this.transloco.translate('social.toasts.inDevelopment'),
-      detail: this.transloco.translate('social.toasts.groupCreationComingSoon')
-    });
+    this.router.navigate(['/social/communities'], { queryParams: { crear: '1' } });
   }
 
   async onPostFormSubmit(formData: any) {
@@ -2453,6 +2588,8 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
     const rawTags = formData.tags || '';
     const tags = rawTags.split(',').map((t: string) => t.trim()).filter((t: string) => t).join(',');
     const uploadedFiles = formData.images || [];
+    // Si el usuario no elige, se comporta como una actualización normal.
+    const intent: PostIntent = resolveIntent(formData.intent);
 
     if (!content.trim()) {
       this.messageService.add({
@@ -2486,7 +2623,8 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
       authorId: this.currentUserId(),
       caption: content,
       imageUrl: '',
-      tags: tags
+      tags: tags,
+      intent
     }, imageFile)
       .subscribe({
         next: (createdPost) => {

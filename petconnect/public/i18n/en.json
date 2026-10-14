@@ -439,7 +439,31 @@
     "detailTitle": "Post",
     "detailSubtitle": "A moment shared with the community",
     "backToProfile": "Back to profile",
-    "detailError": "This post could not be loaded. It may no longer be available."
+    "detailError": "This post could not be loaded. It may no longer be available.",
+    "postIntent": {
+      "label": "Post type",
+      "hint": "Help the community understand your intent",
+      "required": "Choose a post type",
+      "UPDATE": "Update",
+      "QUESTION": "Question",
+      "RECOMMENDATION": "Recommendation",
+      "ACHIEVEMENT": "Achievement",
+      "MEETUP": "Looking for company",
+      "URGENT_LOST": "Lost pet",
+      "filterLabel": "Filter by type",
+      "filterAll": "All",
+      "solvedBadge": "Solved",
+      "solvedBy": "Answered by {{ name }}",
+      "markSolution": "Mark as solution",
+      "unmarkSolution": "Remove solution",
+      "solutionTag": "Solution",
+      "solutionToast": "Reply marked as the solution",
+      "solutionRemovedToast": "Solution removed",
+      "solutionError": "We couldn't update the solution. Please try again.",
+      "urgentNotice": "For an organised search, create a lost pet report.",
+      "urgentAction": "Go to lost pets",
+      "emptyFiltered": "There are no posts of this type yet."
+    }
   },
   "profile": {
     "noDescription": "No description",
@@ -904,6 +928,70 @@
     "submit": "Create product"
   },
   "social": {
+    "communities": {
+      "title": "Community circles",
+      "detailTitle": "Circle details",
+      "detailSubtitle": "Circle information and your membership status",
+      "backToList": "Back to circles",
+      "viewAll": "Browse circles",
+      "createTitle": "Create circle",
+      "editTitle": "Edit circle",
+      "createButton": "Create circle",
+      "ownerBadge": "Owner",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteTitle": "Delete circle",
+      "deleteConfirm": "Are you sure you want to delete this circle?",
+      "deleteConfirmDetail": "It will be hidden from everyone and your members will no longer see it. This action cannot be undone.",
+      "createdTitle": "Circle created",
+      "created": "You can now invite other people to join",
+      "updatedTitle": "Circle updated",
+      "updated": "The changes are already visible on the circle page",
+      "deletedTitle": "Circle deleted",
+      "deleted": "It no longer appears in the circle list",
+      "saveErrorTitle": "Could not save",
+      "saveError": "Check the data and try again",
+      "deleteErrorTitle": "Could not delete",
+      "deleteError": "Only the owner can delete the circle",
+      "notFound": "The circle could not be loaded",
+      "subtitle": "Join groups from your area, your pet's species or your interests",
+      "searchPlaceholder": "Search circles",
+      "topicLabel": "Filter by topic",
+      "join": "Join",
+      "leave": "Leave",
+      "membersCount": "{count} members",
+      "empty": "No circles match your search",
+      "loadError": "Circles could not be loaded",
+      "retry": "Try again",
+      "joinedTitle": "You are now a member",
+      "joined": "You joined the circle",
+      "leftTitle": "You left the circle",
+      "left": "You are no longer a member of that circle",
+      "membershipErrorTitle": "Membership could not be updated",
+      "membershipError": "Please try again in a few seconds",
+      "loginRequiredTitle": "Sign in required",
+      "loginRequired": "You need to sign in to join or leave a circle",
+      "form": {
+        "name": "Name",
+        "namePlaceholder": "Morning walks in Retiro",
+        "description": "Description",
+        "descriptionPlaceholder": "What happens in this circle",
+        "avatarUrl": "Image (URL)",
+        "avatarUrlPlaceholder": "https://…",
+        "category": "Category",
+        "categoryPlaceholder": "Location, species, care…",
+        "topic": "Topic",
+        "noTopic": "No topic",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "topics": {
+        "LOCATION": "Area",
+        "SPECIES": "Species",
+        "ACTIVITY": "Activity",
+        "SUPPORT": "Support"
+      }
+    },
     "tabs": {
       "feed": "Feed",
       "events": "Events",
@@ -941,7 +1029,6 @@
       "shared": "Shared",
       "sharedDetail": "Post link copied to clipboard",
       "eventCreationComingSoon": "Event creation will be available soon",
-      "groupCreationComingSoon": "Group creation will be available soon",
       "emptyContent": "Empty content",
       "emptyContentDetail": "Write something before publishing",
       "loginRequiredPost": "You must be logged in to publish",
@@ -1266,92 +1353,8 @@
     "tryAgain": "Try again."
   },
   "gam": {
-    "exploration": "Exploration",
-    "tenAppointments": "Complete 10 medical appointments",
-    "champion": "Champion",
-    "loyalCompanion": "Loyal companion",
-    "anonymousHero": "Anonymous hero",
-    "firstPost": "Create your first post",
-    "communityHeart": "Community Heart",
-    "tryAgain": "Try again.",
-    "cat": {
-      "social": "Social",
-      "care": "Care",
-      "exploration": "Exploration",
-      "special": "Special"
-    },
-    "unlocked": "Unlocked",
-    "locked": "Locked",
-    "rankExpert": "Pet Expert",
     "resultSingular": "achievement",
-    "resultPlural": "achievements",
-    "toastCleared": "Filters cleared",
-    "toastClearedDetail": "All filters have been reset",
-    "ach": {
-      "1": {
-        "name": "First step",
-        "description": "Register your first pet"
-      },
-      "2": {
-        "name": "Animal lover",
-        "description": "Register 3 pets"
-      },
-      "3": {
-        "name": "Responsible caregiver",
-        "description": "Complete 10 medical appointments"
-      },
-      "4": {
-        "name": "Social",
-        "description": "Make 50 posts"
-      },
-      "5": {
-        "name": "Explorer",
-        "description": "Visit 5 different places"
-      },
-      "6": {
-        "name": "Champion",
-        "description": "Win a contest"
-      },
-      "7": {
-        "name": "Loyal companion",
-        "description": "Take part in 10 events"
-      },
-      "8": {
-        "name": "Anonymous hero",
-        "description": "Adopt a pet"
-      },
-      "9": {
-        "name": "New Voice",
-        "description": "Create your first post"
-      },
-      "10": {
-        "name": "Creator",
-        "description": "Create 10 posts"
-      },
-      "11": {
-        "name": "Community Heart",
-        "description": "Reply to 10 comments"
-      }
-    },
-    "headerTitle": "Achievements and Levels",
-    "headerSubtitle": "Your progress in the community",
-    "statLevel": "Level",
-    "statXP": "Total XP",
-    "statAchievements": "Achievements",
-    "profileLevel": "Level",
-    "profileXP": "XP",
-    "upcomingTitle": "Upcoming Achievements",
-    "xpAbbr": "XP",
-    "followTitle": "Who to follow",
-    "followButton": "Follow",
-    "trendingTitle": "Trending",
-    "trending": "TRENDING",
-    "followers": " followers",
-    "filterCategory": "Category:",
-    "filterStatus": "Status:",
-    "clearFilters": "Clear",
-    "emptyState": "No achievements found with these criteria",
-    "clearFiltersBtn": "Clear filters"
+    "resultPlural": "achievements"
   },
   "messages": {
     "startConversation": "Start the conversation",

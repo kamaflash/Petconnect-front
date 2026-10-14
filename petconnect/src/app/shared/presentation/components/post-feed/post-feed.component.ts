@@ -8,6 +8,7 @@ import { RouterModule } from '@angular/router';
 import { TranslocoModule } from '@jsverse/transloco';
 import { LikeService, LikeTargetType } from '../../../infrastructure/services/like.service';
 import { CommentSectionComponent } from '../comment-section/comment-section.component';
+import { PostIntent, DEFAULT_POST_INTENT, resolveIntent } from '../../../../social/infrastructure/services/social.service';
 
 export interface PostUser {
   name: string;
@@ -27,6 +28,10 @@ export interface PostItem {
   saved: boolean;
   timestamp: Date;
   likeAvatars?: string[];
+  /** Intención declarada. Si falta, se muestra como actualización. */
+  intent?: PostIntent;
+  /** Solo significativo en preguntas. */
+  solved?: boolean;
 }
 
 export type PostViewMode = 'feed' | 'grid';
@@ -152,6 +157,29 @@ export type PostViewMode = 'feed' | 'grid';
             <span class="caption-text">{{ post.caption }}</span>
           </div>
 
+          <!-- Intent badge -->
+          <div class="post-intent-row">
+            <span class="post-intent-badge" [class]="'post-intent-badge intent-' + intentOf(post)" [attr.aria-label]="'post.postIntent.label' | transloco">
+              <i class="pi" [class]="intentIcon(post)" aria-hidden="true"></i>
+              <span>{{ 'post.postIntent.' + intentOf(post) | transloco }}</span>
+            </span>
+            @if (isQuestion(post) && post.solved) {
+              <span class="post-intent-badge intent-solved">
+                <i class="pi pi-check-circle" aria-hidden="true"></i>
+                <span>{{ 'post.postIntent.solvedBadge' | transloco }}</span>
+              </span>
+            }
+            @if (isUrgentLost(post)) {
+              <span class="post-intent-urgent-note">
+                {{ 'post.postIntent.urgentNotice' | transloco }}
+                <a
+                  routerLink="/lostpets"
+                  class="post-intent-urgent-link"
+                >{{ 'post.postIntent.urgentAction' | transloco }}</a>
+              </span>
+            }
+          </div>
+
           <!-- Comments -->
           <div class="post-comments">
             <span class="comments-link" (click)="toggleComments(post.id, false)">{{ 'post.viewComments' | transloco: { count: post.comments } }}</span>
@@ -166,8 +194,11 @@ export type PostViewMode = 'feed' | 'grid';
                 [targetType]="'POST'"
                 [currentUserId]="currentUserId()"
                 [postAuthorId]="post.user.userId"
+                [isQuestion]="isQuestion(post)"
+                [isSolved]="post.solved === true"
                 [showForm]="shouldShowCommentForm(post.id)"
                 (commentsChanged)="onCommentsChanged(post, $event)"
+                (solutionChanged)="onSolutionChanged(post, $event)"
               />
             } @else {
               <div class="comments-login-prompt">
@@ -184,6 +215,78 @@ export type PostViewMode = 'feed' | 'grid';
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
+    }
+
+    /* ===== INTENT BADGE ===== */
+    .post-intent-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.375rem;
+      margin-top: 0.5rem;
+    }
+
+    .post-intent-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-full, 999px);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      line-height: 1.4;
+      background: var(--surface-hover, rgba(0, 0, 0, 0.05));
+      color: var(--text-secondary, #64748b);
+    }
+
+    .post-intent-badge i {
+      font-size: 0.75rem;
+    }
+
+    .intent-QUESTION {
+      background: color-mix(in srgb, var(--primary-color, #3b82f6) 12%, transparent);
+      color: var(--primary-color, #2563eb);
+    }
+
+    .intent-RECOMMENDATION {
+      background: color-mix(in srgb, #10b981 14%, transparent);
+      color: #059669;
+    }
+
+    .intent-ACHIEVEMENT {
+      background: color-mix(in srgb, #f59e0b 16%, transparent);
+      color: #b45309;
+    }
+
+    .intent-MEETUP {
+      background: color-mix(in srgb, #8b5cf6 14%, transparent);
+      color: #7c3aed;
+    }
+
+    .intent-URGENT_LOST {
+      background: color-mix(in srgb, #ef4444 14%, transparent);
+      color: #dc2626;
+    }
+
+    .intent-solved {
+      background: color-mix(in srgb, #10b981 16%, transparent);
+      color: #047857;
+    }
+
+    .post-intent-urgent-note {
+      flex-basis: 100%;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .post-intent-urgent-link {
+      color: var(--primary-color);
+      font-weight: 600;
+      margin-left: 0.25rem;
+    }
+
+    .post-intent-urgent-link:hover {
+      text-decoration: underline;
     }
 
     /* ===== GRID MODE ===== */
@@ -526,6 +629,14 @@ export class PostFeedComponent {
     this.commentsChanged.emit({ postId: post.id, count });
   }
 
+  /**
+   * Refleja en la tarjeta el nuevo estado de solución para que el badge se
+   * actualice sin recargar el feed.
+   */
+  onSolutionChanged(post: PostItem, event: { solved: boolean }): void {
+    post.solved = event.solved;
+  }
+
   toggleComments(postId: string, showForm: boolean = false): void {
     this.expandedComments.update(expanded => {
       const newSet = new Set(expanded);
@@ -564,5 +675,36 @@ export class PostFeedComponent {
 
   shouldShowCommentForm(postId: string): boolean {
     return this.showCommentForm().has(postId);
+  }
+
+  /** Intención mostrada: siempre un valor, aunque el post sea antiguo. */
+  intentOf(post: PostItem): PostIntent {
+    return resolveIntent(post.intent);
+  }
+
+  isQuestion(post: PostItem): boolean {
+    return this.intentOf(post) === 'QUESTION';
+  }
+
+  /** Aviso urgente: enlaza al módulo de mascotas perdidas, no lo sustituye. */
+  isUrgentLost(post: PostItem): boolean {
+    return this.intentOf(post) === 'URGENT_LOST';
+  }
+
+  intentIcon(post: PostItem): string {
+    switch (this.intentOf(post)) {
+      case 'QUESTION':
+        return 'pi-question-circle';
+      case 'RECOMMENDATION':
+        return 'pi-thumbs-up';
+      case 'ACHIEVEMENT':
+        return 'pi-trophy';
+      case 'MEETUP':
+        return 'pi-users';
+      case 'URGENT_LOST':
+        return 'pi-exclamation-triangle';
+      default:
+        return 'pi-info-circle';
+    }
   }
 }

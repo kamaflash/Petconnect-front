@@ -439,7 +439,31 @@
     "detailTitle": "Publicación",
     "detailSubtitle": "Un momento compartido con la comunidad",
     "backToProfile": "Volver al perfil",
-    "detailError": "No se pudo cargar esta publicación. Puede que ya no esté disponible."
+    "detailError": "No se pudo cargar esta publicación. Puede que ya no esté disponible.",
+    "postIntent": {
+      "label": "Tipo de publicación",
+      "hint": "Ayuda a la comunidad a entender tu intención",
+      "required": "Elige un tipo de publicación",
+      "UPDATE": "Actualización",
+      "QUESTION": "Pregunta",
+      "RECOMMENDATION": "Recomendación",
+      "ACHIEVEMENT": "Logro",
+      "MEETUP": "Busco compañía",
+      "URGENT_LOST": "Mascota perdida",
+      "filterLabel": "Filtrar por tipo",
+      "filterAll": "Todos",
+      "solvedBadge": "Resuelta",
+      "solvedBy": "Resuelta por {{ name }}",
+      "markSolution": "Marcar como solución",
+      "unmarkSolution": "Retirar solución",
+      "solutionTag": "Solución",
+      "solutionToast": "Respuesta marcada como solución",
+      "solutionRemovedToast": "Solución retirada",
+      "solutionError": "No se pudo actualizar la solución. Inténtalo de nuevo.",
+      "urgentNotice": "Para una búsqueda organizada, crea un aviso de mascota perdida.",
+      "urgentAction": "Ir a mascotas perdidas",
+      "emptyFiltered": "No hay publicaciones de este tipo todavía."
+    }
   },
   "profile": {
     "noDescription": "Sin descripción",
@@ -904,6 +928,70 @@
     "submit": "Crear producto"
   },
   "social": {
+    "communities": {
+      "title": "Círculos de comunidad",
+      "detailTitle": "Detalle del círculo",
+      "detailSubtitle": "Información del círculo y tu estado de miembro",
+      "backToList": "Volver a círculos",
+      "viewAll": "Ver círculos",
+      "createTitle": "Crear círculo",
+      "editTitle": "Editar círculo",
+      "createButton": "Crear círculo",
+      "ownerBadge": "Propietario",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "deleteTitle": "Eliminar círculo",
+      "deleteConfirm": "¿Seguro que quieres eliminar este círculo?",
+      "deleteConfirmDetail": "Se ocultará para todo el mundo y tus miembros dejarán de verlo. Esta acción no se puede deshacer.",
+      "createdTitle": "Círculo creado",
+      "created": "Ya puedes invitar a otras personas a unirse",
+      "updatedTitle": "Círculo actualizado",
+      "updated": "Los cambios ya se ven en la ficha del círculo",
+      "deletedTitle": "Círculo eliminado",
+      "deleted": "Ya no aparece en el listado de círculos",
+      "saveErrorTitle": "No se pudo guardar",
+      "saveError": "Revisa los datos e inténtalo de nuevo",
+      "deleteErrorTitle": "No se pudo eliminar",
+      "deleteError": "Solo el propietario puede eliminar el círculo",
+      "notFound": "No se pudo cargar el círculo",
+      "subtitle": "Únete a grupos de tu zona, de tu especie o de tus intereses",
+      "searchPlaceholder": "Buscar círculos",
+      "topicLabel": "Filtrar por tema",
+      "join": "Unirse",
+      "leave": "Salir",
+      "membersCount": "{count} miembros",
+      "empty": "No hay círculos que coincidan con tu búsqueda",
+      "loadError": "No se pudieron cargar los círculos",
+      "retry": "Reintentar",
+      "joinedTitle": "Ya formas parte del círculo",
+      "joined": "Te has unido correctamente",
+      "leftTitle": "Has salido del círculo",
+      "left": "Ya no formas parte de ese círculo",
+      "membershipErrorTitle": "No se pudo actualizar tu pertenencia",
+      "membershipError": "Inténtalo de nuevo en unos segundos",
+      "loginRequiredTitle": "Inicia sesión",
+      "loginRequired": "Debes iniciar sesión para unirte o salir de un círculo",
+      "form": {
+        "name": "Nombre",
+        "namePlaceholder": "Paseos en Retiro",
+        "description": "Descripción",
+        "descriptionPlaceholder": "Qué se hace en este círculo",
+        "avatarUrl": "Imagen (URL)",
+        "avatarUrlPlaceholder": "https://…",
+        "category": "Categoría",
+        "categoryPlaceholder": "Zona, especie, cuidados…",
+        "topic": "Tema",
+        "noTopic": "Sin tema",
+        "save": "Guardar",
+        "cancel": "Cancelar"
+      },
+      "topics": {
+        "LOCATION": "Zona",
+        "SPECIES": "Especie",
+        "ACTIVITY": "Actividad",
+        "SUPPORT": "Apoyo"
+      }
+    },
     "tabs": {
       "feed": "Feed",
       "events": "Eventos",
@@ -941,7 +1029,6 @@
       "shared": "Compartido",
       "sharedDetail": "Enlace de la publicación copiado al portapapeles",
       "eventCreationComingSoon": "La creación de eventos estará disponible pronto",
-      "groupCreationComingSoon": "La creación de grupos estará disponible pronto",
       "emptyContent": "Contenido vacío",
       "emptyContentDetail": "Escribe algo antes de publicar",
       "loginRequiredPost": "Debes iniciar sesión para publicar",
@@ -1266,92 +1353,8 @@
     "tryAgain": "Inténtalo de nuevo."
   },
   "gam": {
-    "exploration": "Exploración",
-    "tenAppointments": "Completa 10 citas médicas",
-    "champion": "Campeón",
-    "loyalCompanion": "Compañero fiel",
-    "anonymousHero": "Héroe anónimo",
-    "firstPost": "Crea tu primera publicación",
-    "communityHeart": "Corazón de la Comunidad",
-    "tryAgain": "Inténtalo de nuevo.",
-    "cat": {
-      "social": "Social",
-      "care": "Cuidado",
-      "exploration": "Exploración",
-      "special": "Especial"
-    },
-    "unlocked": "Desbloqueado",
-    "locked": "Bloqueado",
-    "rankExpert": "Experto en Mascotas",
     "resultSingular": "logro",
-    "resultPlural": "logros",
-    "toastCleared": "Filtros limpiados",
-    "toastClearedDetail": "Se han restablecido todos los filtros",
-    "ach": {
-      "1": {
-        "name": "Primer paso",
-        "description": "Registra tu primera compañer@"
-      },
-      "2": {
-        "name": "Amante de los animales",
-        "description": "Registra 3 mascotas"
-      },
-      "3": {
-        "name": "Cuidador responsable",
-        "description": "Completa 10 citas médicas"
-      },
-      "4": {
-        "name": "Social",
-        "description": "Haz 50 publicaciones"
-      },
-      "5": {
-        "name": "Explorador",
-        "description": "Visita 5 lugares diferentes"
-      },
-      "6": {
-        "name": "Campeón",
-        "description": "Gana un concurso"
-      },
-      "7": {
-        "name": "Compañero fiel",
-        "description": "Participa en 10 eventos"
-      },
-      "8": {
-        "name": "Héroe anónimo",
-        "description": "Adopta una compañer@"
-      },
-      "9": {
-        "name": "Nueva Voz",
-        "description": "Crea tu primera publicación"
-      },
-      "10": {
-        "name": "Creador",
-        "description": "Crea 10 publicaciones"
-      },
-      "11": {
-        "name": "Corazón de la Comunidad",
-        "description": "Responde 10 comentarios"
-      }
-    },
-    "headerTitle": "Logros y Niveles",
-    "headerSubtitle": "Tu progreso en la comunidad",
-    "statLevel": "Nivel",
-    "statXP": "XP Total",
-    "statAchievements": "Logros",
-    "profileLevel": "Nivel",
-    "profileXP": "XP",
-    "upcomingTitle": "Próximos Logros",
-    "xpAbbr": "XP",
-    "followTitle": "Quién seguir",
-    "followButton": "Seguir",
-    "trendingTitle": "Tendencias",
-    "trending": "TENDENCIA",
-    "followers": " seguidores",
-    "filterCategory": "Categoría:",
-    "filterStatus": "Estado:",
-    "clearFilters": "Limpiar",
-    "emptyState": "No se encontraron logros con estos criterios",
-    "clearFiltersBtn": "Limpiar filtros"
+    "resultPlural": "logros"
   },
   "messages": {
     "startConversation": "Empieza la conversación",

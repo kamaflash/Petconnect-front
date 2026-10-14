@@ -29,7 +29,23 @@ import { CommentResponse } from '../../../../social/infrastructure/services/soci
           @if (canDelete()) {
             <button class="comment-action-btn delete" (click)="onDelete()">{{ this.i18n.translate('commentItem.delete') }}</button>
           }
+          @if (canModerateSolution()) {
+            <button
+              class="comment-action-btn solution"
+              [class.is-solution]="comment().solution === true"
+              (click)="onToggleSolution()"
+            >
+              <i class="pi pi-check-circle" aria-hidden="true"></i>
+              {{ (comment().solution === true ? 'post.postIntent.unmarkSolution' : 'post.postIntent.markSolution') | transloco }}
+            </button>
+          }
         </div>
+        @if (comment().solution === true) {
+          <span class="solution-tag">
+            <i class="pi pi-verified" aria-hidden="true"></i>
+            {{ 'post.postIntent.solutionTag' | transloco }}
+          </span>
+        }
         <!-- Replies -->
         @if (comment().replies && comment().replies!.length > 0) {
           <div class="comment-replies">
@@ -132,6 +148,30 @@ import { CommentResponse } from '../../../../social/infrastructure/services/soci
       color: #ef4444;
     }
 
+    .comment-action-btn.solution {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--primary-color);
+    }
+
+    .comment-action-btn.solution.is-solution {
+      color: #047857;
+    }
+
+    .solution-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      margin-top: 0.375rem;
+      padding: 0.125rem 0.5rem;
+      border-radius: var(--radius-full, 999px);
+      background: color-mix(in srgb, #10b981 16%, transparent);
+      color: #047857;
+      font-size: 0.6875rem;
+      font-weight: 600;
+    }
+
     .comment-replies {
       margin-top: 0.5rem;
       border-left: 2px solid var(--surface-border);
@@ -147,10 +187,13 @@ export class CommentItemComponent {
   currentUserId = input<string>('');
   postAuthorId = input<string>('');
   isReply = input(false);
+  /** Solo el autor de la pregunta puede marcar o retirar la solución. */
+  canModerateSolution = input(false);
 
   // Outputs
   replyRequested = output<string>();
   deleteRequested = output<string>();
+  solutionToggled = output<CommentResponse>();
 
   canDelete(): boolean {
     const uid = this.currentUserId();
@@ -182,5 +225,9 @@ export class CommentItemComponent {
     if (confirm(this.i18n.translate('commentItem.deleteConfirm'))) {
       this.deleteRequested.emit(this.comment().id);
     }
+  }
+
+  onToggleSolution(): void {
+    this.solutionToggled.emit(this.comment());
   }
 }
