@@ -83,7 +83,7 @@ export interface FilterOptions {
           <!-- Items Grid -->
           <div class="items-grid">
             @for (item of filteredItems(); track $any(item)[itemKeyField]) {
-              <div class="item-card" (click)="onItemClick(item)">
+              <div class="item-card" role="button" tabindex="0" (click)="onItemClick(item)" (keydown.enter)="onItemClick(item)" (keydown.space)="$event.preventDefault(); onItemClick(item)">
                 @for (column of columnConfigs; track column.key) {
                   @if (column.type === 'image') {
                     <div class="item-image-container">
@@ -149,7 +149,7 @@ export interface FilterOptions {
   styles: [`
     :host { display: block; width: 100%; }
     .feed-grid-container { width: 100%; min-width: 0; }
-    .catalog-toolbar { margin: 0 auto 1.25rem; padding: 1rem 1.25rem; border-radius: var(--radius-lg); background: var(--surface-card); }
+    .catalog-toolbar { margin: 0 auto 1.25rem; padding: 1rem 1.25rem; border: none; border-radius: var(--radius-lg); background: var(--surface-card); }
     .filters-summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-primary); cursor: pointer; list-style: none; }
     .filters-summary::-webkit-details-marker { display: none; }
     .filters-summary-title, .filters-summary-meta { display: inline-flex; align-items: center; gap: .75rem; }
@@ -170,11 +170,12 @@ export interface FilterOptions {
     .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
     .skeleton-item { cursor: default; }
     .skeleton-item-content { display: grid; gap: .8rem; }
-    .item-card { background: var(--surface-card); border-radius: var(--radius-md); overflow: hidden; transition: all var(--transition-fast); cursor: pointer; }
-    .item-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .item-card { background: var(--surface-card); border: 1px solid var(--surface-border); border-radius: var(--radius-lg); overflow: hidden; transition: transform var(--transition-normal), box-shadow var(--transition-normal); cursor: pointer; box-shadow: var(--shadow-sm); }
+    .item-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
     .item-image-container { position: relative; width: 100%; height: 250px; overflow: hidden; background: var(--surface-hover); }
     .item-image-container img { width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-normal); }
     .item-card:hover .item-image-container img { transform: scale(1.05); }
+    .item-card:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 2px; }
     .item-status-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
     .status-badge { padding: 0.5rem 1.5rem; border-radius: var(--radius-full); font-weight: 600; font-size: 0.875rem; }
     .item-content { padding: 1.25rem; }
@@ -187,8 +188,8 @@ export interface FilterOptions {
     .date-badge { display: flex; flex-direction: column; align-items: center; background: var(--primary-color-light); padding: 0.5rem 0.75rem; border-radius: var(--radius-sm); }
     .date-day { font-weight: 700; font-size: 1.25rem; color: var(--primary-color); }
     .date-month { font-size: 0.7rem; text-transform: uppercase; color: var(--primary-color); font-weight: 600; }
-    .no-items { text-align: center; padding: 4rem 2rem; background: var(--surface-card); border-radius: var(--radius-md); }
-    .no-items i { font-size: 3rem; color: var(--text-tertiary); margin-bottom: 1rem; }
+    .no-items { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 3.5rem 2rem; background: var(--surface-card); border: 1px dashed var(--surface-border); border-radius: var(--radius-lg); }
+    .no-items i { font-size: 2.5rem; color: var(--primary-color); background: var(--primary-color-light); width: 64px; height: 64px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius-full); margin-bottom: 1rem; }
     .no-items p { font-size: 1.125rem; color: var(--text-secondary); margin: 0 0 1rem; }
 
     @media (max-width: 768px) {

@@ -40,7 +40,7 @@ const SPECIES = [
   providers: [MessageService],
   template: `
     <p-toast />
-    <div class="page-content">
+    <div class="page-content lostpets-page">
       <app-page-heading-card
         [title]="'lostPets.title' | transloco"
         [subtitle]="'lostPets.subtitle' | transloco"
@@ -57,7 +57,20 @@ const SPECIES = [
         </button>
       </app-page-heading-card>
 
-      <section class="filters-bar card-modern">
+      <details class="catalog-toolbar card-modern">
+        <summary class="filters-summary">
+          <span class="filters-summary-title">
+            <i class="pi pi-sliders-h" aria-hidden="true"></i>
+            {{ 'feedGrid.filters' | transloco }}
+          </span>
+          <span class="filters-summary-meta">
+            <span class="results-count">
+              {{ reports().length }} {{ reports().length === 1 ? 'reporte' : 'reportes' }}
+            </span>
+            <i class="pi pi-chevron-down accordion-chevron" aria-hidden="true"></i>
+          </span>
+        </summary>
+        <div class="filter-panel filters-bar">
         <div class="filter-field">
           <label for="species-filter">{{ 'lostPets.filterSpecies' | transloco }}</label>
           <p-select
@@ -103,7 +116,8 @@ const SPECIES = [
           <i class="pi pi-map-marker" aria-hidden="true"></i>
           {{ (nearbyOnly() ? 'lostPets.nearbyActive' : 'lostPets.nearby') | transloco }}
         </button>
-      </section>
+        </div>
+      </details>
 
       @if (loading()) {
         <div class="reports-grid" aria-busy="true">
@@ -211,19 +225,37 @@ const SPECIES = [
   `,
   styles: [`
     :host { display: block; }
-    .lostpets-page { max-width: var(--max-page-width); margin: 0 auto; }
+    .lostpets-page {
+      max-width: var(--max-page-width);
+      margin: 0 auto;
+      padding: 0 1rem;
+      box-sizing: border-box;
+      background: var(--surface-bg);
+    }
     .card-modern {
-      overflow: hidden; margin-bottom: 1rem; padding: 1rem;
-      border: 1px solid var(--surface-border); border-radius: var(--radius-lg);
+      overflow: hidden; margin: 0 auto 1.25rem; padding: 1rem 1.25rem;
+      border: none; border-radius: var(--radius-lg);
       background: var(--surface-card);
     }
-    .filters-bar { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
-    .filter-field { display: flex; flex-direction: column; gap: .35rem; min-width: 11rem; }
-    .filter-field label { font-size: .8rem; font-weight: 600; color: var(--text-secondary); }
+    .filters-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .85rem; align-items: end; }
+    .catalog-toolbar .filters-bar { padding-top: 1rem; }
+    .filters-summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-primary); cursor: pointer; list-style: none; }
+    .filters-summary::-webkit-details-marker { display: none; }
+    .filters-summary-title, .filters-summary-meta { display: inline-flex; align-items: center; gap: .75rem; }
+    .filters-summary-title { font-weight: 650; }
+    .filters-summary-title > i { color: var(--primary-color); }
+    .accordion-chevron { color: var(--text-secondary); transition: transform var(--transition-fast); }
+    .catalog-toolbar[open] .accordion-chevron { transform: rotate(180deg); }
+    .results-count { color: var(--text-secondary); font-size: .85rem; white-space: nowrap; }
+    .filter-field { display: flex; flex-direction: column; gap: .4rem; min-width: 0; }
+    .filter-field label { font-size: .8rem; font-weight: 650; color: var(--text-secondary); }
     .date-input {
       padding: .55rem .65rem; border: 1px solid var(--surface-border);
-      border-radius: var(--radius-md); background: var(--surface-ground);
+      border-radius: var(--radius-md); background: transparent;
       color: var(--text-primary); font: inherit;
+    }
+    :host ::ng-deep .filter-panel .p-select {
+      background: transparent;
     }
     .nearby-toggle.active { border-color: var(--primary-color); color: var(--primary-color); }
     .reports-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }

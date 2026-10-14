@@ -1,0 +1,112 @@
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of LoginPageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/presentation/pages/login-page.component.ts:41:4:
+[37m      41 │     [32mRouterLink[37m,
+         ╵     [32m~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of EventsPageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/events/presentation/pages/events-page.component.ts:58:4:
+[37m      58 │     [32mRouterLink[37m,
+         ╵     [32m~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of MarketplacePageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/marketplace/presentation/pages/marketplace-page.component.ts:62:4:
+[37m      62 │     [32mRouterLink[37m,
+         ╵     [32m~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of NearbyPageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/nearby/presentation/pages/nearby-page.component.ts:41:4:
+[37m      41 │     [32mRouterLink[37m,
+         ╵     [32m~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: InfoItemComponent is not used within the template of PetProfilePageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/profile/presentation/pages/pet-profile-page.component.ts:64:4:
+[37m      64 │     [32mInfoItemComponent[37m,
+         ╵     [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: StatCardComponent is not used within the template of PetProfilePageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/profile/presentation/pages/pet-profile-page.component.ts:65:4:
+[37m      65 │     [32mStatCardComponent[37m,
+         ╵     [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: LocationPickerComponent is not used within the template of ProfilePageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/profile/presentation/pages/profile-page.component.ts:156:4:
+[37m      156 │     [32mLocationPickerComponent[37m,
+          ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of TableCardComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/presentation/components/table-card/table-card.component.ts:58:4:
+[37m      58 │     [32mRouterLink[37m,
+         ╵     [32m~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of LoginPageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/auth/presentation/pages/login-page.component.ts:41:4:
+[37m      41 │     [32mRouterLink[37m,
+         ╵     [32m~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of EventsPageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/events/presentation/pages/events-page.component.ts:58:4:
+[37m      58 │     [32mRouterLink[37m,
+         ╵     [32m~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of MarketplacePageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/marketplace/presentation/pages/marketplace-page.component.ts:62:4:
+[37m      62 │     [32mRouterLink[37m,
+         ╵     [32m~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of NearbyPageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/nearby/presentation/pages/nearby-page.component.ts:41:4:
+[37m      41 │     [32mRouterLink[37m,
+         ╵     [32m~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: InfoItemComponent is not used within the template of PetProfilePageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/profile/presentation/pages/pet-profile-page.component.ts:64:4:
+[37m      64 │     [32mInfoItemComponent[37m,
+         ╵     [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: StatCardComponent is not used within the template of PetProfilePageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/profile/presentation/pages/pet-profile-page.component.ts:65:4:
+[37m      65 │     [32mStatCardComponent[37m,
+         ╵     [32m~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: LocationPickerComponent is not used within the template of ProfilePageComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/profile/presentation/pages/profile-page.component.ts:156:4:
+[37m      156 │     [32mLocationPickerComponent[37m,
+          ╵     [32m~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mNG8113: RouterLink is not used within the template of TableCardComponent[0m [1m[35m[plugin angular-compiler][0m
+
+    src/app/shared/presentation/components/table-card/table-card.component.ts:58:4:
+[37m      58 │     [32mRouterLink[37m,
+         ╵     [32m~~~~~~~~~~[0m
+
+

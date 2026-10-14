@@ -234,7 +234,20 @@ import {
           </div>
 
           <!-- Filters -->
-          <div class="filters-bar">
+          <details class="filters-bar" open>
+            <summary class="filters-summary">
+              <span class="filters-summary-title">
+                <i class="pi pi-sliders-h" aria-hidden="true"></i>
+                {{ 'feedGrid.filters' | transloco }}
+              </span>
+              <span class="filters-summary-meta">
+                <span class="results-count">
+                  {{ filteredAchievements().length }} {{ (filteredAchievements().length !== 1 ? 'gam.resultPlural' : 'gam.resultSingular') | transloco }}
+                </span>
+                <i class="pi pi-chevron-down accordion-chevron" aria-hidden="true"></i>
+              </span>
+            </summary>
+            <div class="filter-panel">
             <div class="filters-group">
               <span class="filter-label">{{ 'gamd.category' | transloco }}</span>
               @for (cat of categories; track cat) {
@@ -250,7 +263,8 @@ import {
                 <i class="pi pi-times"></i> {{ 'gamd.clear' | transloco }}
               </button>
             </div>
-          </div>
+            </div>
+          </details>
 
           <!-- Achievements Grid -->
           <div class="achievements-grid">
@@ -701,13 +715,23 @@ import {
       gap: 1rem;
     }
 
-    /* Filters */
+    /* Filters — mismo patrón plegable que el toolbar de adopciones */
     .filters-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem;
+      margin: 0 auto 1.25rem;
+      padding: 1rem 1.25rem;
+      background: var(--surface-card);
+      border: none;
+      border-radius: var(--radius-lg);
     }
+    .filters-summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-primary); cursor: pointer; list-style: none; }
+    .filters-summary::-webkit-details-marker { display: none; }
+    .filters-summary-title, .filters-summary-meta { display: inline-flex; align-items: center; gap: .75rem; }
+    .filters-summary-title { font-weight: 650; }
+    .filters-summary-title > i { color: var(--primary-color); }
+    .accordion-chevron { color: var(--text-secondary); transition: transform var(--transition-fast); }
+    .filters-bar[open] .accordion-chevron { transform: rotate(180deg); }
+    .filter-panel { display: grid; gap: .75rem; padding-top: 1rem; }
+    .results-count { color: var(--text-secondary); font-size: .85rem; white-space: nowrap; }
 
     .filters-group {
       display: flex;
@@ -717,19 +741,20 @@ import {
     }
 
     .filter-label {
-      font-size: 0.75rem;
-      color: var(--text-tertiary);
-      font-weight: 500;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 650;
       margin-right: 0.25rem;
     }
 
     .filter-chip {
-      padding: 0.1875rem 0.625rem;
-      border-radius: var(--radius-full);
+      min-height: 2.75rem;
+      padding: 0.65rem 0.8rem;
+      border-radius: var(--radius-sm);
       border: 1px solid var(--surface-border);
       background: transparent;
       color: var(--text-secondary);
-      font-size: 0.6875rem;
+      font-size: 0.875rem;
       cursor: pointer;
       transition: all 0.2s ease;
       white-space: nowrap;

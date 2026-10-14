@@ -118,7 +118,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
                   }
                 </button>
 
-                <p-menu #menu [model]="menuItems" [popup]="true" [appendTo]="'body'">
+                <p-menu #menu [model]="menuItems" [popup]="true" [appendTo]="'body'" styleClass="user-profile-menu">
                   <ng-template pTemplate="start">
                     @if (isLoggedIn()) {
                       <div class="user-menu-header">
@@ -251,9 +251,18 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
     }
 
     .header-btn:hover {
-      color: var(--text-primary) !important;
-      background-color: var(--surface-hover) !important;
+      color: var(--primary-color) !important;
+      background-color: var(--primary-color-light) !important;
       transform: scale(1.05);
+    }
+
+    .header-btn:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
+    .header-btn:active {
+      transform: scale(0.95);
     }
 
     .header-btn .p-button-icon {
@@ -267,7 +276,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
       right: 6px;
       width: 8px;
       height: 8px;
-      background: #ef4444;
+      background: var(--danger-color);
       border-radius: 50%;
       border: 2px solid var(--surface-card);
     }
@@ -280,7 +289,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
       min-width: 17px;
       height: 17px;
       padding: 0 4px;
-      background: #ef4444;
+      background: var(--danger-color);
       color: #fff;
       font-size: 0.6875rem;
       font-weight: 700;

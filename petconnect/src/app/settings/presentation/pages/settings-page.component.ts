@@ -18,9 +18,10 @@ interface ThemeColor {
 }
 
 const themeColorValues: Record<string, { hover: string; active: string; light: string }> = {
+  '#f97316': { hover: '#ea580c', active: '#c2410c', light: '#fff7ed' },
+  '#1e6f50': { hover: '#17593f', active: '#114530', light: '#e9f3ee' },
   '#94c748': { hover: '#7cb33d', active: '#659929', light: '#f0f8e6' },
   '#e1306c': { hover: '#c42d5f', active: '#a72951', light: '#fce7f3' },
-  '#f97316': { hover: '#ea580c', active: '#c2410c', light: '#fff7ed' },
   '#3b82f6': { hover: '#2563eb', active: '#1d4ed8', light: '#dbeafe' },
   '#8b5cf6': { hover: '#7c3aed', active: '#6d28d9', light: '#f5f3ff' },
   '#ec4899': { hover: '#db2777', active: '#be185d', light: '#fce7f3' },
@@ -281,6 +282,7 @@ export class SettingsPageComponent implements OnInit {
 
   themeColors: ThemeColor[] = [
     { name: 'Naranja', value: '#f97316' },
+    { name: 'Bosque', value: '#1e6f50' },
     { name: 'Verde', value: '#94c748' },
     { name: 'Azul', value: '#3b82f6' },
     { name: this.i18n.translate('settings.colorPurple'), value: '#8b5cf6' },
@@ -296,7 +298,7 @@ export class SettingsPageComponent implements OnInit {
   ngOnInit(): void {
     const saved = localStorage.getItem('theme-color');
     if (saved) {
-      // Si es el verde antiguo, tratarlo como naranja (nuevo color por defecto)
+      // Migrar el verde de la identidad anterior al naranja por defecto
       const color = saved === '#94c748' ? '#f97316' : saved;
       this.selectedColor.set(color);
     }

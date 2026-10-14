@@ -967,7 +967,7 @@ interface PetComment {
 
     .btn-primary:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(148, 199, 72, 0.4);
+      box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.4);
     }
 
     .btn-primary:active {
@@ -992,11 +992,22 @@ interface PetComment {
     }
 
     .btn-adopt {
-      background: linear-gradient(135deg, #f43f5e, #e11d48);
+      background: var(--accent-color);
+      color: var(--accent-ink);
     }
 
     .btn-adopt:hover {
-      box-shadow: 0 4px 12px rgba(228, 29, 72, 0.4);
+      background: var(--accent-color-hover);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-adopt:active {
+      background: var(--accent-color-active);
+    }
+
+    .btn-adopt:focus-visible {
+      outline: 2px solid var(--accent-color-active);
+      outline-offset: 2px;
     }
 
     .btn-secondary {
@@ -1158,6 +1169,8 @@ interface PetComment {
     }
 
     .edit-form-wrapper {
+      width: 100%;
+      max-width: none;
       background-color: var(--surface-card);
       border: 1px solid var(--surface-border);
       border-radius: var(--radius-lg);
@@ -1166,8 +1179,9 @@ interface PetComment {
 
     /* Sección de edición inline (como una vista, no modal) */
     .pet-edit-section {
-      max-width: 48rem;
-      margin: 0 auto;
+      width: 100%;
+      max-width: none;
+      margin: 0;
     }
 
     .edit-section-header {

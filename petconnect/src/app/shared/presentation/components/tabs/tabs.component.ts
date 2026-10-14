@@ -70,11 +70,22 @@ export interface Tab {
     }
 
     .tab-button-instagram:hover {
-      color: var(--bitbucket-text-primary);
+      color: var(--primary-color);
+    }
+
+    .tab-button-instagram:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: -4px;
+      border-radius: var(--radius-sm);
+    }
+
+    .tab-button-instagram:active {
+      transform: scale(0.97);
     }
 
     .tab-button-instagram.active {
-      color: var(--bitbucket-text-primary);
+      color: var(--primary-color);
+      font-weight: 600;
     }
 
     .tab-button-instagram.active::after {
@@ -109,7 +120,7 @@ export interface Tab {
     }
 
     .tab-badge {
-      background: var(--red-500);
+      background: var(--danger-color);
       color: white;
       font-size: 0.6rem;
       padding: 0.1rem 0.4rem;

@@ -8,6 +8,7 @@ export function buildPetEditorFormConfig(i18n: TranslocoService): DynamicFormCon
   return {
     submitLabel: i18n.translate('petsPage.saveChanges'),
     showCancel: true,
+    columns: 3,
     resolveOptions: (_field, sourceValue) => SPECIES_BREEDS[sourceValue] ?? [],
     fields: [
       {

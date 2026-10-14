@@ -90,6 +90,8 @@ export interface DynamicFormConfig {
   cancelLabel?: string;
   showCancel?: boolean;
   showSubmit?: boolean;
+  /** Número de columnas del grid de campos (por defecto, auto según ancho). */
+  columns?: 1 | 2 | 3 | 4;
 }
 
 @Component({
@@ -123,7 +125,7 @@ export interface DynamicFormConfig {
       }
 
       <form [formGroup]="form()" (ngSubmit)="onSubmit()" class="dynamic-form">
-        <div class="form-fields">
+        <div class="form-fields" [class.form-fields-1]="config().columns === 1" [class.form-fields-2]="config().columns === 2" [class.form-fields-3]="config().columns === 3" [class.form-fields-4]="config().columns === 4">
           @for (field of config().fields; track field.key) {
             <div class="form-field" [class.field-full-width]="field.type === 'textarea' || field.type === 'file'">
               <label [for]="field.key" class="field-label">
@@ -386,8 +388,10 @@ export interface DynamicFormConfig {
     </div>
   `,
   styles: [`
+    :host { display: block; width: 100%; max-width: 100%; }
     .dynamic-form-container {
       width: 100%;
+      max-width: 100%;
       background-color: var(--bitbucket-header-bg);
       border-radius: 8px;
       overflow: hidden;
@@ -418,6 +422,9 @@ export interface DynamicFormConfig {
 
     .dynamic-form {
       padding: 1.5rem;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
     .form-fields {
@@ -426,10 +433,43 @@ export interface DynamicFormConfig {
       gap: 1.25rem;
     }
 
+    .form-fields-1 { grid-template-columns: 1fr; }
+    .form-fields-2 { grid-template-columns: repeat(2, 1fr); }
+    .form-fields-3 { grid-template-columns: repeat(3, 1fr); }
+    .form-fields-4 { grid-template-columns: repeat(4, 1fr); }
+
+    @media (max-width: 1100px) {
+      .form-fields-3, .form-fields-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 640px) {
+      .form-fields-2, .form-fields-3, .form-fields-4 { grid-template-columns: 1fr; }
+    }
+
     .form-field {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .form-field > *,
+    :host ::ng-deep .form-field .p-inputtext,
+    :host ::ng-deep .form-field textarea,
+    :host ::ng-deep .form-field .p-select,
+    :host ::ng-deep .form-field .p-multiselect,
+    :host ::ng-deep .form-field .p-password,
+    :host ::ng-deep .form-field .p-inputnumber,
+    :host ::ng-deep .form-field .p-datepicker,
+    :host ::ng-deep .form-field p-select,
+    :host ::ng-deep .form-field p-multiselect,
+    :host ::ng-deep .form-field p-datepicker,
+    :host ::ng-deep .form-field p-inputnumber,
+    :host ::ng-deep .form-field p-password,
+    :host ::ng-deep .form-field app-location-picker {
+      width: 100%;
+      max-width: 100%;
     }
 
     .field-full-width {
@@ -604,12 +644,49 @@ export interface DynamicFormConfig {
       z-index: 9999 !important;
     }
 
+        /* Inputs y selects con fondo transparente y bordes como el textarea */
+    :host ::ng-deep .p-inputtext,
+    :host ::ng-deep textarea,
+    :host ::ng-deep .p-textarea,
+    :host ::ng-deep .p-select,
+    :host ::ng-deep .p-multiselect,
+    :host ::ng-deep .p-password-input,
+    :host ::ng-deep .p-inputnumber-input,
+    :host ::ng-deep .p-datepicker-input {
+      background: transparent !important;
+      background-color: transparent !important;
+      border: 1px solid var(--surface-border) !important;
+      border-radius: var(--radius-sm) !important;
+      color: var(--text-primary);
+      transition: all var(--transition-fast);
+    }
+
+    :host ::ng-deep .p-inputtext:hover,
+    :host ::ng-deep textarea:hover,
+    :host ::ng-deep .p-textarea:hover,
+    :host ::ng-deep .p-select:not(.p-disabled):hover,
+    :host ::ng-deep .p-multiselect:not(.p-disabled):hover,
+    :host ::ng-deep .p-password-input:hover,
+    :host ::ng-deep .p-inputnumber-input:hover,
+    :host ::ng-deep .p-datepicker-input:hover {
+      border-color: var(--surface-border) !important;
+    }
+
         /* Forzar bordes naranjas nos inputs e selects SOLO cando se enfocan */
     :host ::ng-deep .p-inputtext:focus,
     :host ::ng-deep .p-inputtext.ng-focus,
-    :host ::ng-deep .p-select:focus-within {
-      border-color: #f97316 !important;
-      box-shadow: 0 0 0 1px #f97316 !important;
+    :host ::ng-deep textarea:focus,
+    :host ::ng-deep .p-textarea:focus,
+    :host ::ng-deep .p-select:focus-within,
+    :host ::ng-deep .p-select.p-focus,
+    :host ::ng-deep .p-multiselect:focus-within,
+    :host ::ng-deep .p-multiselect.p-focus,
+    :host ::ng-deep .p-password-input:focus,
+    :host ::ng-deep .p-inputnumber-input:focus,
+    :host ::ng-deep .p-datepicker-input:focus {
+      outline: none !important;
+      border-color: var(--primary-color) !important;
+      box-shadow: 0 0 0 3px var(--primary-color-highlight) !important;
     }
 
     .submit-btn {

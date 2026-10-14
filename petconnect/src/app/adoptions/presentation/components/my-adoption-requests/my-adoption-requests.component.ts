@@ -1,4 +1,4 @@
-﻿import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
@@ -206,14 +206,14 @@ const ADOPTION_STAGES: AdoptionStatus[] = [
     .loading-state { display: flex; flex-direction: column; gap: .75rem; padding: 1rem; border-radius: .75rem; background: var(--surface-card, #fff); }
     .skeleton { display: block; height: 1rem; border-radius: .5rem; background: linear-gradient(90deg, #edf1f2, #f8f9f9, #edf1f2); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
     .skeleton-title { width: 45%; height: 2rem; }
-    .error-state { padding: 1rem; border-radius: .75rem; background: #fdecea; color: #b3261e; }
-    .empty-state { text-align: center; padding: 2.5rem 1rem; border-radius: .75rem; background: var(--surface-card, #fff); }
-    .empty-state i { font-size: 2rem; color: var(--primary-color, #4d7c70); }
+    .error-state { display: flex; align-items: flex-start; gap: .6rem; padding: 1rem; border-radius: var(--radius-md); background: var(--danger-color-light); color: var(--danger-color); border: 1px solid color-mix(in srgb, var(--danger-color) 30%, transparent); }
+    .empty-state { text-align: center; padding: 2.5rem 1.5rem; border-radius: var(--radius-lg); background: var(--surface-card); border: 1px dashed var(--surface-border); }
+    .empty-state i { font-size: 2rem; color: var(--primary-color); }
     .empty-state h2 { margin: .5rem 0; }
-    .empty-state p { margin: 0 0 1rem; color: var(--text-color-secondary, #607d8b); }
+    .empty-state p { margin: 0 0 1rem; color: var(--text-secondary); }
     .requests-group { display: flex; flex-direction: column; gap: .75rem; }
     .requests-group-header { display: flex; align-items: flex-start; gap: .75rem; padding: .5rem .25rem; }
-    .requests-group-header i { font-size: 1.5rem; color: var(--primary-color, #4d7c70); margin-top: .15rem; }
+    .requests-group-header i { font-size: 1.5rem; color: var(--primary-color); margin-top: .15rem; }
     .requests-group-header h2 { margin: 0; font-size: 1.15rem; }
     .requests-group-header p { margin: .15rem 0 0; color: var(--text-secondary); font-size: .9rem; }
     .request { padding: 1rem; border-radius: .75rem; background: var(--surface-card, #fff); display: flex; flex-direction: column; gap: .5rem; }
@@ -225,8 +225,8 @@ const ADOPTION_STAGES: AdoptionStatus[] = [
     .request-title p { margin: 0; color: var(--text-secondary); }
     .request-adopter { display: inline-flex; align-items: center; gap: .3rem; font-size: .9rem; }
     .status { padding: .25rem .6rem; border-radius: 999px; font-size: .8rem; background: var(--surface-ground, #eef3f1); white-space: nowrap; }
-    .status[data-status='completed'], .status[data-status='approved'] { background: #e6f4ea; color: #1e7e34; }
-    .status[data-status='rejected'] { background: #fdecea; color: #b3261e; }
+    .status[data-status='completed'], .status[data-status='approved'] { background: var(--success-color-light); color: var(--success-color); font-weight: 600; }
+    .status[data-status='rejected'] { background: var(--danger-color-light); color: var(--danger-color); font-weight: 600; }
     .request-message { margin: .25rem 0 0; }
     .request-date { margin: .25rem 0 0; color: var(--text-secondary); font-size: .9rem; }
     .request-actions { display: flex; gap: .5rem; margin-top: .25rem; flex-wrap: wrap; align-items: center; }
@@ -234,9 +234,9 @@ const ADOPTION_STAGES: AdoptionStatus[] = [
     .secondary-button:disabled { opacity: .5; cursor: not-allowed; }
     .adoption-steps { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-top: .35rem; }
     .adoption-step { display: inline-flex; align-items: center; gap: .35rem; }
-    .adoption-step-dot { width: .7rem; height: .7rem; border-radius: 50%; background: var(--surface-border, #cfd8d5); }
-    .adoption-step.active .adoption-step-dot { background: var(--primary-color, #4d7c70); }
-    .adoption-step.current .adoption-step-dot { box-shadow: 0 0 0 3px rgba(77,124,112,.25); }
+    .adoption-step-dot { width: .7rem; height: .7rem; border-radius: 50%; background: var(--surface-border); }
+    .adoption-step.active .adoption-step-dot { background: var(--primary-color); }
+    .adoption-step.current .adoption-step-dot { box-shadow: 0 0 0 3px var(--primary-color-highlight); }
     .adoption-step-label { font-size: .8rem; color: var(--text-secondary); }
     .adoption-step.current .adoption-step-label { color: var(--text-color, #333); font-weight: 600; }
     .adoption-step-counter { margin-left: auto; font-size: .8rem; color: var(--text-secondary); }

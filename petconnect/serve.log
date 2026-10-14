@@ -1,0 +1,82 @@
+
+> petconnect@0.0.0 start
+> ng serve
+
+❯ Building...
+✔ Building...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-DPLHN6X2.js   | profile-routes        | 418.30 kB | 
+chunk-X265BFLZ.js   | social-routes         | 147.97 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-TFEKPYMQ.js   | admin-routes          | 114.24 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-ZWT52YEH.js   | lostpets-routes       |  97.03 kB | 
+chunk-DFKPYNRS.js   | -                     |  85.98 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-RWWGQWSX.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [13.742 seconds] - 2026-10-14T18:45:25.499Z
+
+Watch mode enabled. Watching for file changes...
+NOTE: Raw file sizes do not reflect development server per-request transformations.
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m4200[22m/[39m
+[2m[32m  ➜[39m[22m[2m  press [22m[1mh + enter[22m[2m to show help[22m
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-DPLHN6X2.js   | profile-routes        | 418.30 kB | 
+chunk-X265BFLZ.js   | social-routes         | 147.97 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-TFEKPYMQ.js   | admin-routes          | 114.24 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-ZWT52YEH.js   | lostpets-routes       |  97.03 kB | 
+chunk-DFKPYNRS.js   | -                     |  85.98 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-RWWGQWSX.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [6.558 seconds] - 2026-10-14T18:47:19.286Z
+

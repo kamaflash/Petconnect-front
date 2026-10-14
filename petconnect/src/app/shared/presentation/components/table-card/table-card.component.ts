@@ -390,7 +390,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
       padding: 1.5rem; display: flex; align-items: center; justify-content: center;
       cursor: pointer; transition: all 0.3s ease; min-height: 100px;
     }
-    .add-card:hover { border-color: var(--primary-color); background-color: rgba(148, 199, 72, 0.03); }
+    .add-card:hover { border-color: var(--primary-color); background-color: var(--primary-color-highlight); }
     .add-card-content { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
     .add-icon { font-size: 2rem; color: var(--bitbucket-text-secondary); transition: color 0.3s ease; }
     .add-card:hover .add-icon { color: var(--primary-color); }
@@ -462,7 +462,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
     .caption-username { font-weight: 600; color: var(--bitbucket-text-primary); margin-right: 0.375rem; }
     .caption-text { color: var(--bitbucket-text-primary); }
     .post-tags { padding: 0.25rem 1rem; display: flex; flex-wrap: wrap; gap: 0.25rem; }
-    .post-tag { font-size: 0.8125rem; color: var(--primary-color, #f97316); cursor: pointer; }
+    .post-tag { font-size: 0.8125rem; color: var(--primary-color); cursor: pointer; }
     .post-tag:hover { text-decoration: underline; }
     .post-comments-link { padding: 0.25rem 1rem; }
     .post-comments-link span { font-size: 0.8125rem; color: var(--bitbucket-text-secondary); cursor: pointer; }
@@ -624,7 +624,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
       transition: transform 0.2s;
     }
     .story-ring.unseen {
-      background: conic-gradient(var(--primary-color, #f97316) 0deg 360deg, transparent 360deg);
+      background: conic-gradient(var(--primary-color) 0deg 360deg, transparent 360deg);
       padding: 3px;
     }
     .story-ring.unseen:hover { transform: scale(1.05); }

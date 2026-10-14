@@ -1,5 +1,5 @@
 import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -16,20 +16,30 @@ import { AvatarModule } from 'primeng/avatar';
 import { DividerModule } from 'primeng/divider';
 import { ChipModule } from 'primeng/chip';
 
-interface Achievement {
+/**
+ * NOTE: this component is a legacy static-mock page kept for reference. It is not
+ * wired into the router (see gamification.routes.ts, which uses
+ * GamificationDashboardComponent). To avoid depending on the API-backed domain
+ * models it declares its own local view types.
+ */
+type LegacyAchievementCategory = 'social' | 'care' | 'exploration' | 'special';
+
+interface LegacyAchievementProgress {
+  current: number;
+  target: number;
+}
+
+interface LegacyAchievement {
   id: string;
   key: string;
   name: string;
   description: string;
   icon: string;
   xp: number;
+  category: LegacyAchievementCategory;
   unlocked: boolean;
   date?: string;
-  category: 'social' | 'care' | 'exploration' | 'special';
-  progress?: {
-    current: number;
-    target: number;
-  };
+  progress?: LegacyAchievementProgress;
 }
 
 interface UserStats {
@@ -203,7 +213,20 @@ interface UserStats {
           <main class="gamification-page-achievements">
 
             <!-- Filtros -->
-            <div class="gamification-page-filters-bar">
+            <details class="catalog-toolbar gamification-page-filters-bar">
+              <summary class="filters-summary">
+                <span class="filters-summary-title">
+                  <i class="pi pi-sliders-h" aria-hidden="true"></i>
+                  {{ 'feedGrid.filters' | transloco }}
+                </span>
+                <span class="filters-summary-meta">
+                  <span class="results-count">
+                    {{ filteredAchievements().length }} {{ (filteredAchievements().length !== 1 ? 'gam.resultPlural' : 'gam.resultSingular') | transloco }}
+                  </span>
+                  <i class="pi pi-chevron-down accordion-chevron" aria-hidden="true"></i>
+                </span>
+              </summary>
+              <div class="filter-panel">
               <div class="gamification-page-filter-group">
                                 <span class="gamification-page-filter-label">{{ 'gam.filterCategory' | transloco }}</span>
                 @for (category of categories; track category.value) {
@@ -240,6 +263,7 @@ interface UserStats {
                 </button>
               </div>
             </div>
+            </details>
 
             <!-- Resultados -->
             <div class="gamification-page-results-header">
@@ -672,15 +696,23 @@ interface UserStats {
       min-width: 0;
     }
 
-    /* --- Filters Bar --- */
+    /* --- Filters Bar — mismo patrón plegable que el toolbar de adopciones --- */
     .gamification-page-filters-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.75rem 1rem;
-      margin-bottom: 1rem;
-      padding: 0.5rem 0;
+      margin: 0 auto 1.25rem;
+      padding: 1rem 1.25rem;
+      background: var(--surface-card);
+      border: none;
+      border-radius: var(--radius-lg);
     }
+    .filters-summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-primary); cursor: pointer; list-style: none; }
+    .filters-summary::-webkit-details-marker { display: none; }
+    .filters-summary-title, .filters-summary-meta { display: inline-flex; align-items: center; gap: .75rem; }
+    .filters-summary-title { font-weight: 650; }
+    .filters-summary-title > i { color: var(--primary-color); }
+    .accordion-chevron { color: var(--text-secondary); transition: transform var(--transition-fast); }
+    .gamification-page-filters-bar[open] .accordion-chevron { transform: rotate(180deg); }
+    .filter-panel { display: grid; gap: .75rem; padding-top: 1rem; }
+    .results-count { color: var(--text-secondary); font-size: .85rem; white-space: nowrap; }
 
     .gamification-page-filter-group {
       display: flex;
@@ -690,47 +722,48 @@ interface UserStats {
     }
 
     .gamification-page-filter-label {
-      font-size: 0.75rem;
-      color: #9ca3af;
-      font-weight: 500;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 650;
       margin-right: 0.25rem;
     }
 
     .gamification-page-filter-chip {
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      border: 1px solid #e5e7eb;
+      min-height: 2.75rem;
+      padding: 0.65rem 0.8rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--surface-border);
       background: transparent;
-      color: #6b7280;
-      font-size: 0.75rem;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
       cursor: pointer;
       transition: all 0.2s ease;
       white-space: nowrap;
     }
 
     .gamification-page-filter-chip:hover {
-      background: #f3f4f6;
-      color: #1a1a2e;
+      background: var(--surface-hover);
+      color: var(--text-primary);
     }
 
     .gamification-page-filter-chip-active {
-      background: #4f46e5;
+      background: var(--primary-color);
       color: white;
-      border-color: #4f46e5;
+      border-color: var(--primary-color);
     }
 
     .gamification-page-filter-chip-active:hover {
-      background: #4338ca;
+      background: var(--primary-color-hover);
       color: white;
     }
 
     .gamification-page-filter-chip-clear {
-      color: #9ca3af;
+      color: var(--text-secondary);
     }
 
     .gamification-page-filter-chip-clear:hover {
-      color: #1a1a2e;
-      background: #f3f4f6;
+      color: var(--text-primary);
+      background: var(--surface-hover);
     }
 
     .gamification-page-filter-chip-clear i {
@@ -786,7 +819,8 @@ interface UserStats {
     }
 
     .gamification-page-achievement-icon-unlocked {
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      background: var(--accent-color-light);
+      border: 1px solid var(--accent-color);
     }
 
     .gamification-page-achievement-emoji {
@@ -800,7 +834,7 @@ interface UserStats {
       bottom: -4px;
       width: 18px;
       height: 18px;
-      background: #10b981;
+      background: var(--success-color);
       color: white;
       border-radius: 50%;
       display: flex;
@@ -978,7 +1012,7 @@ export class GamificationPageComponent {
   // FILTERS
   // ============================================================
 
-  categories = [
+  categories: { label: string; value: LegacyAchievementCategory }[] = [
     { label: this.i18n.translate('gam.cat.social'), value: 'social' },
     { label: this.i18n.translate('gam.cat.care'), value: 'care' },
     { label: this.i18n.translate('gam.cat.exploration'), value: 'exploration' },
@@ -1050,7 +1084,7 @@ export class GamificationPageComponent {
   // ACHIEVEMENTS
   // ============================================================
 
-  achievements = signal<Achievement[]>([
+  achievements = signal<LegacyAchievement[]>([
     {
       id: '1',
       key: '1',

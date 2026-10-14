@@ -44,14 +44,14 @@ import {
     .timeline-current { display: flex; align-items: center; gap: .6rem; margin-bottom: .75rem; padding: .75rem 1rem; background: var(--surface-card, #fff); border: 1px solid var(--surface-border, #e6e9ee); border-radius: .75rem; }
     .timeline-current-label { font-size: .75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; }
     .status { padding: .25rem .6rem; border-radius: 999px; font-size: .8rem; background: var(--surface-ground, #eef3f1); }
-    .status[data-status='completed'], .status[data-status='approved'] { background: #e6f4ea; color: #1e7e34; }
-    .status[data-status='rejected'] { background: #fdecea; color: #b3261e; }
+    .status[data-status='completed'], .status[data-status='approved'] { background: var(--success-color-light); color: var(--success-color); font-weight: 600; }
+    .status[data-status='rejected'] { background: var(--danger-color-light); color: var(--danger-color); font-weight: 600; }
     .loading-state { display: flex; flex-direction: column; gap: .5rem; }
     .skeleton { display: block; height: 1rem; border-radius: .5rem; background: linear-gradient(90deg, #edf1f2, #f8f9f9, #edf1f2); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
-    .error-state { padding: .75rem 1rem; border-radius: .75rem; background: #fdecea; color: #b3261e; }
+    .error-state { padding: .75rem 1rem; border-radius: var(--radius-md); background: var(--danger-color-light); color: var(--danger-color); font-weight: 500; }
     .timeline-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .75rem; }
     .timeline-event { display: flex; gap: .6rem; }
-    .timeline-dot { width: .65rem; height: .65rem; margin-top: .3rem; border-radius: 50%; background: var(--primary-color, #4d7c70); flex-shrink: 0; }
+    .timeline-dot { width: .65rem; height: .65rem; margin-top: .3rem; border-radius: 50%; background: var(--primary-color); flex-shrink: 0; }
     .timeline-title { margin: 0; font-weight: 600; }
     .timeline-comment { margin: .15rem 0; }
     .timeline-date { margin: 0; font-size: .85rem; color: var(--text-secondary); }

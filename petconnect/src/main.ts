@@ -2,7 +2,7 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { appConfig } from './app/app.config';
 import { App } from './app/app';
 
-// Colores derivados del naranja (color por defecto del theme)
+// Naranja: color por defecto de la identidad Petconnect
 const DEFAULT_COLOR = '#f97316';
 
 const getColorShades = (color: string) => ({
@@ -12,7 +12,7 @@ const getColorShades = (color: string) => ({
 
 // Cargar color del tema desde localStorage
 // Si no hay guardado, usar el naranja por defecto.
-// Si es el verde antiguo (#94c748), ignorarlo y usar el naranja.
+// Si es el verde antiguo (#94c748), migrar al naranja.
 const savedThemeColor = localStorage.getItem('theme-color');
 const color = !savedThemeColor || savedThemeColor === '#94c748' ? DEFAULT_COLOR : savedThemeColor;
 const shades = getColorShades(color);

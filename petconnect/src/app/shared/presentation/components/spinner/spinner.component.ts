@@ -28,7 +28,7 @@ import { SpinnerService } from '../../../infrastructure/services/spinner.service
       left: 0;
       right: 0;
       bottom: 0;
-      background-color: rgba(0, 0, 0, 0.3);
+      background-color: rgba(24, 26, 20, 0.4);
       backdrop-filter: blur(2px);
       display: flex;
       align-items: center;
@@ -43,7 +43,7 @@ import { SpinnerService } from '../../../infrastructure/services/spinner.service
       gap: 1rem;
       background-color: var(--bitbucket-header-bg);
       padding: 2rem;
-      border-radius: 12px;
+      border-radius: var(--radius-lg);
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
     }
 
@@ -75,7 +75,7 @@ import { SpinnerService } from '../../../infrastructure/services/spinner.service
 
     /* Dark mode */
     .dark .spinner-container {
-      background-color: #1f2937;
+      background-color: var(--surface-card);
     }
   `]
 })

@@ -80,6 +80,10 @@ import { TranslocoModule } from '@jsverse/transloco';
         <span class="material-symbols-rounded nav-icon" [class.filled]="eventsLink.isActive">event</span>
         <span class="nav-text">{{ 'nav.events' | transloco }}</span>
       </a>
+      <a routerLink="/gamification" routerLinkActive="sidebar-link-active" #gamificationLink="routerLinkActive" class="sidebar-link">
+        <span class="material-symbols-rounded nav-icon" [class.filled]="gamificationLink.isActive">emoji_events</span>
+        <span class="nav-text">{{ 'nav.achievements' | transloco }}</span>
+      </a>
     </nav>
 
     <!-- Footer del sidebar -->
@@ -244,6 +248,21 @@ import { TranslocoModule } from '@jsverse/transloco';
       color: var(--sidebar-text-hover);
     }
 
+    .sidebar-link:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: -2px;
+      background-color: var(--sidebar-hover);
+    }
+
+    .sidebar-link:active {
+      transform: scale(0.98);
+    }
+
+    .sidebar-link[aria-disabled="true"] {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
     .sidebar-link .nav-icon {
       font-size: 1.5rem;
       width: 1.5rem;
@@ -287,11 +306,23 @@ import { TranslocoModule } from '@jsverse/transloco';
       opacity: 0.6;
     }
 
-    /* ===== ACTIVE STATE ===== */
-    .sidebar-link-active {
+    /* ===== ACTIVE STATE: solo icono en naranja principal, sin fondo ni borde ===== */
+    .sidebar-link.sidebar-link-active {
+      background-color: transparent;
+      border: none;
+      box-shadow: none;
+      color: var(--text-primary);
+      font-weight: 600;
     }
 
-    .sidebar-link-active .nav-icon {
+    .sidebar-link.sidebar-link-active .nav-icon {
+      color: var(--primary-color);
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    }
+
+    /* Sin barra indicadora lateral */
+    .sidebar-link.sidebar-link-active::before {
+      content: none;
     }
 
     /* ===== FOOTER DEL SIDEBAR ===== */
@@ -341,9 +372,6 @@ import { TranslocoModule } from '@jsverse/transloco';
     }
 
     /* ===== DARK MODE AJUSTES ===== */
-  .dark .sidebar-link-active {
-  }
-
   @media (max-width: 768px) {
     .sidebar-container {
       display: none;

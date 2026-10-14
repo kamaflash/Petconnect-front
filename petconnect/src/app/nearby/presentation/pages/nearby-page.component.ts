@@ -39,6 +39,7 @@ interface NearbyService {
     SkeletonModule,
     FormsModule,
     RouterLink,
+    TranslocoModule,
     PageHeadingCardComponent
   ],
   providers: [MessageService],
@@ -52,7 +53,20 @@ interface NearbyService {
         />
 
         <!-- Filtros -->
-        <div class="nearby-filters">
+        <details class="catalog-toolbar">
+          <summary class="filters-summary">
+            <span class="filters-summary-title">
+              <i class="pi pi-sliders-h" aria-hidden="true"></i>
+              {{ 'feedGrid.filters' | transloco }}
+            </span>
+            <span class="filters-summary-meta">
+              <span class="results-count">
+                {{ filteredServices().length }} {{ filteredServices().length === 1 ? 'resultado' : 'resultados' }}
+              </span>
+              <i class="pi pi-chevron-down accordion-chevron" aria-hidden="true"></i>
+            </span>
+          </summary>
+          <div class="filter-panel">
           <div class="filter-group">
             <label class="filter-label">Radio de búsqueda</label>
             <p-select
@@ -84,7 +98,8 @@ interface NearbyService {
             (click)="useCurrentLocation()"
             [disabled]="loading()"
           ></button>
-        </div>
+          </div>
+        </details>
 
         <!-- Estado de carga -->
         <div class="nearby-loading" *ngIf="loading()" aria-busy="true" aria-label="Buscando servicios cercanos">
@@ -227,38 +242,46 @@ interface NearbyService {
       color: var(--primary-color);
     }
 
-    /* Filters */
-    .nearby-filters {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 2rem;
-      padding: 1.5rem;
+    /* Filters — mismo patrón plegable que el toolbar de adopciones */
+    .catalog-toolbar {
+      margin: 0 auto 1.25rem;
+      padding: 1rem 1.25rem;
       background: var(--surface-card);
-      border-radius: 12px;
-      flex-wrap: wrap;
-      align-items: flex-end;
+      border: none;
+      border-radius: var(--radius-lg);
     }
+    .filters-summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-primary); cursor: pointer; list-style: none; }
+    .filters-summary::-webkit-details-marker { display: none; }
+    .filters-summary-title, .filters-summary-meta { display: inline-flex; align-items: center; gap: .75rem; }
+    .filters-summary-title { font-weight: 650; }
+    .filters-summary-title > i { color: var(--primary-color); }
+    .accordion-chevron { color: var(--text-secondary); transition: transform var(--transition-fast); }
+    .catalog-toolbar[open] .accordion-chevron { transform: rotate(180deg); }
+    .filter-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .85rem; align-items: end; padding-top: 1rem; }
+    .results-count { color: var(--text-secondary); font-size: .85rem; white-space: nowrap; }
 
     .filter-group {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      flex: 1;
-      min-width: 200px;
+      gap: 0.4rem;
+      min-width: 0;
     }
 
     .filter-label {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--text-primary);
+      font-size: 0.8rem;
+      font-weight: 650;
+      color: var(--text-secondary);
     }
 
     .filter-select {
       width: 100%;
     }
+    :host ::ng-deep .filter-panel .p-select {
+      background: transparent;
+    }
 
-    .nearby-filters .p-button {
-      height: 42px;
+    .filter-panel .p-button {
+      min-height: 2.75rem;
     }
 
     /* Loading */

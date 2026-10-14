@@ -1,4 +1,4 @@
-﻿import { Component, signal, computed, inject, OnInit, effect, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, effect, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -1071,8 +1071,18 @@ interface Notification {
     }
 
     .follow-btn:hover {
-      background: var(--surface-hover);
-      border-color: var(--text-secondary);
+      background: var(--primary-color);
+      border-color: var(--primary-color);
+      color: var(--on-primary);
+    }
+
+    .follow-btn:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
+    .follow-btn:active {
+      transform: scale(0.97);
     }
 
     .follow-btn.following {
@@ -1082,12 +1092,13 @@ interface Notification {
     }
 
     .follow-btn.following:hover {
-      border-color: #ef4444;
-      color: #ef4444;
+      border-color: var(--danger-color);
+      color: var(--danger-color);
+      background: var(--danger-color-light);
     }
 
     .follow-btn.following:hover i {
-      color: #ef4444;
+      color: var(--danger-color);
     }
 
     .follow-btn i {

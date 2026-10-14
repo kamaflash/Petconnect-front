@@ -41,66 +41,87 @@
   --bitbucket-menu-bg: var(--surface-overlay);
 }
 
-/* ===== MODERN DESIGN SYSTEM - Instagram Style with Orange ===== */
+/* ===== MODERN DESIGN SYSTEM - Naturaleza calida ===== */
 :root {
-  /* Primary - Naranja (color por defecto) */
+  /* Primary - Naranja Petconnect (energia, comunidad) */
   --primary-color: #f97316;
   --primary-color-hover: #ea580c;
   --primary-color-active: #c2410c;
   --primary-color-text: #ffffff;
-  --primary-color-highlight: rgba(249, 115, 22, 0.12);
+  --on-primary: #ffffff;
+  --primary-color-highlight: rgba(249, 115, 22, 0.14);
   --primary-color-light: #fff7ed;
   --primary-color-rgb: 249, 115, 22;
 
-  /* Instagram gradient for stories and logo (naranja variante) */
-  --instagram-gradient: linear-gradient(45deg, #f97316, #ea580c, #c2410c, #9a3412, #7c2d12);
-  --instagram-gradient-stops: #f97316, #ea580c, #c2410c, #9a3412, #7c2d12;
+  /* Accent - Ambar calido para CTA destacadas (adopciones, logros) */
+  --accent-color: #f2b441;
+  --accent-color-hover: #e0a22e;
+  --accent-color-active: #c98f1f;
+  --accent-color-light: #fdf3dc;
+  --accent-ink: #3a2a08;
+  --accent-color-rgb: 242, 180, 65;
 
-  /* Secondary - Azul profundo (uso mínimo, para contraste) */
+  /* Semantic status */
+  --success-color: #2e7d5b;
+  --success-color-light: #e6f4ee;
+  --warning-color: #b45309;
+  --warning-color-light: #fdf0dc;
+  --danger-color: #d64545;
+  --danger-color-hover: #c0392f;
+  --danger-color-light: #fbeae8;
+  --info-color: #3d74b8;
+  --info-color-light: #e8eef8;
+  --like-color: #e5484d;
+
+  /* Anillos de historias y detalles graficos */
+  --instagram-gradient: linear-gradient(135deg, #f97316, #fb923c 45%, #f2b441);
+  --instagram-gradient-stops: #f97316, #fb923c, #f2b441;
+
+  /* Secondary - Azul sereno (uso minimo, para contraste) */
   --secondary-color: #3b82f6;
   --secondary-color-hover: #2563eb;
   --secondary-color-active: #1d4ed8;
   --secondary-color-light: #dbeafe;
 
-  /* Shared app surfaces */
-  --surface-bg: #f6f7f9;
+  /* Shared app surfaces - papel calido */
+  --surface-bg: #f7f5f0;
   --surface-card: #ffffff;
-  --surface-border: #e6e9ee;
-  --surface-hover: #f3f5f7;
+  --surface-border: #e7e3da;
+  --surface-hover: #f1eee7;
   --surface-overlay: #ffffff;
-  --surface-ground: #f6f7f9;
-  --surface-section: #f3f5f7;
+  --surface-ground: #f7f5f0;
+  --surface-section: #f1eee7;
 
   /* Text colors */
-  --text-primary: #20242b;
-  --text-secondary: #667085;
-  --text-tertiary: #98a2b3;
+  --text-primary: #22271f;
+  --text-secondary: #5d655c;
+  --text-tertiary: #8b9288;
   --text-inverse: #ffffff;
 
-  /* Shadows - Minimal shadows like Instagram */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.12);
-  --shadow-xl: 0 12px 30px rgba(0, 0, 0, 0.15);
+  /* Shadows - calidas y discretas */
+  --shadow-sm: 0 1px 2px rgba(43, 38, 28, 0.05);
+  --shadow-md: 0 4px 14px -2px rgba(43, 38, 28, 0.08);
+  --shadow-lg: 0 12px 28px -6px rgba(43, 38, 28, 0.12);
+  --shadow-xl: 0 20px 44px -12px rgba(43, 38, 28, 0.18);
 
-  /* Border radius - Instagram style (smaller, more subtle) */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* Border radius - formas suaves */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
   --radius-full: 9999px;
 
   /* Sidebar */
   --sidebar-bg: #ffffff;
-  --sidebar-border: #e5e7eb;
-  --sidebar-text: #262626;
-  --sidebar-text-secondary: #8e8e8e;
-  --sidebar-text-hover: #262626;
-  --sidebar-hover: #f9fafb;
-  --sidebar-active-bg: #fff7ed;
-  --sidebar-active-text: #f97316;
-  --sidebar-scrollbar: #c7c7c7;
-  --sidebar-scrollbar-hover: #8e8e8e;
+  --sidebar-border: #e7e3da;
+  --sidebar-text: #383f37;
+  --sidebar-text-secondary: #7d8479;
+  --sidebar-text-hover: #20251f;
+  --sidebar-hover: #f1eee7;
+  --sidebar-active-bg: #ffedd5;
+  --sidebar-active-text: #c2410c;
+  --sidebar-scrollbar: #c9c4b8;
+  --sidebar-scrollbar-hover: #8b9288;
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -111,7 +132,7 @@
   --max-page-width: 1440px;
 }
 
-/* ===== PRIME NG PRIMARY COLOR OVERRIDE (forzar cor do theme) ===== */
+/* ===== PRIME NG PRIMARY COLOR OVERRIDE ===== */
 :root {
   --primary-color: #f97316 !important;
   --primary-color-hover: #ea580c !important;
@@ -133,11 +154,31 @@
 
 /* ===== DARK MODE ===== */
 .dark {
-  --primary-color: #f97316;
-  --primary-color-hover: #fb923c;
-  --primary-color-active: #ea580c;
-  --primary-color-light: #431407;
-  --primary-color-rgb: 249, 115, 22;
+  --primary-color: #fb923c;
+  --primary-color-hover: #fdba74;
+  --primary-color-active: #f97316;
+  --on-primary: #1a0e02;
+  --primary-color-light: #2a1a0c;
+  --primary-color-highlight: rgba(251, 146, 60, 0.2);
+  --primary-color-rgb: 251, 146, 60;
+
+  --accent-color: #f5c466;
+  --accent-color-hover: #f2b441;
+  --accent-color-active: #e0a22e;
+  --accent-color-light: #33280c;
+  --accent-ink: #2a1e05;
+  --accent-color-rgb: 245, 196, 102;
+
+  --success-color: #4cbf8d;
+  --success-color-light: #10281c;
+  --warning-color: #f0b03c;
+  --warning-color-light: #2f2409;
+  --danger-color: #e57373;
+  --danger-color-hover: #ef8e8e;
+  --danger-color-light: #2f1513;
+  --info-color: #7fa8dd;
+  --info-color-light: #142033;
+  --like-color: #ff6b6b;
 
   --secondary-color: #60a5fa;
   --secondary-color-hover: #93c5fd;
@@ -145,36 +186,41 @@
   --secondary-color-light: #172554;
 
   /* Shared app surfaces */
-  --surface-bg: #121212;
-  --surface-card: #1a1a1a;
-  --surface-border: #2a2a2a;
-  --surface-hover: #1e1e1e;
-  --surface-overlay: #1a1a1a;
-  --surface-ground: #121212;
-  --surface-section: #1a1a1a;
+  --surface-bg: #131510;
+  --surface-card: #1a1d17;
+  --surface-border: #2b3029;
+  --surface-hover: #20241d;
+  --surface-overlay: #1a1d17;
+  --surface-ground: #131510;
+  --surface-section: #1a1d17;
   --surface-ground-dark: var(--surface-bg);
   --surface-card-dark: var(--surface-card);
 
-  --text-primary: #e5e5e5;
-  --text-secondary: #a0a0a0;
-  --text-tertiary: #737373;
-  --text-inverse: #262626;
+  --text-primary: #e8ebe3;
+  --text-secondary: #a4ab9d;
+  --text-tertiary: #797f72;
+  --text-inverse: #131510;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.35);
-  --shadow-xl: 0 12px 30px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 28px -6px rgba(0, 0, 0, 0.45);
+  --shadow-xl: 0 20px 44px -12px rgba(0, 0, 0, 0.5);
 
-  --sidebar-bg: #121212;
-  --sidebar-border: #2a2a2a;
-  --sidebar-text: #e5e5e5;
-  --sidebar-text-secondary: #737373;
+  --sidebar-bg: #161913;
+  --sidebar-border: #2b3029;
+  --sidebar-text: #d5d9cd;
+  --sidebar-text-secondary: #797f72;
   --sidebar-text-hover: #ffffff;
-  --sidebar-hover: #1e1e1e;
-  --sidebar-active-bg: #431407;
-  --sidebar-active-text: #fb923c;
-  --sidebar-scrollbar: #333333;
-  --sidebar-scrollbar-hover: #555555;
+  --sidebar-hover: #20241d;
+  --sidebar-active-bg: #2a1a0c;
+  --sidebar-active-text: #fdba74;
+  --sidebar-scrollbar: #333830;
+  --sidebar-scrollbar-hover: #4a5145;
+
+  --p-primary-color: #fb923c !important;
+  --p-primary-hover-color: #fdba74 !important;
+  --p-primary-active-color: #f97316 !important;
+  --p-primary-contrast-color: #1a0e02 !important;
 }
 
 /* ===== BASE STYLES ===== */
@@ -185,11 +231,18 @@ html, body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: var(--surface-bg);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
 /* Shared page heading card used by the main app sections. */
@@ -235,15 +288,18 @@ app-table-card .stories-row > .add-card {
 .page-heading-card h1 {
   margin: 0;
   color: var(--text-primary);
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: 1.625rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 
 .page-heading-card p {
   margin: 0.35rem 0 0;
   color: var(--text-secondary);
-  line-height: 1.5;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  max-width: 65ch;
 }
 
 @media (max-width: 600px) {
@@ -610,7 +666,7 @@ button.primary-button {
 
 /* ===== PRIMENG MENU ===== */
 .p-menu {
-  background: var(--surface-overlay);
+  background: var(--surface-hover);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
@@ -623,8 +679,13 @@ button.primary-button {
     transition: all var(--transition-fast);
 
     &:hover {
-      background-color: var(--surface-hover);
-      color: var(--text-primary);
+      background-color: var(--primary-color) !important;
+      color: #ffffff !important;
+    }
+
+    &:hover .p-menuitem-icon,
+    &:hover .p-menuitem-text {
+      color: #ffffff !important;
     }
 
     .p-menuitem-icon {
@@ -649,6 +710,47 @@ button.primary-button {
     border-color: var(--surface-border);
     margin: 0.25rem 0 !important;
   }
+}
+
+/* ===== HEADER USER DROPDOWN: fondo del tema con hover naranja SOLO en dark ===== */
+.dark .p-menu.user-profile-menu {
+  background: var(--surface-card) !important;
+  border-color: var(--surface-border) !important;
+}
+
+.dark .p-menu.user-profile-menu .p-menuitem-link,
+.dark .p-menu.user-profile-menu .p-menuitem-text {
+  color: var(--text-primary) !important;
+}
+
+.dark .p-menu.user-profile-menu .p-menuitem-icon {
+  color: var(--text-secondary) !important;
+}
+
+.dark .p-menu.user-profile-menu .p-menuitem-link:hover {
+  background-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+.dark .p-menu.user-profile-menu .p-menuitem-link:hover .p-menuitem-icon,
+.dark .p-menu.user-profile-menu .p-menuitem-link:hover .p-menuitem-text {
+  color: #ffffff !important;
+}
+
+.dark .p-menu.user-profile-menu .p-menuitem-separator {
+  border-color: var(--surface-border) !important;
+}
+
+.dark .p-menu.user-profile-menu .user-menu-header {
+  border-bottom-color: var(--surface-border) !important;
+}
+
+.dark .p-menu.user-profile-menu .user-name {
+  color: var(--text-primary) !important;
+}
+
+.dark .p-menu.user-profile-menu .user-email {
+  color: var(--text-secondary) !important;
 }
 
 /* ===== PRIMENG CARD ===== */
@@ -799,7 +901,7 @@ button.primary-button {
 }
 
 .p-dropdown-panel {
-  background: var(--surface-overlay);
+  background: var(--surface-hover);
   border: 1px solid var(--surface-border);
   box-shadow: var(--shadow-lg);
   border-radius: var(--radius-sm);
@@ -810,15 +912,60 @@ button.primary-button {
     transition: all var(--transition-fast);
 
     &:hover {
-      background-color: var(--surface-hover);
+      background-color: var(--primary-color) !important;
+      color: #ffffff !important;
     }
 
     &.p-highlight {
       background: var(--primary-color-light) !important;
       color: var(--primary-color) !important;
     }
+
+    &.p-highlight:hover {
+      background: var(--primary-color) !important;
+      color: #ffffff !important;
+    }
   }
 }
+
+/* ===== OVERLAYS DE SELECT / MULTISELECT (dynamic-form) ===== */
+.p-select-overlay,
+.p-multiselect-overlay {
+  background: var(--surface-hover) !important;
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-sm);
+}
+
+.p-select-option,
+.p-multiselect-option {
+  color: var(--text-primary);
+  transition: all var(--transition-fast);
+
+  &:not(.p-select-option-selected):not(.p-disabled):hover,
+  &:not(.p-multiselect-option-selected):not(.p-disabled):hover {
+    background: var(--primary-color) !important;
+    color: #ffffff !important;
+  }
+
+  &.p-select-option-selected,
+  &.p-multiselect-option-selected {
+    background: var(--primary-color-light) !important;
+    color: var(--primary-color) !important;
+  }
+
+  &.p-select-option-selected:hover,
+  &.p-multiselect-option-selected:hover {
+    background: var(--primary-color) !important;
+    color: #ffffff !important;
+  }
+
+  .p-select-option-check-icon,
+  .p-multiselect-option-check-icon {
+    color: inherit;
+  }
+}
+
 
 /* ===== PRIMENG INPUT ===== */
 .p-inputtext {
@@ -1583,7 +1730,7 @@ button.primary-button {
 }
 
 .post-modal-details-likes i {
-  color: #e74c3c;
+  color: var(--like-color);
 }
 
 .post-modal-details-time {
@@ -1606,3 +1753,114 @@ button.primary-button {
  * {
   transition: background-color var(--transition-normal), border-color var(--transition-normal), color var(--transition-normal);
  }
+
+/* ===== FOCUS VISIBLE & REDUCED MOTION (accesibilidad global) ===== */
+:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===== ESTADOS COMPARTIDOS (carga, vacio, error, exito) ===== */
+.pc-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  color: var(--text-secondary);
+}
+
+.pc-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--primary-color-light);
+  color: var(--primary-color);
+  font-size: 1.5rem;
+}
+
+.pc-state-title {
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.pc-state-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  max-width: 42ch;
+}
+
+.pc-state-error .pc-state-icon {
+  background: var(--danger-color-light);
+  color: var(--danger-color);
+}
+
+.pc-state-success .pc-state-icon {
+  background: var(--success-color-light);
+  color: var(--success-color);
+}
+
+.pc-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+/* Indicador de carga discreto y coherente */
+.pc-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.pc-loading::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--surface-border);
+  border-top-color: var(--primary-color);
+  animation: pc-spin 0.7s linear infinite;
+}
+
+@keyframes pc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

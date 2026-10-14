@@ -371,7 +371,7 @@ export interface ModalButton {
         color: var(--text-primary) !important;
       }
 
-      /* ===== PRIMARY BUTTON - Instagram Orange ===== */
+      /* ===== PRIMARY BUTTON - Verde marca ===== */
       :host ::ng-deep .p-button.p-button-primary {
         background: var(--primary-color) !important;
         border-color: var(--primary-color) !important;
@@ -382,7 +382,7 @@ export interface ModalButton {
         background: var(--primary-color-hover) !important;
         border-color: var(--primary-color-hover) !important;
         color: #ffffff !important;
-        box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25) !important;
+        box-shadow: 0 4px 14px -2px rgba(var(--primary-color-rgb), 0.35) !important;
       }
 
       :host ::ng-deep .p-button.p-button-primary:active {

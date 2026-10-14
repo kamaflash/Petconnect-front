@@ -131,15 +131,16 @@ import { TranslocoModule } from '@jsverse/transloco';
     }
 
     .footer-logo-icon {
-      width: 32px;
-      height: 32px;
-      background-color: var(--primary-color);
-      border-radius: 0.375rem;
+      width: 36px;
+      height: 36px;
+      background: var(--instagram-gradient);
+      border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
       transition: background-color 0.3s ease;
+      box-shadow: 0 2px 8px rgba(var(--primary-color-rgb), 0.3);
     }
 
     .footer-logo-text {
@@ -187,8 +188,15 @@ import { TranslocoModule } from '@jsverse/transloco';
 
     .social-link:hover {
       background-color: var(--primary-color);
-      color: white;
+      border-color: var(--primary-color);
+      color: var(--on-primary);
       transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .social-link:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
     }
 
     .dark .social-link {

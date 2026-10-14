@@ -17,7 +17,7 @@ import { CommonModule } from '@angular/common';
   styles: [`
     .stat-card {
       padding: 1rem;
-      border-radius: 0.5rem;
+      border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       gap: 1rem;
@@ -27,7 +27,7 @@ import { CommonModule } from '@angular/common';
 
     .stat-card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow-md);
     }
 
     .stat-card i {

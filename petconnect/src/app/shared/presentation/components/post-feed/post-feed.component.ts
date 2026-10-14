@@ -124,7 +124,7 @@ export type PostViewMode = 'feed' | 'grid';
             <div class="post-actions-left">
               <button class="post-action-btn" (click)="toggleLike(post)">
                 <i class="pi" [class.pi-heart-fill]="post.liked" [class.pi-heart]="!post.liked"
-                   [style.color]="post.liked ? 'var(--primary-color)' : ''"></i>
+                   [style.color]="post.liked ? 'var(--like-color)' : ''"></i>
               </button>
               <button class="post-action-btn" (click)="toggleComments(post.id, true)">
                 <i class="pi pi-comment"></i>
@@ -133,8 +133,8 @@ export type PostViewMode = 'feed' | 'grid';
                 <i class="pi pi-send"></i>
               </button>
             </div>
-            <button class="post-action-btn" (click)="toggleSave(post)">
-              <i class="pi" [class.pi-bookmark-fill]="post.saved" [class.pi-bookmark]="!post.saved"></i>
+            <button class="post-action-btn" (click)="toggleSave(post)" [attr.aria-pressed]="post.saved">
+              <i class="pi" [class.pi-bookmark-fill]="post.saved" [class.pi-bookmark]="!post.saved" [style.color]="post.saved ? 'var(--primary-color)' : ''"></i>
             </button>
           </div>
 
@@ -201,8 +201,11 @@ export type PostViewMode = 'feed' | 'grid';
 
     .post-card {
       background: var(--surface-card);
-      border-radius: var(--radius-md);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-lg);
       overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow var(--transition-normal);
     }
 
     .skeleton-post {
@@ -317,7 +320,17 @@ export type PostViewMode = 'feed' | 'grid';
 
     .post-action-btn:hover {
       color: var(--primary-color);
-      background: var(--surface-hover);
+      background: var(--primary-color-light);
+      transform: scale(1.08);
+    }
+
+    .post-action-btn:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
+    .post-action-btn:active {
+      transform: scale(0.92);
     }
 
     .post-likes {

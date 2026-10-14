@@ -168,13 +168,24 @@ import { TranslocoModule } from '@jsverse/transloco';
       transform: translateY(-2px);
     }
 
-    .mobile-nav-active {
-      color: var(--sidebar-text-hover);
+    .mobile-nav-link:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: -2px;
     }
 
-    .mobile-nav-active span {
-      color: var(--sidebar-text-hover);
-      font-variation-settings: 'FILL' 1;
+    .mobile-nav-link:active {
+      transform: scale(0.96);
+    }
+
+    .mobile-nav-active {
+      color: var(--sidebar-active-text);
+      background-color: var(--sidebar-active-bg);
+    }
+
+    .mobile-nav-active .material-symbols-rounded,
+    .mobile-nav-active .mobile-nav-label {
+      color: var(--sidebar-active-text);
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
     }
 
     /* ===== RESPONSIVE ===== */
@@ -184,8 +195,10 @@ import { TranslocoModule } from '@jsverse/transloco';
       }
 
       .layout-content-wrapper {
+        /* En móvil el breadcrumb sigue siendo fixed (top:64px, alto ~40px):
+           desplazamos el contenido para que el encabezado no quede tapado. */
         padding-left: 0;
-        padding-top: 0;
+        padding-top: 40px;
         padding-bottom: calc(64px + env(safe-area-inset-bottom));
       }
 

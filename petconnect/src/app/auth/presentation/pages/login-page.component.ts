@@ -387,7 +387,7 @@ interface RegisterStep {
       align-items: center;
       justify-content: center;
       padding: 3rem;
-      background: var(--surface-bg);
+      background: var(--primary-color-light);
       border-right: 1px solid var(--surface-border);
       position: relative;
       overflow: hidden;
@@ -464,16 +464,16 @@ interface RegisterStep {
     .logo-icon {
       width: 56px;
       height: 56px;
-      background: var(--primary-color);
-      border-radius: 16px;
+      background: var(--instagram-gradient);
+      border-radius: var(--radius-lg);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: var(--shadow-md);
+      box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.35);
     }
 
     .logo-icon i {
-      color: white;
+      color: var(--on-primary);
       font-size: 1.75rem;
     }
 
@@ -502,6 +502,8 @@ interface RegisterStep {
 
     .presentation-title .highlight {
       color: var(--primary-color);
+      position: relative;
+      white-space: nowrap;
     }
 
     .presentation-description {

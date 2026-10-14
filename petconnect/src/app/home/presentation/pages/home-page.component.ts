@@ -303,9 +303,10 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
       .card-modern {
         background: var(--surface-card);
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-lg);
         overflow: hidden;
         margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
       }
 
       .card-header {
@@ -317,8 +318,16 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
       }
 
       .card-header-icon {
-        color: var(--text-secondary);
-        font-size: 1.125rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        border-radius: var(--radius-sm);
+        background: var(--primary-color-light);
+        color: var(--primary-color);
+        font-size: 1rem;
       }
 
       .card-header-title {
@@ -478,8 +487,18 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
       }
 
       .follow-btn:hover {
-        background: var(--surface-hover);
-        border-color: var(--text-secondary);
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: var(--on-primary);
+      }
+
+      .follow-btn:focus-visible {
+        outline: 2px solid var(--primary-color);
+        outline-offset: 2px;
+      }
+
+      .follow-btn:active {
+        transform: scale(0.97);
       }
 
       .follow-btn.following {
@@ -489,12 +508,13 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
       }
 
       .follow-btn.following:hover {
-        border-color: #ef4444;
-        color: #ef4444;
+        border-color: var(--danger-color);
+        color: var(--danger-color);
+        background: var(--danger-color-light);
       }
 
       .follow-btn.following:hover i {
-        color: #ef4444;
+        color: var(--danger-color);
       }
 
       .follow-btn i {
@@ -902,13 +922,14 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
        ============================================================ */
 
       .empty-state {
-        padding: 1rem 0;
-
+        padding: 1.5rem 1rem;
         text-align: center;
-
         font-size: 0.8125rem;
-
         color: var(--text-secondary);
+        background: var(--surface-hover);
+        border: 1px dashed var(--surface-border);
+        border-radius: var(--radius-md);
+        margin: 0.5rem 0;
       }
 
       .empty-stories {
