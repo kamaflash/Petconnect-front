@@ -73,7 +73,12 @@
     "rabbit": "Conejo",
     "male": "Macho",
     "female": "Hembra",
-    "other": "Otro"
+    "other": "Otro",
+    "pet": "Mascota",
+    "cancel": "Cancelar"
+  },
+  "form": {
+    "images": "Imágenes"
   },
   "nav": {
     "groupHome": "INICIO",
@@ -661,8 +666,8 @@
       "rejected": "Solicitud rechazada",
       "approved": "Solicitud aprobada"
     },
-    "petsTab": "Animales en adopción"
-    , "receivedRequests": "Solicitudes recibidas",
+    "petsTab": "Animales en adopción",
+    "receivedRequests": "Solicitudes recibidas",
     "receivedRequestsDescription": "Personas que quieren adoptar a tus compañer@s. Gestiona su avance.",
     "mySentRequests": "Mis solicitudes enviadas",
     "mySentRequestsDescription": "El progreso de las solicitudes que has enviado.",
@@ -675,7 +680,6 @@
     "requestUpdateError": "No se pudo actualizar la solicitud de adopción",
     "timelineEmpty": "Todavía no hay movimientos en esta solicitud.",
     "currentStatus": "Estado actual"
-
   },
   "feedGrid": {
     "filters": "Filtros",
@@ -777,7 +781,7 @@
     "reward": "Recompensa",
     "status": "Estado",
     "lost": "Perdido",
-    "found": "Encontrado",
+    "found": "Avistado",
     "reunited": "Reencontrado",
     "closed": "Cerrado",
     "filterSpecies": "Especie",
@@ -821,7 +825,12 @@
     "sightingAreaPlaceholder": "¿Dónde lo viste?",
     "sightingSubmit": "Enviar avistamiento",
     "sightingCreatedDetail": "El avistamiento se registró correctamente.",
-    "sightingError": "No se pudo registrar el avistamiento."
+    "sightingError": "No se pudo registrar el avistamiento.",
+    "petNamePlaceholder": "Nombre de la mascota (si lo conoces)",
+    "tabLost": "Perdidas",
+    "tabFound": "Avistamientos",
+    "emptyFoundTitle": "No hay avistamientos",
+    "emptyFoundDescription": "Sé el primero en reportar un avistamiento de una mascota en la calle."
   },
   "services": {
     "title": "Servicios",
@@ -1005,7 +1014,9 @@
       "content": "Contenido",
       "tags": "Etiquetas",
       "tagsPlaceholder": "Añade etiquetas",
-      "tagsMessage": "Separa las etiquetas con comas"
+      "tagsMessage": "Separa las etiquetas con comas",
+      "location": "Ubicación",
+      "locationPlaceholder": "Busca la ubicación (pérdida, quedada...)"
     },
     "whatsOnYourMind": "¿Qué estás pensando?",
     "toasts": {
@@ -1038,7 +1049,10 @@
       "publishedOfflineDetail": "Tu publicación se publicará cuando te reconectes",
       "notifications": "Notificaciones",
       "notificationsReadDetail": "Todas las notificaciones marcadas como leídas",
-      "notificationsError": "No se pudieron actualizar las notificaciones"
+      "notificationsError": "No se pudieron actualizar las notificaciones",
+      "locationConfirmed": "Ubicación confirmada",
+      "locationConfirmedDetail": "La ubicación se añadirá a tu publicación.",
+      "publishError": "No se pudo publicar. Inténtalo de nuevo."
     },
     "defaultUser": "Usuario",
     "organizer": "Organizador",
@@ -1073,7 +1087,8 @@
     "markAllRead": "Marcar todo como leído",
     "markRead": "Marcar como leída",
     "createPost": "Crear publicación",
-    "imageViewer": "Visor de imágenes"
+    "imageViewer": "Visor de imágenes",
+    "createPostSubtitle": "Comparte una actualización, pregunta o aviso con la comunidad"
   },
   "admin": {
     "createNewPost": "Crear Nueva Publicación",

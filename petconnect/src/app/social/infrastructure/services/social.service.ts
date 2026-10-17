@@ -42,6 +42,12 @@ export interface PostResponse {
   intent?: PostIntent;
   /** Solo significativo en publicaciones de tipo QUESTION. */
   solved?: boolean;
+  /** Dirección confirmada en el selector; ausente en publicaciones antiguas. */
+  location?: string | null;
+  /** Solo presente cuando el autor confirmó la ubicación en el mapa. */
+  latitude?: number | null;
+  /** Solo presente cuando el autor confirmó la ubicación en el mapa. */
+  longitude?: number | null;
 }
 
 export interface CreatePostRequest {
@@ -50,12 +56,21 @@ export interface CreatePostRequest {
   caption: string;
   tags?: string;
   intent?: PostIntent;
+  /** Dirección confirmada en el selector (como en editar perfil). */
+  location?: string | null;
+  /** Coordenadas confirmadas en el mapa; pueden faltar aunque haya dirección. */
+  latitude?: number | null;
+  /** Coordenadas confirmadas en el mapa; pueden faltar aunque haya dirección. */
+  longitude?: number | null;
 }
 
 export interface UpdatePostRequest {
   imageUrl?: string;
   caption?: string;
   intent?: PostIntent;
+  location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
 
 export interface EventResponse {
@@ -296,6 +311,17 @@ export class SocialService {
     }
     if (request.intent) {
       formData.append('intent', request.intent);
+    }
+    // Ubicación con el mismo patrón que editar perfil: la dirección es el texto
+    // confirmado en el selector y las coordenadas solo viajan si se confirmó en el mapa.
+    if (request.location) {
+      formData.append('location', request.location);
+    }
+    if (request.latitude != null) {
+      formData.append('latitude', String(request.latitude));
+    }
+    if (request.longitude != null) {
+      formData.append('longitude', String(request.longitude));
     }
     if (imageFile) {
       formData.append('image', imageFile);

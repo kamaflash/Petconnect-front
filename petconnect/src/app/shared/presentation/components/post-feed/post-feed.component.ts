@@ -32,6 +32,8 @@ export interface PostItem {
   intent?: PostIntent;
   /** Solo significativo en preguntas. */
   solved?: boolean;
+  /** Dirección confirmada en el selector; ausente en publicaciones antiguas. */
+  location?: string | null;
 }
 
 export type PostViewMode = 'feed' | 'grid';
@@ -178,6 +180,12 @@ export type PostViewMode = 'feed' | 'grid';
                 >{{ 'post.postIntent.urgentAction' | transloco }}</a>
               </span>
             }
+            @if (post.location) {
+              <span class="post-location" role="note">
+                <i class="pi pi-map-marker" aria-hidden="true"></i>
+                <span>{{ post.location }}</span>
+              </span>
+            }
           </div>
 
           <!-- Comments -->
@@ -224,6 +232,7 @@ export type PostViewMode = 'feed' | 'grid';
       align-items: center;
       gap: 0.375rem;
       margin-top: 0.5rem;
+      padding: 0 1rem 0.375rem;
     }
 
     .post-intent-badge {
@@ -277,6 +286,24 @@ export type PostViewMode = 'feed' | 'grid';
       flex-basis: 100%;
       font-size: 0.75rem;
       color: var(--text-secondary);
+    }
+
+    .post-location {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: var(--radius-full, 999px);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      line-height: 1.4;
+      background: color-mix(in srgb, var(--primary-color, #3b82f6) 10%, transparent);
+      color: var(--text-secondary, #64748b);
+    }
+
+    .post-location i {
+      font-size: 0.75rem;
+      color: var(--primary-color, #2563eb);
     }
 
     .post-intent-urgent-link {

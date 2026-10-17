@@ -1037,3 +1037,921 @@ Application bundle generation failed. [0.008 seconds] - 2026-10-14T21:52:43.098Z
 ✔ Changes detected. Rebuilding...
 Application bundle generation failed. [0.002 seconds] - 2026-10-14T21:52:55.535Z
 
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [2.075 seconds] - 2026-10-15T18:37:29.862Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-TL3ENGT7.js   | profile-routes        | 418.30 kB | 
+chunk-O6LEQNZL.js   | social-routes         | 239.71 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-4TXIZ5QL.js   | admin-routes          | 114.24 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-2FE4BTEI.js   | -                     | 102.61 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-ZWT52YEH.js   | lostpets-routes       |  97.03 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-YKQ5QE2F.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [0.916 seconds] - 2026-10-15T18:37:48.429Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-BPRGPQ64.js   | social-routes | 239.71 kB | 
+
+Application bundle generation complete. [1.412 seconds] - 2026-10-15T18:38:00.101Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-GVD6Y4XO.js   | social-routes | 239.71 kB | 
+
+Application bundle generation complete. [1.322 seconds] - 2026-10-15T18:38:35.888Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-6QEWVQVV.js   | social-routes | 240.41 kB | 
+
+Application bundle generation complete. [1.441 seconds] - 2026-10-15T18:38:43.411Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-ZD76YEX6.js   | social-routes | 240.63 kB | 
+
+Application bundle generation complete. [1.311 seconds] - 2026-10-15T18:38:54.449Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.410 seconds] - 2026-10-15T18:39:01.616Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-TL3ENGT7.js   | profile-routes        | 418.30 kB | 
+chunk-2R3CTILG.js   | social-routes         | 241.71 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-4TXIZ5QL.js   | admin-routes          | 114.24 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-2FE4BTEI.js   | -                     | 102.61 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-ZWT52YEH.js   | lostpets-routes       |  97.03 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-YKQ5QE2F.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [1.262 seconds] - 2026-10-15T18:39:09.147Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-GPEOVLJM.js   | social-routes | 242.06 kB | 
+
+Application bundle generation complete. [1.485 seconds] - 2026-10-15T18:39:18.041Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-6YUSECDZ.js   | social-routes | 242.11 kB | 
+
+Application bundle generation complete. [1.343 seconds] - 2026-10-15T18:39:23.674Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-FFRW7WDD.js   | social-routes | 242.23 kB | 
+
+Application bundle generation complete. [1.346 seconds] - 2026-10-15T18:39:40.600Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-4PWOKP2B.js   | social-routes | 242.47 kB | 
+
+Application bundle generation complete. [1.242 seconds] - 2026-10-15T18:39:49.121Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-GVB22WQ7.js   | social-routes | 242.55 kB | 
+
+Application bundle generation complete. [1.278 seconds] - 2026-10-15T18:39:54.544Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-WQU2KVM2.js   | social-routes | 242.55 kB | 
+chunk-GA3IPASH.js   | -             | 102.61 kB | 
+chunk-5W7K25FF.js   | home-routes   |  82.27 kB | 
+
+Application bundle generation complete. [1.081 seconds] - 2026-10-15T18:40:01.107Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-KE5NRSFB.js   | social-routes | 242.55 kB | 
+chunk-NIEQYE42.js   | -             | 103.63 kB | 
+chunk-VXOO4KLV.js   | home-routes   |  82.27 kB | 
+
+Application bundle generation complete. [1.649 seconds] - 2026-10-15T18:40:07.969Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-Z6TXJ3RI.js   | social-routes | 242.55 kB | 
+chunk-LJT6SRCP.js   | -             | 104.58 kB | 
+chunk-U5RSMXL7.js   | home-routes   |  82.27 kB | 
+
+Application bundle generation complete. [1.247 seconds] - 2026-10-15T18:40:14.150Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-XHF4HA5S.js   | social-routes | 242.59 kB | 
+
+Application bundle generation complete. [1.178 seconds] - 2026-10-15T18:40:21.254Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-B3C5HN3O.js   | social-routes | 242.69 kB | 
+
+Application bundle generation complete. [0.750 seconds] - 2026-10-15T18:40:28.049Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-TL3ENGT7.js   | profile-routes        | 418.30 kB | 
+chunk-B3C5HN3O.js   | social-routes         | 242.69 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-4TXIZ5QL.js   | admin-routes          | 114.24 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-LJT6SRCP.js   | -                     | 104.58 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-ZWT52YEH.js   | lostpets-routes       |  97.03 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-U5RSMXL7.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [0.062 seconds] - 2026-10-15T18:41:08.715Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.852 seconds] - 2026-10-15T18:52:19.681Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [2.039 seconds] - 2026-10-15T18:52:26.020Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.423 seconds] - 2026-10-15T18:52:33.599Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.174 seconds] - 2026-10-15T18:52:39.025Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.722 seconds] - 2026-10-15T18:52:53.547Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.317 seconds] - 2026-10-15T18:53:02.673Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.556 seconds] - 2026-10-15T18:53:43.283Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.187 seconds] - 2026-10-15T18:54:03.303Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.243 seconds] - 2026-10-15T18:54:19.178Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.148 seconds] - 2026-10-15T18:54:29.058Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.373 seconds] - 2026-10-15T18:54:35.396Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.303 seconds] - 2026-10-15T18:54:40.829Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.636 seconds] - 2026-10-15T18:54:47.197Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.001 seconds] - 2026-10-15T18:55:02.340Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-TL3ENGT7.js   | profile-routes        | 418.30 kB | 
+chunk-BILVXYDN.js   | social-routes         | 247.77 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-4TXIZ5QL.js   | admin-routes          | 114.24 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-LJT6SRCP.js   | -                     | 104.58 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-ZWT52YEH.js   | lostpets-routes       |  97.03 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-U5RSMXL7.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [0.754 seconds] - 2026-10-15T18:55:41.552Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-APSILXPE.js   | social-routes | 243.47 kB | 
+
+Application bundle generation complete. [3.967 seconds] - 2026-10-15T20:01:25.997Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [2.362 seconds] - 2026-10-15T20:01:36.063Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [2.063 seconds] - 2026-10-15T20:02:02.202Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [2.300 seconds] - 2026-10-15T20:02:15.768Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [2.078 seconds] - 2026-10-15T20:02:41.618Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.918 seconds] - 2026-10-15T20:02:58.147Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.940 seconds] - 2026-10-15T20:03:13.440Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [2.226 seconds] - 2026-10-15T20:03:28.230Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.428 seconds] - 2026-10-15T20:03:39.535Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.745 seconds] - 2026-10-15T20:03:47.679Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-TL3ENGT7.js   | profile-routes        | 418.30 kB | 
+chunk-O4CWU6XS.js   | social-routes         | 250.63 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-4TXIZ5QL.js   | admin-routes          | 114.24 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-LJT6SRCP.js   | -                     | 104.58 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-ZWT52YEH.js   | lostpets-routes       |  97.03 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-U5RSMXL7.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [1.722 seconds] - 2026-10-15T20:03:56.201Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.167 seconds] - 2026-10-15T20:04:02.914Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-TL3ENGT7.js   | profile-routes        | 418.30 kB | 
+chunk-UNWPZ5HX.js   | social-routes         | 235.41 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-4TXIZ5QL.js   | admin-routes          | 114.24 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-LJT6SRCP.js   | -                     | 104.58 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-ZWT52YEH.js   | lostpets-routes       |  97.03 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-U5RSMXL7.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [0.781 seconds] - 2026-10-15T20:04:08.583Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names         |  Raw size
+main.js             | main          | 144.79 kB | 
+
+Lazy chunk files    | Names         |  Raw size
+chunk-D43IZ5BI.js   | social-routes | 235.41 kB | 
+chunk-OEIBELLL.js   | -             | 104.64 kB | 
+chunk-OI356S5F.js   | home-routes   |  82.27 kB | 
+
+Application bundle generation complete. [1.505 seconds] - 2026-10-15T20:04:17.368Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [3.986 seconds] - 2026-10-15T20:30:56.078Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.782 seconds] - 2026-10-15T20:31:17.440Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.077 seconds] - 2026-10-15T20:31:50.437Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.929 seconds] - 2026-10-15T20:32:09.312Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.116 seconds] - 2026-10-15T20:32:40.107Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.003 seconds] - 2026-10-15T20:32:50.241Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.669 seconds] - 2026-10-15T20:33:19.348Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.114 seconds] - 2026-10-15T20:33:47.649Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.183 seconds] - 2026-10-15T20:33:55.426Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.913 seconds] - 2026-10-15T20:34:19.613Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.941 seconds] - 2026-10-15T20:34:57.558Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.672 seconds] - 2026-10-15T20:35:48.280Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.850 seconds] - 2026-10-15T20:36:26.905Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.006 seconds] - 2026-10-15T20:36:35.110Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.892 seconds] - 2026-10-15T20:36:41.308Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.760 seconds] - 2026-10-15T20:37:04.388Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.040 seconds] - 2026-10-15T20:37:12.521Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.795 seconds] - 2026-10-15T20:37:19.551Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.898 seconds] - 2026-10-15T20:37:33.407Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.114 seconds] - 2026-10-15T20:38:25.877Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.156 seconds] - 2026-10-15T20:38:33.958Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.747 seconds] - 2026-10-15T20:38:49.010Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.833 seconds] - 2026-10-15T20:38:56.220Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.892 seconds] - 2026-10-15T20:39:22.966Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.818 seconds] - 2026-10-15T20:39:59.120Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.078 seconds] - 2026-10-15T20:40:10.628Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.984 seconds] - 2026-10-15T20:40:26.037Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.752 seconds] - 2026-10-15T20:40:50.415Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.690 seconds] - 2026-10-15T20:45:23.764Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.860 seconds] - 2026-10-15T20:45:26.167Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.613 seconds] - 2026-10-15T20:45:28.226Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.790 seconds] - 2026-10-15T20:45:30.926Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.916 seconds] - 2026-10-15T20:45:52.753Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.809 seconds] - 2026-10-15T20:45:55.097Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.932 seconds] - 2026-10-15T20:45:57.470Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.093 seconds] - 2026-10-15T20:46:00.122Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.846 seconds] - 2026-10-15T20:46:02.286Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.235 seconds] - 2026-10-15T20:46:05.020Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [0.666 seconds] - 2026-10-15T20:46:06.776Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Application bundle generation failed. [1.111 seconds] - 2026-10-15T20:46:09.501Z
+
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-TL3ENGT7.js   | profile-routes        | 418.30 kB | 
+chunk-D43IZ5BI.js   | social-routes         | 235.41 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-4TXIZ5QL.js   | admin-routes          | 114.24 kB | 
+chunk-KDI5S6Z2.js   | lostpets-routes       | 107.84 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-OEIBELLL.js   | -                     | 104.64 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-OI356S5F.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [1.593 seconds] - 2026-10-15T20:46:43.851Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names           |  Raw size
+main.js             | main            | 144.79 kB | 
+
+Lazy chunk files    | Names           |  Raw size
+chunk-4LGUOTCB.js   | lostpets-routes | 107.84 kB | 
+
+Application bundle generation complete. [1.432 seconds] - 2026-10-15T20:47:30.209Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names           |  Raw size
+main.js             | main            | 144.79 kB | 
+
+Lazy chunk files    | Names           |  Raw size
+chunk-SYAJIQ4Y.js   | lostpets-routes | 107.84 kB | 
+
+Application bundle generation complete. [2.319 seconds] - 2026-10-15T20:47:38.276Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-TL3ENGT7.js   | profile-routes        | 418.30 kB | 
+chunk-D43IZ5BI.js   | social-routes         | 235.41 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-4TXIZ5QL.js   | admin-routes          | 114.24 kB | 
+chunk-SYAJIQ4Y.js   | lostpets-routes       | 107.84 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-OEIBELLL.js   | -                     | 104.64 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-OI356S5F.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [0.078 seconds] - 2026-10-15T20:48:53.182Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-TL3ENGT7.js   | profile-routes        | 418.30 kB | 
+chunk-D43IZ5BI.js   | social-routes         | 235.41 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-4TXIZ5QL.js   | admin-routes          | 114.24 kB | 
+chunk-SYAJIQ4Y.js   | lostpets-routes       | 107.84 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-OEIBELLL.js   | -                     | 104.64 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-OI356S5F.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [0.078 seconds] - 2026-10-15T20:48:59.179Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-TL3ENGT7.js   | profile-routes        | 418.30 kB | 
+chunk-D43IZ5BI.js   | social-routes         | 235.41 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-4TXIZ5QL.js   | admin-routes          | 114.24 kB | 
+chunk-SYAJIQ4Y.js   | lostpets-routes       | 107.84 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-OEIBELLL.js   | -                     | 104.64 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-OI356S5F.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [0.048 seconds] - 2026-10-15T20:49:10.145Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names                 |  Raw size
+styles.css          | styles                | 505.36 kB | 
+main.js             | main                  | 144.79 kB | 
+chunk-I3JL2QER.js   | -                     |  83.42 kB | 
+chunk-BK7BQEGX.js   | -                     |  44.90 kB | 
+chunk-GWZ33CIV.js   | -                     |  11.81 kB | 
+chunk-JWWTPXGH.js   | -                     |   9.33 kB | 
+chunk-UH7ASQV2.js   | -                     |   4.55 kB | 
+chunk-N5FORTQZ.js   | -                     |   2.50 kB | 
+chunk-SSUFZCTQ.js   | -                     |   1.85 kB | 
+chunk-VUJOFXKG.js   | -                     | 987 bytes | 
+chunk-A6RYJASW.js   | -                     | 403 bytes | 
+
+                    | Initial total         | 809.92 kB
+
+Lazy chunk files    | Names                 |  Raw size
+chunk-TL3ENGT7.js   | profile-routes        | 418.30 kB | 
+chunk-D43IZ5BI.js   | social-routes         | 235.41 kB | 
+chunk-43RDDQ4F.js   | pets-routes           | 139.53 kB | 
+chunk-4TXIZ5QL.js   | admin-routes          | 114.24 kB | 
+chunk-SYAJIQ4Y.js   | lostpets-routes       | 107.84 kB | 
+chunk-4VA57HLB.js   | -                     | 105.04 kB | 
+chunk-OEIBELLL.js   | -                     | 104.64 kB | 
+chunk-5AJDSQ5J.js   | -                     | 100.31 kB | 
+chunk-BVOXTKOL.js   | adoptions-routes      |  85.51 kB | 
+chunk-JJEOB4RB.js   | marketplace-routes    |  83.52 kB | 
+chunk-OI356S5F.js   | home-routes           |  82.27 kB | 
+chunk-PIW47UFY.js   | messages-routes       |  79.53 kB | 
+chunk-D3A44U5G.js   | gamification-routes   |  77.72 kB | 
+chunk-GNXPTM2F.js   | agenda-page-component |  60.76 kB | 
+chunk-ST5VZWX4.js   | nearby-routes         |  49.07 kB | 
+...and 20 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [0.059 seconds] - 2026-10-15T20:49:13.081Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names |  Raw size
+main.js             | main  | 145.83 kB | 
+
+Application bundle generation complete. [1.605 seconds] - 2026-10-15T20:56:12.397Z
+
+Component update sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names           |  Raw size
+main.js             | main            | 145.83 kB | 
+
+Lazy chunk files    | Names           |  Raw size
+chunk-QTJNAPZU.js   | lostpets-routes | 107.84 kB | 
+
+Application bundle generation complete. [1.774 seconds] - 2026-10-15T21:14:04.483Z
+
+Page reload sent to client(s).
+❯ Changes detected. Rebuilding...
+✔ Changes detected. Rebuilding...
+Initial chunk files | Names           |  Raw size
+main.js             | main            | 145.83 kB | 
+
+Lazy chunk files    | Names           |  Raw size
+chunk-OBUBIKAE.js   | lostpets-routes | 107.95 kB | 
+
+Application bundle generation complete. [2.148 seconds] - 2026-10-15T21:15:13.035Z
+
+Page reload sent to client(s).

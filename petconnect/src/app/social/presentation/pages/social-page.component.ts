@@ -16,14 +16,14 @@ import { BadgeModule } from 'primeng/badge';
 import { TooltipModule } from 'primeng/tooltip';
 import { MenuModule } from 'primeng/menu';
 import { ProgressBarModule } from 'primeng/progressbar';
-import { DynamicFormComponent, DynamicFormConfig, FormFieldOption } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { CloudinaryService, CloudinaryUploadResponse } from '../../../shared/infrastructure/services/cloudinary.service';
-import { SocialService, PostResponse, EventResponse, GroupResponse, NotificationResponse, TrendingTopicResponse, FollowResponse, UserProfileResponse, PageResponse, PostIntent, DEFAULT_POST_INTENT, resolveIntent } from '../../infrastructure/services/social.service';
+import { SocialService, PostResponse, EventResponse, GroupResponse, NotificationResponse, TrendingTopicResponse, FollowResponse, UserProfileResponse, PageResponse, PostIntent } from '../../infrastructure/services/social.service';
 import { LikeService } from '../../../shared/infrastructure/services/like.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
@@ -89,6 +89,12 @@ interface CommunityPost {
   intent?: PostIntent;
   /** Solo significativo en preguntas. */
   solved?: boolean;
+  /** Dirección confirmada en el selector; ausente en publicaciones antiguas. */
+  location?: string | null;
+  /** Solo presente cuando el autor confirmó la ubicación en el mapa. */
+  latitude?: number | null;
+  /** Solo presente cuando el autor confirmó la ubicación en el mapa. */
+  longitude?: number | null;
   type?: 'update' | 'question' | 'event' | 'tip' | 'milestone';
   petMention?: {
     id: string;
@@ -208,7 +214,7 @@ interface Notification {
         <!-- Loading state is now handled by PostFeedComponent with Skeleton -->
         <div class="feed-layout" *ngIf="activeTab() === 'feed'">
           <div class="feed-column">
-            <div class="create-post-input" (click)="showCreatePostDialog()">
+            <div class="create-post-input" (click)="showCreatePostDialog()" (keydown.enter)="showCreatePostDialog()" tabindex="0" role="link">
               <p-avatar [image]="currentUserAvatar()" shape="circle" size="normal"></p-avatar>
               <input
                 type="text"
@@ -221,34 +227,6 @@ interface Notification {
                 <i class="pi pi-smile"></i>
               </div>
             </div>
-
-            <!-- Filtro por intención -->
-            <div class="intent-filter-bar" role="group" [attr.aria-label]="'post.postIntent.filterLabel' | transloco">
-              <button
-                type="button"
-                class="intent-chip"
-                [class.active]="!intentFilter()"
-                [attr.aria-pressed]="!intentFilter()"
-                (click)="intentFilter.set(null)"
-              >
-                {{ 'post.postIntent.filterAll' | transloco }}
-              </button>
-              @for (option of intentOptions; track option.value) {
-                <button
-                  type="button"
-                  class="intent-chip"
-                  [class.active]="intentFilter() === option.value"
-                  [attr.aria-pressed]="intentFilter() === option.value"
-                  (click)="intentFilter.set(option.value)"
-                >
-                  {{ 'post.postIntent.' + option.key | transloco }}
-                </button>
-              }
-            </div>
-
-            @if (intentFilter() && filteredFeedPosts().length === 0) {
-              <p class="intent-filter-empty">{{ 'post.postIntent.emptyFiltered' | transloco }}</p>
-            }
 
             <app-post-feed
               [posts]="postItems()"
@@ -489,7 +467,9 @@ interface Notification {
       </div>
     </div>
 
-    <!-- Diálogo de creación de publicación -->
+    <!-- Modal de creación de publicación: solo imágenes, contenido y etiquetas.
+      Sin tipo (siempre UPDATE) ni ubicación: esos tipos se crean automáticamente
+      desde reporte, evento o logro. -->
     <app-modal
       [visible]="createPostDialogVisible()"
       [style]="{width: '600px'}"
@@ -1718,25 +1698,17 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
   activeTab = signal('feed');
   followersSearchQuery = signal('');
 
-  // New post
+  // Creación manual: modal con formulario mínimo (imágenes, contenido, etiquetas).
   createPostDialogVisible = signal(false);
-  newPostContent = '';
-  newPostTags = '';
 
-  // Form config for creating posts (getter para reflejar el idioma activo)
+  // Formulario mínimo de publicación manual: sin tipo (siempre UPDATE) ni
+  // ubicación (esos tipos se crean automáticamente desde reporte/evento/logro).
   get postFormConfig(): DynamicFormConfig {
     return {
       submitLabel: this.transloco.translate('social.form.submit'),
       cancelLabel: this.transloco.translate('social.form.cancel'),
       showCancel: false,
       fields: [
-        {
-          key: 'intent',
-          label: this.transloco.translate('post.postIntent.label'),
-          type: 'select',
-          options: this.intentFormOptions(),
-          validation: { required: true, customMessage: this.transloco.translate('post.postIntent.required') }
-        },
         {
           key: 'images',
           label: this.transloco.translate('social.form.images'),
@@ -1766,14 +1738,6 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       ]
     };
-  }
-
-  /** Opciones traducidas del selector de intención al crear una publicación. */
-  intentFormOptions(): FormFieldOption[] {
-    return this.intentOptions.map(option => ({
-      label: this.transloco.translate(`post.postIntent.${option.key}`),
-      value: option.value
-    }));
   }
 
   // Comments
@@ -1827,30 +1791,10 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
   notifications = signal<Notification[]>([]);
 
   // Computed
-  /**
-   * Filtro de intención del feed. `null` muestra todos los tipos, que es el
-   * comportamiento anterior a esta funcionalidad.
-   */
-  intentFilter = signal<PostIntent | null>(null);
-
-  /** Opciones del selector de intención, en el orden que se muestra al usuario. */
-  readonly intentOptions: { value: PostIntent; key: string }[] = [
-    { value: 'UPDATE', key: 'UPDATE' },
-    { value: 'QUESTION', key: 'QUESTION' },
-    { value: 'RECOMMENDATION', key: 'RECOMMENDATION' },
-    { value: 'ACHIEVEMENT', key: 'ACHIEVEMENT' },
-    { value: 'MEETUP', key: 'MEETUP' },
-    { value: 'URGENT_LOST', key: 'URGENT_LOST' },
-  ];
-
+  // El feed muestra todas las publicaciones ordenadas; el filtro por tipo se
+  // eliminó. El badge de cada tarjeta sigue informando del origen.
   filteredFeedPosts = computed(() => {
-    const filter = this.intentFilter();
-    const sorted = this.communityPosts().sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-    if (!filter) {
-      return sorted;
-    }
-    // Las publicaciones antiguas sin intención se tratan como actualización.
-    return sorted.filter(post => resolveIntent(post.intent) === filter);
+    return this.communityPosts().sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   });
 
   // Convert CommunityPost[] to PostItem[] for the shared component
@@ -1871,6 +1815,7 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
       saved: post.saved,
       intent: post.intent,
       solved: post.solved,
+      location: post.location ?? null,
       likeAvatars: post.likeAvatars,
       timestamp: post.timestamp
     }));
@@ -2270,6 +2215,9 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
       saved: false,
       intent: post.intent,
       solved: post.solved,
+      location: post.location ?? null,
+      latitude: post.latitude ?? null,
+      longitude: post.longitude ?? null,
       tags: tags
     };
   }
@@ -2556,14 +2504,12 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  closeCreatePostDialog() {
-    this.createPostDialogVisible.set(false);
-    this.newPostContent = '';
-    this.newPostTags = '';
-  }
-
   showCreatePostDialog() {
     this.createPostDialogVisible.set(true);
+  }
+
+  closeCreatePostDialog() {
+    this.createPostDialogVisible.set(false);
   }
 
   showCreateEventDialog() {
@@ -2583,13 +2529,13 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/social/communities'], { queryParams: { crear: '1' } });
   }
 
+  // La publicación manual siempre es UPDATE sin ubicación; los tipos
+  // URGENT_LOST/ACHIEVEMENT/evento se crean automáticamente desde su origen.
   async onPostFormSubmit(formData: any) {
     const content = formData.content || '';
     const rawTags = formData.tags || '';
     const tags = rawTags.split(',').map((t: string) => t.trim()).filter((t: string) => t).join(',');
     const uploadedFiles = formData.images || [];
-    // Si el usuario no elige, se comporta como una actualización normal.
-    const intent: PostIntent = resolveIntent(formData.intent);
 
     if (!content.trim()) {
       this.messageService.add({
@@ -2600,7 +2546,6 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Get current user from AuthService
     const currentUser = this.authService.user();
     if (!currentUser) {
       this.messageService.add({
@@ -2611,20 +2556,21 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Get the first image file if available
     let imageFile: File | undefined;
     if (uploadedFiles && uploadedFiles.length > 0) {
       const firstFile = uploadedFiles[0];
       imageFile = firstFile.originalFile || firstFile;
     }
 
-    // Create post in backend with image upload
     this.socialService.createPost({
       authorId: this.currentUserId(),
       caption: content,
       imageUrl: '',
       tags: tags,
-      intent
+      intent: 'UPDATE',
+      location: null,
+      latitude: null,
+      longitude: null
     }, imageFile)
       .subscribe({
         next: (createdPost) => {
@@ -2645,6 +2591,11 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
             shares: 0,
             liked: false,
             saved: false,
+            intent: createdPost.intent,
+            solved: createdPost.solved,
+            location: createdPost.location ?? null,
+            latitude: createdPost.latitude ?? null,
+            longitude: createdPost.longitude ?? null,
             tags: tags
           };
 
@@ -2659,7 +2610,6 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
           });
         },
         error: () => {
-          // Fallback: add locally if API fails
           const newPost: CommunityPost = {
             id: 'p' + Date.now(),
             user: {
@@ -2676,6 +2626,7 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
             shares: 0,
             liked: false,
             saved: false,
+            intent: 'UPDATE',
             tags: tags
           };
 

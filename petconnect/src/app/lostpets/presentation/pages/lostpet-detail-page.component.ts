@@ -326,6 +326,9 @@ export class LostPetDetailPageComponent implements OnInit {
           summary: this.i18n.translate('common.success'),
           detail: this.i18n.translate('lostPets.sightingCreatedDetail'),
         });
+        // Recargar desde el backend para mantener el listado y el contador consistentes.
+        const reportId = this.reportId;
+        if (reportId) setTimeout(() => this.load(reportId));
       },
       error: () => this.messages.add({
         severity: 'error',

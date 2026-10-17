@@ -57,6 +57,10 @@ import { TranslocoModule } from '@jsverse/transloco';
           <span class="material-symbols-rounded">pet_supplies</span>
           <span class="mobile-nav-label">{{ 'nav.adoptions' | transloco }}</span>
         </a>
+        <a routerLink="/lostpets" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.lostPets' | transloco">
+          <span class="material-symbols-rounded">search</span>
+          <span class="mobile-nav-label">{{ 'nav.lostPets' | transloco }}</span>
+        </a>
         <a routerLink="/social" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.community' | transloco">
           <span class="material-symbols-rounded">groups</span>
           <span class="mobile-nav-label">{{ 'nav.community' | transloco }}</span>

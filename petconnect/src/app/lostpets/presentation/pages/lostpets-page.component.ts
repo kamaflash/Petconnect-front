@@ -6,14 +6,15 @@ import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TagModule } from 'primeng/tag';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
-import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
-import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
+import { MessageService } from 'primeng/api';
+import { LostPetReportModalComponent } from '../components/lostpet-report-modal.component';
+import { LostPetSightingModalComponent } from '../components/lostpet-sighting-modal.component';
 import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
+import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { GeolocationService } from '../../../shared/services/geolocation.service';
-import { LostPetsService, LostPetReport, LostPetStatus } from '../../infrastructure/services/lost-pets.service';
+import { LostPetsService, LostPetReport, LostPetStatus, CreateLostPetReport } from '../../infrastructure/services/lost-pets.service';
 
 /** Especies ofrecidas en el filtro, alineadas con el enum del backend. */
 const SPECIES = [
@@ -33,9 +34,10 @@ const SPECIES = [
     ToastModule,
     FormsModule,
     TranslocoModule,
-    DynamicFormComponent,
-    ModalComponent,
+    LostPetReportModalComponent,
+    LostPetSightingModalComponent,
     PageHeadingCardComponent,
+    TabsComponent,
   ],
   providers: [MessageService],
   template: `
@@ -44,201 +46,235 @@ const SPECIES = [
       <app-page-heading-card
         [title]="'lostPets.title' | transloco"
         [subtitle]="'lostPets.subtitle' | transloco"
-      >
-        <button
-          page-heading-actions
-          type="button"
-          class="report-button"
-          [attr.aria-label]="'lostPets.report' | transloco"
-          [title]="'lostPets.report' | transloco"
-          (click)="openCreate()"
-        >
-          <i class="pi pi-plus" aria-hidden="true"></i>
-        </button>
-      </app-page-heading-card>
+      />
 
-      <details class="catalog-toolbar card-modern">
-        <summary class="filters-summary">
-          <span class="filters-summary-title">
-            <i class="pi pi-sliders-h" aria-hidden="true"></i>
-            {{ 'feedGrid.filters' | transloco }}
-          </span>
-          <span class="filters-summary-meta">
-            <span class="results-count">
-              {{ reports().length }} {{ reports().length === 1 ? 'reporte' : 'reportes' }}
+      <app-tabs
+        [tabs]="tabs()"
+        [activeTab]="activeTab()"
+        (tabChange)="onTabChange($event)"
+      />
+
+      <div class="tab-content">
+        <details class="catalog-toolbar">
+          <summary class="filters-summary">
+            <span class="filters-summary-title">
+              <i class="pi pi-sliders-h" aria-hidden="true"></i>
+              {{ 'feedGrid.filters' | transloco }}
             </span>
-            <i class="pi pi-chevron-down accordion-chevron" aria-hidden="true"></i>
-          </span>
-        </summary>
-        <div class="filter-panel filters-bar">
-        <div class="filter-field">
-          <label for="species-filter">{{ 'lostPets.filterSpecies' | transloco }}</label>
-          <p-select
-            inputId="species-filter"
-            [(ngModel)]="speciesFilter"
-            [options]="speciesOptions()"
-            optionLabel="label"
-            optionValue="value"
-            [showClear]="true"
-            (onChange)="load()"
-          />
-        </div>
-        <div class="filter-field">
-          <label for="status-filter">{{ 'lostPets.status' | transloco }}</label>
-          <p-select
-            inputId="status-filter"
-            [(ngModel)]="statusFilter"
-            [options]="statusOptions()"
-            optionLabel="label"
-            optionValue="value"
-            [showClear]="true"
-            (onChange)="load()"
-          />
-        </div>
-        <div class="filter-field">
-          <label for="from-filter">{{ 'lostPets.filterFrom' | transloco }}</label>
-          <input id="from-filter" type="date" class="date-input"
-            [(ngModel)]="fromFilter" (change)="load()" />
-        </div>
-        <div class="filter-field">
-          <label for="to-filter">{{ 'lostPets.filterTo' | transloco }}</label>
-          <input id="to-filter" type="date" class="date-input"
-            [(ngModel)]="toFilter" (change)="load()" />
-        </div>
-        <button
-          type="button"
-          pButton
-          class="p-button-outlined nearby-toggle"
-          [class.active]="nearbyOnly()"
-          [attr.aria-pressed]="nearbyOnly()"
-          (click)="toggleNearby()"
-        >
-          <i class="pi pi-map-marker" aria-hidden="true"></i>
-          {{ (nearbyOnly() ? 'lostPets.nearbyActive' : 'lostPets.nearby') | transloco }}
-        </button>
-        </div>
-      </details>
+            <span class="filters-summary-meta">
+              <span class="results-count">
+                {{ filteredReports().length }} {{ filteredReports().length === 1 ? 'reporte' : 'reportes' }}
+              </span>
+              <i class="pi pi-chevron-down accordion-chevron" aria-hidden="true"></i>
+            </span>
+          </summary>
+          <div class="filter-panel">
+            <div class="filter-group">
+              <label class="filter-label">{{ 'lostPets.species' | transloco }}</label>
+              <p-select
+                [options]="speciesOptions()"
+                optionLabel="label"
+                optionValue="value"
+                [showClear]="true"
+                [placeholder]="'lostPets.species' | transloco"
+                [(ngModel)]="speciesFilter"
+                (onChange)="load()"
+                class="filter-select"
+              />
+            </div>
+            <div class="filter-group">
+              <label class="filter-label">{{ 'lostPets.status' | transloco }}</label>
+              <p-select
+                [options]="statusOptions()"
+                optionLabel="label"
+                optionValue="value"
+                [showClear]="true"
+                [placeholder]="'lostPets.status' | transloco"
+                [(ngModel)]="statusFilter"
+                (onChange)="load()"
+                class="filter-select"
+              />
+            </div>
+            <div class="filter-group">
+              <label class="filter-label">{{ 'lostPets.lostDate' | transloco }}</label>
+              <div class="date-range">
+                <input
+                  type="date"
+                  class="form-input"
+                  [(ngModel)]="fromFilter"
+                  (change)="load()"
+                  [attr.aria-label]="'lostPets.lostDate' | transloco"
+                />
+                <span aria-hidden="true">–</span>
+                <input
+                  type="date"
+                  class="form-input"
+                  [(ngModel)]="toFilter"
+                  (change)="load()"
+                  [attr.aria-label]="'lostPets.lostDate' | transloco"
+                />
+              </div>
+            </div>
+            <div class="filter-group">
+              <label class="filter-label">&nbsp;</label>
+              <div class="filter-actions">
+                <button
+                  type="button"
+                  pButton
+                  [icon]="nearbyOnly() ? 'pi pi-map-marker' : 'pi pi-compass'"
+                  [label]="'lostPets.nearby' | transloco"
+                  [class.p-button-primary]="nearbyOnly()"
+                  class="p-button-outlined"
+                  (click)="toggleNearby()"
+                ></button>
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-text"
+                  icon="pi pi-filter-slash"
+                  [label]="'lostPets.clearFilters' | transloco"
+                  (click)="clearFilters()"
+                ></button>
+              </div>
+            </div>
+          </div>
+        </details>
 
-      @if (loading()) {
-        <div class="reports-grid" aria-busy="true">
-          @for (placeholder of [1, 2, 3, 4]; track placeholder) {
-            <article class="report-card skeleton-card" aria-hidden="true">
-              <p-skeleton height="150px" />
-              <div class="report-body">
-                <p-skeleton width="60%" height="1.1rem" />
-                <p-skeleton width="40%" height=".85rem" />
-                <p-skeleton width="85%" height=".85rem" />
-              </div>
-            </article>
-          }
+        <div class="tab-header">
+          <h2 class="tab-title">
+            {{ activeTab() === 'found' ? ('lostPets.tabFound' | transloco) : ('lostPets.tabLost' | transloco) }}
+            <span class="tab-count">({{ filteredReports().length }})</span>
+          </h2>
+          <button
+            type="button"
+            pButton
+            icon="pi pi-plus"
+            [label]="activeTab() === 'found' ? ('lostPets.sightingTitle' | transloco) : ('lostPets.report' | transloco)"
+            (click)="openCreate()"
+          ></button>
         </div>
-      } @else if (error()) {
-        <section class="state-card" role="alert">
-          <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
-          <h2>{{ 'lostPets.errorTitle' | transloco }}</h2>
-          <p>{{ error() }}</p>
-          <button type="button" pButton [label]="'lostPets.retry' | transloco" (click)="load()"></button>
-        </section>
-      } @else if (reports().length === 0) {
-        <section class="state-card">
-          <i class="pi pi-search" aria-hidden="true"></i>
-          <h2>{{ 'lostPets.emptyTitle' | transloco }}</h2>
-          <p>{{ 'lostPets.emptyDescription' | transloco }}</p>
-          <button type="button" pButton [label]="'lostPets.report' | transloco" (click)="openCreate()"></button>
-        </section>
-      } @else {
-        <div class="reports-grid">
-          @for (report of reports(); track report.id) {
-            <article class="report-card">
-              <div class="report-photo">
-                @if (report.photoUrl) {
-                  <img [src]="report.photoUrl" [alt]="report.petName" loading="lazy" />
-                } @else {
-                  <div class="photo-placeholder"><i class="pi pi-image" aria-hidden="true"></i></div>
-                }
-                <p-tag class="status-tag" [value]="statusLabel(report.status)"
-                  [severity]="statusSeverity(report.status)" />
-              </div>
-              <div class="report-body">
-                <h3 class="report-name">{{ report.petName }}</h3>
-                <p class="report-meta">
-                  {{ speciesLabel(report.species) }} ·
-                  {{ report.breed || report.color || ('lostPets.unknownBreed' | transloco) }}
-                </p>
-                <p class="report-meta">
-                  <i class="pi pi-calendar" aria-hidden="true"></i>
-                  {{ report.lostDate | date:'mediumDate' }}
-                </p>
-                <p class="report-meta">
-                  <i class="pi pi-map-marker" aria-hidden="true"></i>
-                  {{ report.lastSeenArea }}
-                  @if (report.distanceKm != null) {
-                    <span class="distance"> · {{ geolocation.formatDistance(report.distanceKm) }}</span>
-                  }
-                </p>
-                @if (report.rewardAmount) {
-                  <p class="report-reward">
-                    <i class="pi pi-euro" aria-hidden="true"></i> {{ report.rewardAmount }}
-                  </p>
-                }
-                <p class="report-meta">
-                  <i class="pi pi-eye" aria-hidden="true"></i>
-                  {{ report.sightingsCount }} {{ 'lostPets.sightings' | transloco }}
-                </p>
-                <div class="report-actions">
-                  <button type="button" pButton class="p-button-text p-button-sm"
-                    [label]="'lostPets.viewDetail' | transloco"
-                    (click)="goToDetail(report)"></button>
-                  <button type="button" pButton class="p-button-text p-button-sm"
-                    icon="pi pi-share-alt"
-                    [attr.aria-label]="'lostPets.share' | transloco"
-                    [title]="'lostPets.share' | transloco"
-                    (click)="share(report)"></button>
-                  @if (report.owner) {
-                    <button type="button" pButton class="p-button-text p-button-sm"
-                      [label]="'lostPets.edit' | transloco" (click)="openEdit(report)"></button>
-                  }
+
+        @if (loading()) {
+          <div class="reports-grid">
+            @for (skeleton of [1, 2, 3, 4]; track skeleton) {
+              <div class="report-card">
+                <p-skeleton height="180px" />
+                <div class="report-body">
+                  <p-skeleton width="60%" height="1.2rem" styleClass="mb-2" />
+                  <p-skeleton width="80%" height="0.9rem" styleClass="mb-2" />
+                  <p-skeleton width="70%" height="0.9rem" />
                 </div>
               </div>
-            </article>
-          }
-        </div>
-      }
+            }
+          </div>
+        } @else if (error()) {
+          <section class="state-card">
+            <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
+            <h2>{{ 'lostPets.errorTitle' | transloco }}</h2>
+            <p>{{ error() }}</p>
+            <button type="button" pButton [label]="'lostPets.retry' | transloco" (click)="load()"></button>
+          </section>
+        } @else if (filteredReports().length === 0) {
+          <section class="state-card">
+            <i class="pi pi-search" aria-hidden="true"></i>
+            <h2>{{ activeTab() === 'found' ? ('lostPets.emptyFoundTitle' | transloco) : ('lostPets.emptyTitle' | transloco) }}</h2>
+            <p>{{ activeTab() === 'found' ? ('lostPets.emptyFoundDescription' | transloco) : ('lostPets.emptyDescription' | transloco) }}</p>
+            <button type="button" pButton [label]="activeTab() === 'found' ? ('lostPets.sightingTitle' | transloco) : ('lostPets.report' | transloco)" (click)="openCreate()"></button>
+          </section>
+        } @else {
+          <div class="reports-grid">
+            @for (report of filteredReports(); track report.id) {
+              <article class="report-card">
+                <div class="report-photo">
+                  @if (report.photoUrl) {
+                    <img [src]="report.photoUrl" [alt]="report.petName" loading="lazy" />
+                  } @else {
+                    <div class="photo-placeholder"><i class="pi pi-image" aria-hidden="true"></i></div>
+                  }
+                  <p-tag class="status-tag" [value]="statusLabel(report.status)"
+                    [severity]="statusSeverity(report.status)" />
+                </div>
+                <div class="report-body">
+                  <h3 class="report-name">{{ report.petName }}</h3>
+                  <p class="report-meta">
+                    {{ speciesLabel(report.species) }} ·
+                    {{ report.breed || report.color || ('lostPets.unknownBreed' | transloco) }}
+                  </p>
+                  <p class="report-meta">
+                    <i class="pi pi-calendar" aria-hidden="true"></i>
+                    {{ report.lostDate | date:'mediumDate' }}
+                  </p>
+                  <p class="report-meta">
+                    <i class="pi pi-map-marker" aria-hidden="true"></i>
+                    {{ report.lastSeenArea }}
+                    @if (report.distanceKm != null) {
+                      <span class="distance"> · {{ geolocation.formatDistance(report.distanceKm) }}</span>
+                    }
+                  </p>
+                  @if (report.rewardAmount) {
+                    <p class="report-reward">
+                      <i class="pi pi-euro" aria-hidden="true"></i> {{ report.rewardAmount }}
+                    </p>
+                  }
+                  <p class="report-meta">
+                    <i class="pi pi-eye" aria-hidden="true"></i>
+                    {{ report.sightingsCount }} {{ 'lostPets.sightings' | transloco }}
+                  </p>
+                  <div class="report-actions">
+                    <button type="button" pButton class="p-button-text p-button-sm"
+                      [label]="'lostPets.viewDetail' | transloco"
+                      (click)="goToDetail(report)"></button>
+                    <button type="button" pButton class="p-button-text p-button-sm"
+                      icon="pi pi-share-alt"
+                      [attr.aria-label]="'lostPets.share' | transloco"
+                      [title]="'lostPets.share' | transloco"
+                      (click)="share(report)"></button>
+                    @if (report.owner) {
+                      <button type="button" pButton class="p-button-text p-button-sm"
+                        [label]="'lostPets.edit' | transloco" (click)="openEdit(report)"></button>
+                    }
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        }
       </div>
 
-    <app-modal
-      [visible]="dialogOpen()"
-      [header]="(editing() ? 'lostPets.editTitle' : 'lostPets.reportTitle') | transloco"
-      size="medium"
-      [showConfirm]="false"
-      [showCancel]="false"
-      [hideFooter]="true"
-      (onHide)="closeDialog()"
-    >
-      <app-dynamic-form
-        [config]="reportFormConfig"
-        [formData]="reportFormData"
-        (onSubmitClick)="submitReport($event)"
-        (onCancel)="closeDialog()"
-      />
-    </app-modal>
+      @if (dialogOpen()) {
+        <app-lostpet-report-modal
+          [editable]="editing()"
+          (cancel)="closeDialog()"
+          (submit)="onLostPetSubmit($event)"
+        />
+      }
+
+      @if (sightingDialogOpen()) {
+        <app-lostpet-sighting-modal
+          (cancel)="closeSightingDialog()"
+          (submit)="onSightingSubmit($event)"
+        />
+      }
+    </div>
   `,
   styles: [`
-    :host { display: block; }
-    .lostpets-page {
-      max-width: var(--max-page-width);
-      margin: 0 auto;
-      padding: 0 1rem;
-      box-sizing: border-box;
-      background: var(--surface-bg);
+    .lostpets-page { padding-bottom: 2rem; }
+    .tab-content { margin-top: 0.5rem; }
+    .tab-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 1.25rem 0 1rem;
     }
-    .card-modern {
-      overflow: hidden; margin: 0 auto 1.25rem; padding: 1rem 1.25rem;
-      border: none; border-radius: var(--radius-lg);
+    .tab-title { margin: 0; font-size: 1.1rem; font-weight: 700; }
+    .tab-count { color: var(--text-secondary); font-weight: 500; font-size: 0.95rem; }
+
+    /* Filters — mismo patrón plegable que el toolbar de adopciones / nearby */
+    .catalog-toolbar {
+      margin: 0 auto 1.25rem;
+      padding: 1rem 1.25rem;
       background: var(--surface-card);
+      border: none;
+      border-radius: var(--radius-lg);
     }
-    .filters-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .85rem; align-items: end; }
-    .catalog-toolbar .filters-bar { padding-top: 1rem; }
     .filters-summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-primary); cursor: pointer; list-style: none; }
     .filters-summary::-webkit-details-marker { display: none; }
     .filters-summary-title, .filters-summary-meta { display: inline-flex; align-items: center; gap: .75rem; }
@@ -246,64 +282,83 @@ const SPECIES = [
     .filters-summary-title > i { color: var(--primary-color); }
     .accordion-chevron { color: var(--text-secondary); transition: transform var(--transition-fast); }
     .catalog-toolbar[open] .accordion-chevron { transform: rotate(180deg); }
+    .filter-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .85rem; align-items: end; padding-top: 1rem; }
     .results-count { color: var(--text-secondary); font-size: .85rem; white-space: nowrap; }
-    .filter-field { display: flex; flex-direction: column; gap: .4rem; min-width: 0; }
-    .filter-field label { font-size: .8rem; font-weight: 650; color: var(--text-secondary); }
-    .date-input {
-      padding: .55rem .65rem; border: 1px solid var(--surface-border);
-      border-radius: var(--radius-md); background: transparent;
-      color: var(--text-primary); font: inherit;
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      min-width: 0;
+    }
+    .filter-label {
+      font-size: 0.8rem;
+      font-weight: 650;
+      color: var(--text-secondary);
+    }
+    .filter-select {
+      width: 100%;
     }
     :host ::ng-deep .filter-panel .p-select {
       background: transparent;
     }
-    .nearby-toggle.active { border-color: var(--primary-color); color: var(--primary-color); }
-    .reports-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
-    .report-card {
-      overflow: hidden; border: 1px solid var(--surface-border);
-      border-radius: var(--radius-lg); background: var(--surface-card);
-      transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    .filter-panel .p-button {
+      min-height: 2.75rem;
     }
-    .report-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
-    .report-photo { position: relative; height: 9.5rem; background: var(--surface-hover); }
-    .report-photo img { width: 100%; height: 100%; object-fit: cover; }
-    .photo-placeholder { display: grid; place-items: center; height: 100%; color: var(--text-secondary); font-size: 1.75rem; }
-    .status-tag { position: absolute; top: .6rem; right: .6rem; }
-    .report-body { display: flex; flex-direction: column; gap: .3rem; padding: .9rem 1rem 1rem; }
-    .report-name { margin: 0; font-size: 1.05rem; }
-    .report-meta { margin: 0; font-size: .82rem; color: var(--text-secondary); }
-    .report-meta i { margin-right: .3rem; }
+    .filter-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .date-range { display: flex; align-items: center; gap: 0.4rem; }
+    .form-input {
+      width: 100%; padding: 0.5rem 0.65rem; border: 1px solid var(--surface-border);
+      border-radius: var(--radius-sm); background: var(--surface-card); color: var(--text-primary);
+    }
+    .reports-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+    .report-card {
+      display: flex; flex-direction: column; overflow: hidden;
+      border: 1px solid var(--surface-border); border-radius: var(--radius-lg);
+      background: var(--surface-card); transition: box-shadow 0.2s;
+    }
+    .report-card:hover { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08); }
+    .report-photo { position: relative; aspect-ratio: 4/3; overflow: hidden; }
+    .report-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .photo-placeholder {
+      display: grid; place-items: center; width: 100%; height: 100%;
+      background: var(--surface-hover); color: var(--text-secondary);
+    }
+    .photo-placeholder i { font-size: 2rem; }
+    .status-tag { position: absolute; top: 0.6rem; right: 0.6rem; }
+    .report-body { display: flex; flex-direction: column; gap: 0.35rem; padding: 0.85rem 1rem 1rem; }
+    .report-name { margin: 0; font-size: 1rem; font-weight: 700; }
+    .report-meta { margin: 0; font-size: 0.82rem; color: var(--text-secondary); }
+    .report-meta i { margin-right: 0.3rem; }
     .distance { color: var(--primary-color); font-weight: 600; }
     .report-reward { margin: 0; font-weight: 700; color: var(--primary-color); }
     .report-actions {
-      display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .5rem;
-      padding-top: .6rem; border-top: 1px solid var(--surface-border);
+      display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.5rem;
+      padding-top: 0.6rem; border-top: 1px solid var(--surface-border);
     }
     .state-card {
-      display: grid; place-items: center; gap: .5rem; padding: 3rem 1rem; text-align: center;
+      display: grid; place-items: center; gap: 0.5rem; padding: 3rem 1rem; text-align: center;
       border: 1px dashed var(--surface-border); border-radius: var(--radius-lg);
       background: var(--surface-card);
     }
     .state-card i { font-size: 2rem; color: var(--text-secondary); }
     .state-card h2 { margin: 0; font-size: 1.1rem; }
-    .state-card p { margin: 0 0 .5rem; color: var(--text-secondary); }
-    .report-button {
-      display: grid; place-items: center; width: 2.75rem; height: 2.75rem;
-      border: 1px solid var(--surface-border); border-radius: 50%;
-      background: var(--surface-card); color: var(--text-secondary); cursor: pointer;
-    }
-    .report-button:hover { background: var(--surface-hover); color: var(--text-primary); }
+    .state-card p { margin: 0 0 0.5rem; color: var(--text-secondary); }
     @media (max-width: 640px) {
-      .filter-field { flex: 1 1 100%; }
+      .filter-group { flex: 1 1 100%; }
       .reports-grid { grid-template-columns: 1fr; }
+      .tab-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
     }
   `],
 })
 export class LostPetsPageComponent implements OnInit {
   private readonly lostPetsService = inject(LostPetsService);
-  private readonly messages = inject(MessageService);
   private readonly router = inject(Router);
   private readonly i18n = inject(TranslocoService);
+  private readonly messages = inject(MessageService);
+
   readonly geolocation = inject(GeolocationService);
 
   readonly reports = signal<LostPetReport[]>([]);
@@ -311,15 +366,35 @@ export class LostPetsPageComponent implements OnInit {
   readonly error = signal<string | null>(null);
   readonly nearbyOnly = signal(false);
   readonly dialogOpen = signal(false);
+  readonly sightingDialogOpen = signal(false);
   readonly editing = signal<LostPetReport | null>(null);
   readonly userCoordinates = signal<{ lat: number; lng: number } | null>(null);
+  readonly activeTab = signal<'found' | 'lost'>('found');
+
+  readonly tabs = computed<Tab[]>(() => [
+    {
+      id: 'found',
+      label: this.i18n.translate('lostPets.tabFound'),
+      icon: 'pi pi-eye',
+      iconType: 'prime',
+    },
+    {
+      id: 'lost',
+      label: this.i18n.translate('lostPets.tabLost'),
+      icon: 'pi pi-flag',
+      iconType: 'prime',
+    },
+  ]);
+
+  readonly filteredReports = computed(() => {
+    const tab = this.activeTab();
+    return this.reports().filter(r => tab === 'lost' ? r.status === 'LOST' : r.status === 'FOUND');
+  });
 
   speciesFilter: string | null = null;
   statusFilter: LostPetStatus | null = null;
   fromFilter = '';
   toFilter = '';
-
-  reportFormData: Record<string, unknown> = {};
 
   readonly speciesOptions = computed(() =>
     SPECIES.map((value) => ({ label: this.speciesLabel(value), value })),
@@ -332,33 +407,12 @@ export class LostPetsPageComponent implements OnInit {
     { label: this.i18n.translate('lostPets.closed'), value: 'CLOSED' as LostPetStatus },
   ]);
 
-  readonly reportFormConfig: DynamicFormConfig = {
-    showSubmit: true,
-    showCancel: true,
-    submitLabel: this.i18n.translate('lostPets.save'),
-    cancelLabel: this.i18n.translate('common.cancel'),
-    fields: [
-      { key: 'petName', label: this.i18n.translate('lostPets.pet'), type: 'input',
-        validation: { required: true, maxLength: 100 } },
-      { key: 'species', label: this.i18n.translate('common.species'), type: 'select',
-        options: this.speciesOptions(), validation: { required: true } },
-      { key: 'breed', label: this.i18n.translate('common.breed'), type: 'input' },
-      { key: 'color', label: this.i18n.translate('common.color'), type: 'input' },
-      { key: 'lostDate', label: this.i18n.translate('lostPets.lostDate'), type: 'date',
-        validation: { required: true } },
-      { key: 'lastSeenArea', label: this.i18n.translate('lostPets.lastSeenArea'), type: 'input',
-        placeholder: this.i18n.translate('lostPets.lastSeenAreaPlaceholder'),
-        validation: { required: true, maxLength: 255 } },
-      { key: 'description', label: this.i18n.translate('common.description'), type: 'textarea',
-        rows: 3, validation: { maxLength: 1000 } },
-      { key: 'rewardAmount', label: this.i18n.translate('lostPets.reward'), type: 'number',
-        validation: { min: 0 } },
-      { key: 'photoUrl', label: this.i18n.translate('lostPets.photoUrl'), type: 'input' },
-    ],
-  };
-
   ngOnInit(): void {
     this.load();
+  }
+
+  onTabChange(tabId: string): void {
+    this.activeTab.set(tabId as 'found' | 'lost');
   }
 
   load(): void {
@@ -373,7 +427,7 @@ export class LostPetsPageComponent implements OnInit {
         to: this.toFilter || undefined,
         latitude: coordinates?.lat,
         longitude: coordinates?.lng,
-        radiusKm: coordinates ? 15 : undefined,
+        radiusKm: coordinates ? 50 : undefined,
       })
       .subscribe({
         next: (reports) => {
@@ -385,6 +439,14 @@ export class LostPetsPageComponent implements OnInit {
           this.loading.set(false);
         },
       });
+  }
+
+  clearFilters(): void {
+    this.speciesFilter = null;
+    this.statusFilter = null;
+    this.fromFilter = '';
+    this.toFilter = '';
+    this.load();
   }
 
   toggleNearby(): void {
@@ -408,24 +470,16 @@ export class LostPetsPageComponent implements OnInit {
   }
 
   openCreate(): void {
+    if (this.activeTab() === 'found') {
+      this.sightingDialogOpen.set(true);
+      return;
+    }
     this.editing.set(null);
-    this.reportFormData = { lostDate: new Date().toISOString().slice(0, 10) };
     this.dialogOpen.set(true);
   }
 
   openEdit(report: LostPetReport): void {
     this.editing.set(report);
-    this.reportFormData = {
-      petName: report.petName,
-      species: report.species,
-      breed: report.breed ?? '',
-      color: report.color ?? '',
-      lostDate: report.lostDate,
-      lastSeenArea: report.lastSeenArea,
-      description: report.description ?? '',
-      rewardAmount: report.rewardAmount ?? null,
-      photoUrl: report.photoUrl ?? '',
-    };
     this.dialogOpen.set(true);
   }
 
@@ -434,42 +488,16 @@ export class LostPetsPageComponent implements OnInit {
     this.editing.set(null);
   }
 
-  submitReport(values: Record<string, unknown>): void {
-    const payload = {
-      petId: null,
-      petName: String(values['petName'] ?? ''),
-      species: String(values['species'] ?? ''),
-      breed: (values['breed'] as string) || null,
-      color: (values['color'] as string) || null,
-      description: (values['description'] as string) || null,
-      photoUrl: (values['photoUrl'] as string) || null,
-      lostDate: this.toIsoDate(values['lostDate']),
-      lastSeenArea: String(values['lastSeenArea'] ?? ''),
-      rewardAmount: values['rewardAmount'] == null ? null : Number(values['rewardAmount']),
-    };
-    const editing = this.editing();
-    const request = editing
-      ? this.lostPetsService.update(editing.id, payload)
-      : this.lostPetsService.create(payload);
+  closeSightingDialog(): void {
+    this.sightingDialogOpen.set(false);
+  }
 
-    request.subscribe({
-      next: () => {
-        this.messages.add({
-          severity: 'success',
-          summary: this.i18n.translate('common.success'),
-          detail: this.i18n.translate(
-            editing ? 'lostPets.updatedDetail' : 'lostPets.createdDetail',
-          ),
-        });
-        this.closeDialog();
-        this.load();
-      },
-      error: () => this.messages.add({
-        severity: 'error',
-        summary: this.i18n.translate('lostPets.errorTitle'),
-        detail: this.i18n.translate('lostPets.saveError'),
-      }),
-    });
+  onSightingSubmit(_event: { payload: CreateLostPetReport; files: any[] }): void {
+    this.closeSightingDialog();
+    // El avistamiento se crea con estado FOUND: mostrarlo en la pestaña Avistamientos.
+    this.activeTab.set('found');
+    // Recargar tras un tick para que el cambio de detección aplique la nueva pestaña y los datos.
+    setTimeout(() => this.load());
   }
 
   goToDetail(report: LostPetReport): void {
@@ -502,6 +530,14 @@ export class LostPetsPageComponent implements OnInit {
     return translated === key ? species : translated;
   }
 
+  onLostPetSubmit(_event: any): void {
+    this.closeDialog();
+    // El reporte se crea con estado LOST: mostrarlo en la pestaña Perdidas.
+    this.activeTab.set('lost');
+    // Recargar tras un tick para que el cambio de detección aplique la nueva pestaña y los datos.
+    setTimeout(() => this.load());
+  }
+
   statusLabel(status: LostPetStatus): string {
     switch (status) {
       case 'LOST': return this.i18n.translate('lostPets.lost');
@@ -518,11 +554,5 @@ export class LostPetsPageComponent implements OnInit {
       case 'REUNITED': return 'success';
       default: return 'secondary';
     }
-  }
-
-  private toIsoDate(value: unknown): string {
-    if (!value) return new Date().toISOString().slice(0, 10);
-    if (value instanceof Date) return value.toISOString().slice(0, 10);
-    return String(value);
   }
 }

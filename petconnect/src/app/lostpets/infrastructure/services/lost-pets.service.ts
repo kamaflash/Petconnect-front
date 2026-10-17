@@ -56,6 +56,7 @@ export interface CreateLostPetReport {
   latitude?: number | null;
   longitude?: number | null;
   rewardAmount?: number | null;
+  status?: LostPetStatus;
 }
 
 export interface CreateLostPetSighting {

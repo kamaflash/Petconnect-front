@@ -183,6 +183,9 @@ export class PostDetailPageComponent implements OnInit, OnDestroy {
         comments: post.commentsCount || 0,
         liked: likeStatus.liked,
         saved: false,
+        intent: post.intent,
+        solved: post.solved,
+        location: post.location ?? null,
         timestamp: post.createdAt ? new Date(post.createdAt) : new Date(),
       })),
       catchError(error => {

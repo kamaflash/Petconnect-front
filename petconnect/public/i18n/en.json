@@ -73,7 +73,12 @@
     "rabbit": "Rabbit",
     "male": "Male",
     "female": "Female",
-    "other": "Other"
+    "other": "Other",
+    "pet": "Pet",
+    "cancel": "Cancel"
+  },
+  "form": {
+    "images": "Images"
   },
   "nav": {
     "groupHome": "HOME",
@@ -661,8 +666,8 @@
       "rejected": "Request rejected",
       "approved": "Request approved"
     },
-    "petsTab": "Animals for adoption"
-    , "receivedRequests": "Received requests",
+    "petsTab": "Animals for adoption",
+    "receivedRequests": "Received requests",
     "receivedRequestsDescription": "People who want to adopt your pets. Manage their progress.",
     "mySentRequests": "My sent requests",
     "mySentRequestsDescription": "The progress of the requests you have sent.",
@@ -675,7 +680,6 @@
     "requestUpdateError": "Could not update the adoption request",
     "timelineEmpty": "There are no updates for this request yet.",
     "currentStatus": "Current status"
-
   },
   "feedGrid": {
     "filters": "Filters",
@@ -777,7 +781,7 @@
     "reward": "Reward",
     "status": "Status",
     "lost": "Lost",
-    "found": "Found",
+    "found": "Sighted",
     "reunited": "Reunited",
     "closed": "Closed",
     "filterSpecies": "Species",
@@ -821,7 +825,12 @@
     "sightingAreaPlaceholder": "Where did you see it?",
     "sightingSubmit": "Submit sighting",
     "sightingCreatedDetail": "The sighting was recorded successfully.",
-    "sightingError": "The sighting could not be recorded."
+    "sightingError": "The sighting could not be recorded.",
+    "petNamePlaceholder": "Pet name (if known)",
+    "tabLost": "Lost",
+    "tabFound": "Sightings",
+    "emptyFoundTitle": "No sightings",
+    "emptyFoundDescription": "Be the first to report a pet sighting on the street."
   },
   "services": {
     "title": "Services",
@@ -1005,7 +1014,9 @@
       "content": "Content",
       "tags": "Tags",
       "tagsPlaceholder": "Add tags",
-      "tagsMessage": "Separate tags with commas"
+      "tagsMessage": "Separate tags with commas",
+      "location": "Location",
+      "locationPlaceholder": "Search the location (lost, meetup...)"
     },
     "whatsOnYourMind": "What's on your mind?",
     "toasts": {
@@ -1038,7 +1049,10 @@
       "publishedOfflineDetail": "Your post will be published when you reconnect",
       "notifications": "Notifications",
       "notificationsReadDetail": "All notifications marked as read",
-      "notificationsError": "Could not update notifications"
+      "notificationsError": "Could not update notifications",
+      "locationConfirmed": "Location confirmed",
+      "locationConfirmedDetail": "The location will be added to your post.",
+      "publishError": "Could not publish. Please try again."
     },
     "defaultUser": "User",
     "organizer": "Organizer",
@@ -1073,7 +1087,8 @@
     "markAllRead": "Mark all as read",
     "markRead": "Mark as read",
     "createPost": "Create post",
-    "imageViewer": "Image viewer"
+    "imageViewer": "Image viewer",
+    "createPostSubtitle": "Share an update, question or notice with the community"
   },
   "admin": {
     "createNewPost": "Create New Post",
