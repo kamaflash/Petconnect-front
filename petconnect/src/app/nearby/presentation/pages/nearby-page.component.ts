@@ -1,760 +1,247 @@
-import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ButtonModule } from 'primeng/button';
-import { CardModule } from 'primeng/card';
-import { TagModule } from 'primeng/tag';
-import { SelectModule } from 'primeng/select';
-import { SkeletonModule } from 'primeng/skeleton';
+import { ToastModule } from 'primeng/toast';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
-import { GeolocationService, Coordinates, GeocodingResult } from '../../../shared/services/geolocation.service';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { MessageService } from 'primeng/api';
-import { Subscription } from 'rxjs';
+import { TranslocoModule } from '@jsverse/transloco';
 import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
+import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../../../adoptions/presentation/components/pet-feed-grid/pet-feed-grid.component';
+import { ProfileService, UserProfileResponse } from '../../../profile/infrastructure/services/profile.service';
+import { SocialService, EventResponse } from '../../../social/infrastructure/services/social.service';
 
-interface NearbyService {
+interface NearbyItem {
   id: string;
   name: string;
-  type: 'vet' | 'shelter' | 'event';
-  category: string;
+  itemType: 'vet' | 'shelter' | 'event';
+  itemTypeLabel: string;
   location: string;
-  distance: number;
-  rating?: number;
-  image?: string;
-  description?: string;
-  phone?: string;
-  website?: string;
+  image: string;
+  detail: string;
 }
 
 @Component({
   selector: 'app-nearby-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    ButtonModule,
-    CardModule,
-    TagModule,
-    SelectModule,
-    SkeletonModule,
-    FormsModule,
-    RouterLink,
-    TranslocoModule,
-    PageHeadingCardComponent
-  ],
+  imports: [CommonModule, ToastModule, FormsModule, TranslocoModule, PetFeedGridComponent, PageHeadingCardComponent],
   providers: [MessageService],
   template: `
     <div class="nearby-page" [class.dark]="isDarkMode()">
       <div class="nearby-container">
-        <!-- Header -->
         <app-page-heading-card
           title="Servicios cercanos"
           subtitle="Encuentra veterinarios, protectoras y eventos cerca de ti"
         />
-
-        <!-- Filtros -->
-        <details class="catalog-toolbar">
-          <summary class="filters-summary">
-            <span class="filters-summary-title">
-              <i class="pi pi-sliders-h" aria-hidden="true"></i>
-              {{ 'feedGrid.filters' | transloco }}
-            </span>
-            <span class="filters-summary-meta">
-              <span class="results-count">
-                {{ filteredServices().length }} {{ filteredServices().length === 1 ? 'resultado' : 'resultados' }}
-              </span>
-              <i class="pi pi-chevron-down accordion-chevron" aria-hidden="true"></i>
-            </span>
-          </summary>
-          <div class="filter-panel">
-          <div class="filter-group">
-            <label class="filter-label">Radio de búsqueda</label>
-            <p-select
-              [(ngModel)]="searchRadius"
-              [options]="radiusOptions"
-              optionLabel="label"
-              optionValue="value"
-              class="filter-select"
-            />
-          </div>
-
-          <div class="filter-group">
-            <label class="filter-label">Tipo de servicio</label>
-            <p-select
-              [(ngModel)]="serviceType"
-              [options]="serviceTypeOptions"
-              optionLabel="label"
-              optionValue="value"
-              [showClear]="true"
-              class="filter-select"
-            />
-          </div>
-
-          <button
-            pButton
-            icon="pi pi-crosshair"
-            label="Mi ubicación"
-            class="p-button-outlined"
-            (click)="useCurrentLocation()"
-            [disabled]="loading()"
-          ></button>
-          </div>
-        </details>
-
-        <!-- Estado de carga -->
-        <div class="nearby-loading" *ngIf="loading()" aria-busy="true" aria-label="Buscando servicios cercanos">
-          <div class="nearby-skeleton-grid" aria-hidden="true">
-            <article class="nearby-skeleton-card" *ngFor="let placeholder of [1, 2, 3]">
-              <p-skeleton height="190px" />
-              <div class="nearby-skeleton-content">
-                <p-skeleton width="68%" height="1.1rem" />
-                <p-skeleton width="42%" height=".85rem" />
-                <p-skeleton width="88%" height=".85rem" />
-                <p-skeleton width="58%" height=".85rem" />
-              </div>
-            </article>
-          </div>
-        </div>
-
-        <!-- Error -->
-        <div class="nearby-error" *ngIf="error()">
-          <i class="pi pi-exclamation-triangle"></i>
-          <div class="error-content">
-            <h3>Error</h3>
-            <p>{{ error() }}</p>
-            <button pButton label="Reintentar" (click)="useCurrentLocation()"></button>
-          </div>
-        </div>
-
-        <!-- Sin ubicación -->
-        <div class="nearby-no-location" *ngIf="!loading() && !error() && !userLocation()">
-          <i class="pi pi-map-marker"></i>
-          <h3>Sin ubicación</h3>
-          <p>Activa tu ubicación para encontrar servicios cercanos</p>
-          <button pButton label="Activar ubicación" icon="pi pi-crosshair" (click)="useCurrentLocation()"></button>
-        </div>
-
-        <!-- Resultados -->
-        <div class="nearby-results" *ngIf="!loading() && !error() && userLocation()">
-          <div class="results-header">
-            <h3 class="results-title">
-              {{ filteredServices().length }} {{ filteredServices().length === 1 ? 'resultado' : 'resultados' }}
-              encontrados
-            </h3>
-            <span class="results-location">
-              <i class="pi pi-map-marker"></i>
-              {{ currentAddress() }}
-            </span>
-          </div>
-
-          <!-- Lista de servicios -->
-          <div class="services-grid">
-            <div class="service-card" *ngFor="let service of filteredServices()">
-              <div class="service-image" *ngIf="service.image">
-                <img [src]="service.image" [alt]="service.name" />
-              </div>
-
-              <div class="service-content">
-                <div class="service-header">
-                  <h3 class="service-name">{{ service.name }}</h3>
-                  <span class="service-type" [ngClass]="'type-' + service.type">
-                    {{ getServiceTypeLabel(service.type) }}
-                  </span>
-                </div>
-
-                <p class="service-category">{{ service.category }}</p>
-
-                <p class="service-description" *ngIf="service.description">
-                  {{ service.description }}
-                </p>
-
-                <div class="service-info">
-                  <div class="info-item">
-                    <i class="pi pi-map-marker"></i>
-                    <span>{{ service.location }}</span>
-                  </div>
-
-                  <div class="info-item">
-                    <i class="pi pi-road"></i>
-                    <span class="distance">{{ service.distance | number:'1.1' }} km</span>
-                  </div>
-
-                  <div class="info-item" *ngIf="service.rating">
-                    <i class="pi pi-star-fill"></i>
-                    <span>{{ service.rating }} / 5.0</span>
-                  </div>
-
-                  <div class="info-item" *ngIf="service.phone">
-                    <i class="pi pi-phone"></i>
-                    <span>{{ service.phone }}</span>
-                  </div>
-                </div>
-
-                <div class="service-actions">
-                  <a
-                    *ngIf="service.website"
-                    [href]="'https://' + service.website"
-                    target="_blank"
-                    class="p-button p-button-sm p-button-outlined"
-                  >
-                    <i class="pi pi-globe"></i>
-                    Web
-                  </a>
-                  <button pButton label="Ver detalles" class="p-button-sm"></button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Sin resultados -->
-          <div class="no-results" *ngIf="filteredServices().length === 0">
-            <i class="pi pi-info-circle"></i>
-            <h3>No se encontraron resultados</h3>
-            <p>Intenta ampliar el radio de búsqueda o cambiar los filtros</p>
-          </div>
-        </div>
+        <app-pet-feed-grid
+          [items]="items()"
+          [itemLabel]="'nearby.itemLabel' | transloco"
+          itemKeyField="id"
+          itemLocationField="location"
+          [enableDistanceFilter]="true"
+          [filterConfigs]="nearbyFilterConfigs()"
+          [columnConfigs]="nearbyColumnConfigs"
+          [loading]="loading()"
+          [initialFilters]="nearbyFilters()"
+          (filtersChange)="onFiltersChange($event)"
+        />
+        <p-toast />
       </div>
     </div>
   `,
   styles: [`
-    .nearby-page {
-      min-height: 100vh;
-      background: var(--surface-ground);
-      transition: background 0.3s ease;
-    }
-
-    .dark .nearby-page {
-      background: var(--surface-ground-dark);
-    }
-
-    .nearby-container {
-      max-width: var(--max-page-width);
-      margin: 0 auto;
-      padding: 0 1rem 2rem;
-    }
-
-    /* Header */
-    .nearby-header {
-      justify-content: flex-start;
-    }
-
-    .nearby-title i {
-      color: var(--primary-color);
-    }
-
-    /* Filters — mismo patrón plegable que el toolbar de adopciones */
-    .catalog-toolbar {
-      margin: 0 auto 1.25rem;
-      padding: 1rem 1.25rem;
-      background: var(--surface-card);
-      border: none;
-      border-radius: var(--radius-lg);
-    }
-    .filters-summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--text-primary); cursor: pointer; list-style: none; }
-    .filters-summary::-webkit-details-marker { display: none; }
-    .filters-summary-title, .filters-summary-meta { display: inline-flex; align-items: center; gap: .75rem; }
-    .filters-summary-title { font-weight: 650; }
-    .filters-summary-title > i { color: var(--primary-color); }
-    .accordion-chevron { color: var(--text-secondary); transition: transform var(--transition-fast); }
-    .catalog-toolbar[open] .accordion-chevron { transform: rotate(180deg); }
-    .filter-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .85rem; align-items: end; padding-top: 1rem; }
-    .results-count { color: var(--text-secondary); font-size: .85rem; white-space: nowrap; }
-
-    .filter-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      min-width: 0;
-    }
-
-    .filter-label {
-      font-size: 0.8rem;
-      font-weight: 650;
-      color: var(--text-secondary);
-    }
-
-    .filter-select {
-      width: 100%;
-    }
-    :host ::ng-deep .filter-panel .p-select {
-      background: transparent;
-    }
-
-    .filter-panel .p-button {
-      min-height: 2.75rem;
-    }
-
-    /* Loading */
-    .nearby-loading { margin-bottom: 2rem; }
-    .nearby-skeleton-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1.5rem; }
-    .nearby-skeleton-card { overflow: hidden; border: 1px solid var(--surface-border); border-radius: 12px; background: var(--surface-card); }
-    .nearby-skeleton-content { display: grid; gap: .85rem; padding: 1.25rem; }
-
-    /* Error */
-    .nearby-error {
-      display: flex;
-      align-items: center;
-      gap: 1.5rem;
-      padding: 2rem;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      border-radius: 12px;
-      margin-bottom: 2rem;
-    }
-
-    .dark .nearby-error {
-      background: #450a0a;
-      border-color: #7f1d1d;
-    }
-
-    .nearby-error i {
-      font-size: 3rem;
-      color: #dc2626;
-    }
-
-    .error-content h3 {
-      margin: 0 0 0.5rem 0;
-      color: #dc2626;
-      font-size: 1.125rem;
-    }
-
-    .error-content p {
-      margin: 0 0 1rem 0;
-      color: var(--text-secondary);
-    }
-
-    /* No Location */
-    .nearby-no-location {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 4rem 2rem;
-      text-align: center;
-      gap: 1rem;
-    }
-
-    .nearby-no-location i {
-      font-size: 4rem;
-      color: var(--text-secondary);
-      opacity: 0.5;
-    }
-
-    .nearby-no-location h3 {
-      margin: 0;
-      color: var(--text-primary);
-      font-size: 1.5rem;
-    }
-
-    .nearby-no-location p {
-      margin: 0;
-      color: var(--text-secondary);
-      max-width: 400px;
-    }
-
-    /* Results Header */
-    .results-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-      gap: 1rem;
-    }
-
-    .results-title {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin: 0;
-    }
-
-    .results-location {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-
-    .results-location i {
-      color: var(--primary-color);
-    }
-
-    /* Services Grid */
-    .services-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-      gap: 1.5rem;
-    }
-
-    .service-card {
-      background: var(--surface-card);
-      border-radius: 12px;
-      overflow: hidden;
-      transition: all 0.2s ease;
-      border: 1px solid var(--surface-border);
-    }
-
-    .service-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-    }
-
-    .service-image {
-      width: 100%;
-      height: 200px;
-      overflow: hidden;
-      background: var(--surface-hover);
-    }
-
-    .service-image img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .service-content {
-      padding: 1.5rem;
-    }
-
-    .service-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 0.5rem;
-      gap: 1rem;
-    }
-
-    .service-name {
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: var(--text-primary);
-      margin: 0;
-      flex: 1;
-    }
-
-    .service-type {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      white-space: nowrap;
-    }
-
-    .type-vet {
-      background: #dc2626;
-      color: white;
-    }
-
-    .type-shelter {
-      background: #2563eb;
-      color: white;
-    }
-
-    .type-event {
-      background: #16a34a;
-      color: white;
-    }
-
-    .service-category {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      margin: 0 0 0.75rem 0;
-    }
-
-    .service-description {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-      margin: 0 0 1rem 0;
-      line-height: 1.5;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-line-orient: vertical;
-      overflow: hidden;
-    }
-
-    .service-info {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .info-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-
-    .info-item i {
-      font-size: 0.875rem;
-      color: var(--primary-color);
-      width: 16px;
-    }
-
-    .info-item .distance {
-      font-weight: 600;
-      color: var(--primary-color);
-    }
-
-    .service-actions {
-      display: flex;
-      gap: 0.75rem;
-    }
-
-    .service-actions a,
-    .service-actions button {
-      flex: 1;
-    }
-
-    /* No Results */
-    .no-results {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 4rem 2rem;
-      text-align: center;
-      gap: 1rem;
-    }
-
-    .no-results i {
-      font-size: 4rem;
-      color: var(--text-secondary);
-      opacity: 0.5;
-    }
-
-    .no-results h3 {
-      margin: 0;
-      color: var(--text-primary);
-      font-size: 1.25rem;
-    }
-
-    .no-results p {
-      margin: 0;
-      color: var(--text-secondary);
-      max-width: 400px;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      .nearby-container {
-        padding: 1rem;
-      }
-
-      .nearby-filters {
-        flex-direction: column;
-      }
-
-      .filter-group {
-        width: 100%;
-      }
-
-      .services-grid {
-        grid-template-columns: 1fr;
-      }
-      .nearby-skeleton-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .results-header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-    }
+    .nearby-page { min-height: 100vh; background: var(--surface-ground); transition: background 0.3s ease; }
+    .dark .nearby-page { background: var(--surface-ground-dark); }
+    .nearby-container { max-width: var(--max-page-width); margin: 0 auto; padding: 0 1rem 2rem; }
   `]
 })
 export class NearbyPageComponent implements OnInit, OnDestroy {
-  readonly i18n = inject(TranslocoService);
-  private readonly geolocationService = inject(GeolocationService);
   private readonly messageService = inject(MessageService);
+  private readonly profileService = inject(ProfileService);
+  private readonly socialService = inject(SocialService);
 
-  // Estado
-  loading = signal(false);
-  error = signal<string | null>(null);
-  userLocation = signal<Coordinates | null>(null);
-  currentAddress = signal<string>('');
+  items = signal<NearbyItem[]>([]);
+  nearbyFilters = signal<Record<string, any>>({});
+  loading = signal(true);
+  loadingMore = signal(false);
+  pageNumber = signal(0);
+  pageSize = signal(10);
+  totalPages = signal(1);
+  totalElements = signal(0);
+  pageError = signal<string | null>(null);
+  isDarkMode = signal<boolean>(false);
 
-  // Filtros
-  searchRadius = signal(10); // km
-  serviceType = signal<string | null>(null);
+  private readonly filterChanges = new Subject<void>();
+  private filterSub: any = null;
+  private lastFilterKey = '';
+  private requestId = 0;
 
-  // Opciones
-  radiusOptions = [
-    { label: '5 km', value: 5 },
-    { label: '10 km', value: 10 },
-    { label: '25 km', value: 25 },
-    { label: '50 km', value: 50 },
-    { label: '100 km', value: 100 }
-  ];
-
-  serviceTypeOptions = [
+  private readonly serviceTypeOptions = [
     { label: 'Veterinarios', value: 'vet' },
     { label: 'Protectoras', value: 'shelter' },
-    { label: 'Eventos', value: 'event' }
+    { label: 'Eventos', value: 'event' },
   ];
 
-  // Servicios (datos de ejemplo)
-  services = signal<NearbyService[]>([
+  readonly nearbyColumnConfigs: ColumnConfig[] = [
+    { key: 'name', label: 'Nombre', type: 'text' },
+    { key: 'location', label: 'Ubicación', type: 'text' },
+    { key: 'detail', label: 'Detalle', type: 'text' },
+  ];
+
+  nearbyFilterConfigs = computed<FilterConfig[]>(() => [
     {
-      id: '1',
-      name: this.i18n.translate('nearby.centralClinic'),
-      type: 'vet',
-      category: 'Veterinaria General',
-      location: this.i18n.translate('nearby.address1'),
-      distance: 2.3,
-      rating: 4.5,
-      image: 'https://picsum.photos/400/200?random=10',
-      description: this.i18n.translate('nearby.clinicDesc'),
-      phone: '+34 912 345 678',
-      website: 'www.vetcentral.es'
+      type: 'select',
+      key: 'serviceType',
+      label: 'Tipo de servicio',
+      options: this.serviceTypeOptions,
+      matchValue: (item: unknown, value: string) =>
+        String((item as NearbyItem).itemType ?? '').toLowerCase() === value.toLowerCase(),
     },
-    {
-      id: '2',
-      name: 'Protectora de Animales Madrid',
-      type: 'shelter',
-      category: 'Protectora de animales',
-      location: 'Av. de la Paz 23, Madrid',
-      distance: 3.1,
-      rating: 4.8,
-      image: 'https://picsum.photos/400/200?random=11',
-      description: this.i18n.translate('nearby.shelterDesc'),
-      phone: '+34 913 456 789',
-      website: 'www.protectoramadrid.org'
-    },
-    {
-      id: '3',
-      name: 'Hospital Veterinario 24h',
-      type: 'vet',
-      category: 'Urgencias Veterinarias',
-      location: this.i18n.translate('nearby.address2'),
-      distance: 4.5,
-      rating: 4.2,
-      image: 'https://picsum.photos/400/200?random=12',
-      description: this.i18n.translate('nearby.emergency24'),
-      phone: '+34 914 567 890',
-      website: 'www.vet24h.es'
-    },
-    {
-      id: '4',
-      name: 'Evento: Paseo Canino',
-      type: 'event',
-      category: 'Evento social',
-      location: 'Parque del Retiro, Madrid',
-      distance: 1.8,
-      rating: 4.9,
-      image: 'https://picsum.photos/400/200?random=13',
-      description: 'Paseo canino comunitario para perros de todas las razas',
-      phone: '',
-      website: ''
-    },
-    {
-      id: '5',
-      name: 'Protectora Huellas',
-      type: 'shelter',
-      category: 'Protectora de animales',
-      location: this.i18n.translate('nearby.address3'),
-      distance: 5.2,
-      rating: 4.6,
-      image: 'https://picsum.photos/400/200?random=14',
-      description: 'Protectora especializada en perros y gatos',
-      phone: '+34 915 678 901',
-      website: 'www.huellas.es'
-    }
   ]);
-
-  // Servicios filtrados
-  filteredServices = computed(() => {
-    let services = this.services();
-
-    // Filtrar por radio de distancia
-    services = services.filter(s => s.distance <= this.searchRadius());
-
-    // Filtrar por tipo
-    if (this.serviceType()) {
-      services = services.filter(s => s.type === this.serviceType());
-    }
-
-    // Ordenar por distancia
-    return services.sort((a, b) => a.distance - b.distance);
-  });
-
-  // Dark mode
-  isDarkMode = signal(false);
 
   ngOnInit(): void {
     this.detectDarkMode();
-    this.useCurrentLocation();
+    this.filterSub = this.filterChanges
+      .pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe(() => {
+        const key = this.filterKey();
+        if (key === this.lastFilterKey) {
+          this.loading.set(false);
+          return;
+        }
+        this.lastFilterKey = key;
+        this.loadItems(0, this.pageSize());
+      });
+    this.lastFilterKey = this.filterKey();
+    this.loadItems(0, this.pageSize());
   }
 
   ngOnDestroy(): void {
-    // Cleanup si es necesario
+    this.filterSub?.unsubscribe();
+    this.filterSub = null;
   }
 
-  /**
-   * Detecta el modo oscuro
-   */
-  private detectDarkMode(): void {
-    const darkMode = document.documentElement.classList.contains('dark');
-    this.isDarkMode.set(darkMode);
-
-    const observer = new MutationObserver(() => {
-      this.isDarkMode.set(document.documentElement.classList.contains('dark'));
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-  }
-
-  /**
-   * Usa la ubicación actual del navegador
-   */
-  useCurrentLocation(): void {
+  onFiltersChange(filters: Record<string, unknown>): void {
+    this.nearbyFilters.set({ ...(filters ?? {}) });
     this.loading.set(true);
-    this.error.set(null);
+    this.filterChanges.next();
+  }
 
-    this.geolocationService.getCurrentPosition().subscribe({
-      next: (coords) => {
-        this.userLocation.set(coords);
+  private filterKey(): string {
+    const f = this.nearbyFilters();
+    return `${f['serviceType'] ?? ''}`;
+  }
 
-        // Obtener dirección inversa
-        this.geolocationService.reverseGeocode(coords.lat, coords.lng).subscribe({
-          next: (result) => {
-            this.currentAddress.set(result.displayName);
-            this.loading.set(false);
-          },
-          error: () => {
-            this.currentAddress.set(this.i18n.translate('nearby.currentLocation'));
-            this.loading.set(false);
+  private loadItems(page: number, size: number): void {
+    const isFirst = page === 0;
+    const req = ++this.requestId;
+    if (isFirst) {
+      this.loading.set(true);
+      this.loadingMore.set(false);
+    } else {
+      this.loadingMore.set(true);
+    }
+    this.pageError.set(null);
+    const f = this.nearbyFilters();
+    const st = typeof f['serviceType'] === 'string' && f['serviceType'] ? String(f['serviceType']) : '';
+    if (st === 'event') {
+      this.socialService.getAllEvents().subscribe({
+        next: (events) => {
+          if (req !== this.requestId) {
+            return;
           }
-        });
+          this.pageNumber.set(0);
+          this.totalElements.set(events.length);
+          this.totalPages.set(1);
+          this.items.set(events.map((e) => this.toEventItem(e)));
+          this.loading.set(false);
+        },
+        error: (e) => {
+          if (req !== this.requestId) {
+            return;
+          }
+          console.error('Error loading events:', e);
+          this.loading.set(false);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'No se pudieron cargar los eventos',
+          });
+        },
+      });
+      return;
+    }
+    const pt = st === 'vet' || st === 'shelter' ? st : undefined;
+    this.profileService.searchProviders(page, size, { profileType: pt }).subscribe({
+      next: (response) => {
+        if (req !== this.requestId) {
+          return;
+        }
+        // Excluir perfiles tipo "usuario" cuando no hay tipo de servicio seleccionado
+        const content = !pt
+          ? response.content.filter((p) => p.profileType !== 'usuario')
+          : response.content;
+        this.pageNumber.set(response.page);
+        this.pageSize.set(response.size);
+        this.totalElements.set(content.length);
+        this.totalPages.set(Math.max(1, response.totalPages));
+        this.items.set(content.map((profile) => this.toProviderItem(profile)));
+        this.loading.set(false);
       },
-      error: (err) => {
-        console.error(this.i18n.translate('nearby.locationError'), err);
-        this.error.set(err.message);
+      error: (e) => {
+        if (req !== this.requestId) {
+          return;
+        }
+        console.error('Error loading providers:', e);
+        this.pageError.set(e?.message ?? 'error');
         this.loading.set(false);
         this.messageService.add({
           severity: 'error',
-          summary: this.i18n.translate('nearby.locationErrorTitle'),
-          detail: err.message
+          summary: 'Error',
+          detail: 'No se pudieron cargar los proveedores',
         });
-      }
+      },
     });
   }
 
-  /**
-   * Obtiene la etiqueta del tipo de servicio
-   */
-  getServiceTypeLabel(type: string): string {
-    const labels: Record<string, string> = {
-      vet: 'Veterinario',
-      shelter: 'Protectora',
-      event: 'Evento'
+  private toProviderItem(profile: UserProfileResponse): NearbyItem {
+    const name =
+      [profile.firstName, profile.lastName].filter(Boolean).join(' ') ||
+      profile.storeName ||
+      profile.firstName;
+    return {
+      id: profile.id,
+      name,
+      itemType: profile.profileType === 'vet' ? 'vet' : 'shelter',
+      itemTypeLabel: this.typeLabel(profile.profileType),
+      location: profile.location ?? '',
+      image: profile.avatarUrl || 'https://i.pravatar.cc/300',
+      detail: profile.specialty ?? '',
     };
-    return labels[type] || type;
   }
+
+  private toEventItem(event: EventResponse): NearbyItem {
+    return {
+      id: event.id,
+      name: event.title,
+      itemType: 'event',
+      itemTypeLabel: this.typeLabel('event'),
+      location: event.location ?? '',
+      image: event.imageUrl || 'https://picsum.photos/400/200?random=13',
+      detail: event.description ?? '',
+    };
+  }
+
+  private typeLabel(type: string): string {
+    return this.serviceTypeOptions.find((o) => o.value === type)?.label ?? type;
+  }
+
+  private detectDarkMode(): void {
+    const dark = document.documentElement.classList.contains('dark');
+    this.isDarkMode.set(dark);
+    const obs = new MutationObserver(() =>
+      this.isDarkMode.set(document.documentElement.classList.contains('dark')),
+    );
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  }
+
 }

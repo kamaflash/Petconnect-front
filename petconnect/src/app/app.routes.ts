@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard } from './shared/infrastructure/guards/auth.guard';
+import { authGuard, profileCompletedGuard } from './shared/infrastructure/guards/auth.guard';
 import { PublicLayout } from './layout/public/public-layout/public-layout';
 
 export const routes: Routes = [
@@ -15,8 +15,16 @@ export const routes: Routes = [
         .then(m => m.PublicPetPassportPageComponent)
   },
   {
-    path: '',
+    // Onboarding post-registro: requiere sesión, pero no perfil completo.
+    path: 'onboarding',
     canActivate: [authGuard],
+    loadComponent: () =>
+      import('./onboarding/presentation/pages/onboarding-page.component')
+        .then(m => m.OnboardingPageComponent)
+  },
+  {
+    path: '',
+    canActivate: [authGuard, profileCompletedGuard],
     component: PublicLayout,
     children: [
       {
@@ -28,7 +36,7 @@ export const routes: Routes = [
   },
   {
     path: '',
-    canActivate: [authGuard],
+    canActivate: [authGuard, profileCompletedGuard],
     component: PublicLayout,
     children: [
       {

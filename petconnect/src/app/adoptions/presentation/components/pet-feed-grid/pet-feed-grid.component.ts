@@ -1,8 +1,11 @@
-import { Component, signal, computed, OnInit, EventEmitter, Output, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, signal, computed, effect, inject, OnInit, EventEmitter, Output, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { TranslocoModule } from '@jsverse/transloco';
 import { SkeletonModule } from 'primeng/skeleton';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { Coordinates } from '../../../../shared/services/geolocation.service';
+import { SearchRadiusService } from '../../../../shared/services/search-radius.service';
 
 export interface FilterConfig {
   type: 'text' | 'checkbox' | 'select' | 'range';
@@ -33,6 +36,7 @@ export interface FilterOptions {
     TranslocoModule,
     SkeletonModule,
     DynamicFormComponent,
+    RouterLink,
   ],
   template: `
     <div class="feed-grid-container">
@@ -61,6 +65,17 @@ export interface FilterOptions {
               <i class="pi pi-times" aria-hidden="true"></i>
               {{ 'feedGrid.clear' | transloco }}
             </button>
+          }
+          @if (enableDistanceFilter) {
+            <a routerLink="/settings" class="radius-info" [title]="'distanceFilter.editRadius' | transloco">
+              <i class="pi pi-map-marker" aria-hidden="true"></i>
+              <span>{{ 'distanceFilter.radiusLabel' | transloco }}: @if (searchRadius.isUnlimited()) {
+                {{ 'distanceFilter.unlimited' | transloco }}
+              } @else {
+                {{ searchRadius.radiusKm() }} km
+              }</span>
+              <span class="radius-info-edit">{{ 'distanceFilter.editRadius' | transloco }}</span>
+            </a>
           }
         </div>
       </details>
@@ -128,6 +143,16 @@ export interface FilterOptions {
                       </div>
                     }
                   }
+                  @if (distanceLabels().has($any(item)[itemKeyField])) {
+                    <div class="item-distance">
+                      <i class="pi pi-map-marker" aria-hidden="true"></i>
+                      @if (distanceLabels().get($any(item)[itemKeyField]) === null) {
+                        <span class="no-distance">{{ 'distanceFilter.noDistance' | transloco }}</span>
+                      } @else {
+                        <span>{{ distanceLabels().get($any(item)[itemKeyField]) }}</span>
+                      }
+                    </div>
+                  }
                 </div>
               </div>
             }
@@ -181,6 +206,12 @@ export interface FilterOptions {
     .item-content { padding: 1.25rem; }
     .item-field { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.875rem; color: var(--text-secondary); }
     .item-field i { color: var(--primary-color); }
+    .item-distance { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.65rem; font-size: 0.85rem; font-weight: 600; color: var(--primary-color); }
+    .item-distance .no-distance { color: var(--text-tertiary); font-weight: 500; font-style: italic; }
+    .radius-info { display: inline-flex; align-items: center; gap: .5rem; min-height: 2.75rem; padding: .65rem .8rem; border: 1px solid var(--surface-border); border-radius: var(--radius-sm); background: var(--surface-hover); color: var(--text-secondary); text-decoration: none; font-size: .85rem; white-space: nowrap; }
+    .radius-info i { color: var(--primary-color); }
+    .radius-info:hover { color: var(--text-primary); }
+    .radius-info-edit { color: var(--primary-color); font-weight: 600; text-decoration: underline; }
     .item-price { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0; }
     .original-price { font-size: 0.875rem; color: var(--text-tertiary); text-decoration: line-through; }
     .current-price { font-size: 1.125rem; font-weight: 700; color: var(--primary-color); }
@@ -209,6 +240,16 @@ export class PetFeedGridComponent<T = any> implements OnInit, OnChanges {
   @Input() columnConfigs: ColumnConfig[] = [];
   @Input() initialFilters: FilterOptions = {};
   @Input() loading = false;
+  /**
+   * Activa el filtro global de distancia (radio configurado en Configuración).
+   * Solo lo habilitan las páginas cuyos datos tienen sentido geográfico.
+   */
+  @Input() enableDistanceFilter = false;
+  /** Campo del item con la dirección en texto (o bien `latitude`/`longitude`). */
+  @Input() itemLocationField = 'location';
+
+  /** Radio global de búsqueda (Configuración → estilo Tinder). */
+  readonly searchRadius = inject(SearchRadiusService);
 
   // Internal state
   private itemsSignal = signal<T[]>([]);
@@ -216,6 +257,20 @@ export class PetFeedGridComponent<T = any> implements OnInit, OnChanges {
   localFilters: FilterOptions = {};
   filterFormConfig: DynamicFormConfig = { fields: [], showSubmit: false };
   readonly skeletonItems = [1, 2, 3, 4, 5, 6];
+
+  /** Geocodifica las direcciones de los items en segundo plano. */
+  private readonly distanceEffect = effect(() => {
+    if (!this.enableDistanceFilter) return;
+    const origin = this.searchRadius.userOrigin();
+    const items = this.itemsSignal();
+    if (!origin || !items?.length) return;
+    this.searchRadius.prefetchLocations(
+      items.map(
+        (item) =>
+          (item as Record<string, unknown>)[this.itemLocationField] as string | null | undefined,
+      ),
+    );
+  });
 
   // Outputs
   @Output() filtersChange = new EventEmitter<FilterOptions>();
@@ -280,8 +335,60 @@ export class PetFeedGridComponent<T = any> implements OnInit, OnChanges {
       }
     });
 
+    // Filtro global de distancia (radio configurado en Configuración).
+    // Los items sin ubicación resoluble no se filtran: se muestran con la
+    // etiqueta "Sin distancia".
+    if (this.enableDistanceFilter) {
+      const origin = this.searchRadius.userOrigin();
+      if (origin) {
+        const geocoded = this.searchRadius.geocodedLocations();
+        const radius = this.searchRadius.radiusKm();
+        result = result.filter((item: unknown) =>
+          this.searchRadius.withinRadius(origin, this.itemCoords(item, geocoded), radius),
+        );
+      }
+    }
+
     return result;
   });
+
+  /** Distancia de cada tarjeta respecto al usuario (null = "Sin distancia"). */
+  readonly distanceLabels = computed(() => {
+    const labels = new Map<string, string | null>();
+    if (!this.enableDistanceFilter) return labels;
+    const origin = this.searchRadius.userOrigin();
+    if (!origin) return labels;
+    const geocoded = this.searchRadius.geocodedLocations();
+    for (const item of this.itemsSignal()) {
+      const record = item as Record<string, unknown>;
+      const key = String(record[this.itemKeyField] ?? '');
+      const coords = this.itemCoords(item, geocoded);
+      if (coords === undefined) continue; // pendiente de geocodificar
+      labels.set(
+        key,
+        coords
+          ? this.searchRadius.formatDistance(this.searchRadius.distanceKm(origin, coords))
+          : null,
+      );
+    }
+    return labels;
+  });
+
+  /** Coordenadas de un item: lat/lng directos o dirección en texto geocodificada. */
+  private itemCoords(
+    item: unknown,
+    geocoded: Record<string, Coordinates | null>,
+  ): Coordinates | null | undefined {
+    const record = item as Record<string, unknown>;
+    const lat = record['latitude'];
+    const lng = record['longitude'];
+    if (typeof lat === 'number' && typeof lng === 'number') {
+      return { lat, lng };
+    }
+    const location = record[this.itemLocationField];
+    if (typeof location !== 'string' || location.trim().length < 3) return null;
+    return geocoded[location.trim().toLowerCase()] ?? undefined;
+  }
 
   onFilterValuesChange(values: Record<string, unknown>): void {
     this.localFilters = { ...values };

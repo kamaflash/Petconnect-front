@@ -266,7 +266,7 @@ export class LostPetDetailPageComponent implements OnInit {
       },
     });
     this.lostPetsService.getSightings(id).subscribe({
-      next: (sightings) => this.sightings.set(sightings),
+      next: (page) => this.sightings.set(page.content),
       error: () => this.sightings.set([]),
     });
   }

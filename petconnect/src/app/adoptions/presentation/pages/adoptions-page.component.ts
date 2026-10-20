@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule } from '@angular/forms';
@@ -11,6 +11,8 @@ import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../components/
 import { MyAdoptionRequestsComponent } from '../components/my-adoption-requests/my-adoption-requests.component';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
+import { PageResponse } from '../../../shared/infrastructure/http/page-response';
+import { SearchRadiusService } from '../../../shared/services/search-radius.service';
 
 interface Pet {
   id: string;
@@ -65,12 +67,14 @@ interface Pet {
           [itemLabel]="'adoptions.itemLabel' | transloco"
           itemKeyField="id"
           [filterConfigs]="petFilterConfigs"
+          [enableDistanceFilter]="true"
           [columnConfigs]="petColumnConfigs"
           [loading]="loading()"
           [initialFilters]="petFilters()"
           (filtersChange)="onFiltersChange($event)"
           (itemClick)="onPetClick($event)"
         />
+
       } @else {
         <app-my-adoption-requests />
       }
@@ -85,10 +89,19 @@ export class AdoptionsPageComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private readonly transloco = inject(TranslocoService);
+  readonly searchRadius = inject(SearchRadiusService);
+
 
   // Pets data (loaded from backend)
   pets = signal<Pet[]>([]);
   loading = signal(true);
+  // Paginación del listado de mascotas
+  availablePage = signal<PageResponse<AvailablePetResponse> | null>(null);
+  availablePageNumber = signal(0);
+  availablePageSize = signal(10);
+  availableTotalPages = signal(1);
+  availableTotalElements = signal(0);
+  loadingMore = signal(false);
 
   // Tabs: listado de animales primero, mis solicitudes después
   activeTab = signal('pets');
@@ -203,6 +216,8 @@ export class AdoptionsPageComponent implements OnInit {
     if (initialTab === 'requests' || initialTab === 'pets') {
       this.activeTab.set(initialTab);
     }
+    // Ubicación de referencia para el filtro global de distancia
+    this.searchRadius.resolveOrigin().subscribe();
     this.loadAvailablePets();
   }
 
@@ -226,22 +241,63 @@ export class AdoptionsPageComponent implements OnInit {
   }
 
   // Load available pets from the backend
-  loadAvailablePets(): void {
-    this.adoptionService.getAvailablePets().subscribe({
-      next: (petResponses: AvailablePetResponse[]) => {
-        const mappedPets: Pet[] = petResponses
-          .filter(p => p.pet.availableForAdoption)
-          .map(p => this.mapPetResponseToPet(p));
-        this.pets.set(mappedPets);
-        this.loading.set(false);
+  loadAvailablePets(page = 0, size = 10): void {
+    const isFirstPage = page === 0;
+    if (isFirstPage) {
+      this.loading.set(true);
+    } else {
+      this.loadingMore.set(true);
+    }
+
+    this.adoptionService.getAvailablePets(page, size).subscribe({
+      next: (page) => {
+        this.availablePage.set(page);
+        this.availablePageNumber.set(page.page);
+        this.availablePageSize.set(page.size);
+        this.availableTotalPages.set(page.totalPages);
+        this.availableTotalElements.set(page.totalElements);
+
+        const mapped = page.content.filter(p => p.pet.availableForAdoption).map(p => this.mapPetResponseToPet(p));
+        if (isFirstPage) {
+          this.pets.set(mapped);
+          this.loading.set(false);
+        } else {
+          this.pets.update(existing => [...existing, ...mapped]);
+          this.loadingMore.set(false);
+        }
       },
       error: (err) => {
         console.error('Error loading available pets:', err);
-        this.loading.set(false);
+        if (isFirstPage) {
+          this.loading.set(false);
+        } else {
+          this.loadingMore.set(false);
+        }
       }
     });
   }
 
+  prevAvailablePage(): void {
+    this.loadAvailablePets(Math.max(0, this.availablePageNumber() - 1), this.availablePageSize());
+  }
+
+  nextAvailablePage(): void {
+    const next = this.availablePageNumber() + 1;
+    if (next < this.availableTotalPages()) {
+      this.loadAvailablePets(next, this.availablePageSize());
+    }
+  }
+
+  @HostListener('window:scroll')
+  onScroll(): void {
+    if (this.loading() || this.loadingMore()) return;
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const threshold = document.body.offsetHeight - 200;
+    const hasMorePages = this.availablePageNumber() < this.availableTotalPages() - 1;
+    if (scrollPosition >= threshold && hasMorePages) {
+      this.loadAvailablePets(this.availablePageNumber() + 1, this.availablePageSize());
+    }
+  }
   // Map PetResponse from backend to the Pet interface used in the UI
   mapPetResponseToPet(p: AvailablePetResponse): Pet {
     const petDetail = p.pet;

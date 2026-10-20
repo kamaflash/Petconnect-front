@@ -270,7 +270,7 @@ export class MyAdoptionRequestsComponent implements OnInit {
     this.adoptionService.getMyAdoptionRequests().subscribe({
       next: (requests) => {
         this.sentRequests.set(
-          [...requests].sort(
+          [...requests.content].sort(
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           ),
         );
@@ -286,7 +286,7 @@ export class MyAdoptionRequestsComponent implements OnInit {
     this.adoptionService.getAdoptionRequestsForMyPets().subscribe({
       next: (requests) => {
         this.receivedRequests.set(
-          [...requests].sort(
+          [...requests.content].sort(
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
           ),
         );

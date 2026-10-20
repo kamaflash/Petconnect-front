@@ -1,5 +1,6 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { PageResponse } from '../../../shared/infrastructure/http/page-response';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
@@ -12,12 +13,11 @@ import { CheckboxModule } from 'primeng/checkbox';
 import { RadioButtonModule } from 'primeng/radiobutton';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-import { RouterLink, Router } from '@angular/router';
+import { Subject, Subscription, debounceTime, distinctUntilChanged } from 'rxjs';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../../../adoptions/presentation/components/pet-feed-grid/pet-feed-grid.component';
-import { MarketplaceService, ProductResponse } from '../../infrastructure/services/marketplace.service';
-import { AuthService } from '../../../auth/infrastructure/services/auth.service';
+import { MarketplaceService, ProductResponse, ProductListFilters } from '../../infrastructure/services/marketplace.service';
 import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
 
 interface Product {
@@ -59,7 +59,6 @@ interface CartItem {
     CheckboxModule,
     RadioButtonModule,
     ToastModule,
-    RouterLink,
     ModalComponent,
     PetFeedGridComponent,
     PageHeadingCardComponent,
@@ -86,15 +85,6 @@ interface CartItem {
                 <span class="cart-badge">{{ cartItems().length }}</span>
               }
             </button>
-            @if (isSeller()) {
-              <button
-                class="create-product-btn"
-                (click)="createProduct()"
-              >
-                <i class="pi pi-plus"></i>
-                <span>{{ 'marketplace.createProduct' | transloco }}</span>
-              </button>
-            }
         </div>
       </app-page-heading-card>
 
@@ -104,7 +94,7 @@ interface CartItem {
         itemKeyField="id"
         [filterConfigs]="productFilterConfigs"
         [columnConfigs]="productColumnConfigs"
-        [loading]="loading()"
+        [loading]="productsLoading()"
         [initialFilters]="productFilters()"
         (filtersChange)="onFiltersChange($event)"
         (itemClick)="openProductDetail($event)"
@@ -262,26 +252,6 @@ interface CartItem {
       padding: 0.15rem 0.4rem;
       border-radius: 999px;
       font-weight: 600;
-    }
-
-    .create-product-btn {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.625rem 1.25rem;
-      background: var(--surface-card);
-      color: var(--text-primary);
-      border: 1px solid var(--surface-border);
-      border-radius: var(--radius_full);
-      cursor: pointer;
-      font-weight: 600;
-      transition: all var(--transition-fast);
-    }
-
-    .create-product-btn:hover {
-      background: var(--surface-hover);
-      border-color: var(--primary-color);
-      color: var(--primary-color);
     }
 
     /* Cart Sidebar */
@@ -624,16 +594,29 @@ interface CartItem {
     }
   `]
 })
-export class MarketplacePageComponent implements OnInit {
+export class MarketplacePageComponent implements OnInit, OnDestroy {
   private messageService = inject(MessageService);
   private readonly marketplaceService = inject(MarketplaceService);
-  private readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
   private readonly transloco = inject(TranslocoService);
+
+  /**
+   * Cambios de filtro del grid con debounce (patrón de communities-page):
+   * el valor emite la clave JSON de los filtros ya mapeados a query params.
+   */
+  private readonly filterChanges = new Subject<string>();
+  private filterSub?: Subscription;
+  /** Filtros con los que se pidió la última página; evita la carga doble al montar. */
+  private lastFilterKey = '';
+  /**
+   * Secuencia de cargas de productos. Cada `loadProducts` incrementa el contador;
+   * una respuesta sólo se aplica si su id sigue siendo el vigente, de modo que si
+   * el usuario cambia los filtros mientras una petición está en vuelo, la respuesta
+   * antigua no pisa a la nueva.
+   */
+  private productsRequestId = 0;
 
   // Products data
   products = signal<Product[]>([]);
-  loading = signal(true);
   cartItems = signal<CartItem[]>([]);
   cartOpen = signal(false);
 
@@ -644,6 +627,16 @@ export class MarketplacePageComponent implements OnInit {
   // Filters
   productFilters = signal<Record<string, any>>({});
 
+  // Paginación del catálogo
+  productsPage = signal<PageResponse<ProductResponse> | null>(null);
+  productsPageNumber = signal(0);
+  productsPageSize = signal(10);
+  productsTotalPages = signal(1);
+  productsTotalElements = signal(0);
+  productsLoading = signal(true);
+  loadingMore = signal(false);
+  productsPageError = signal<string | null>(null);
+
   // Generic component configs
   productFilterConfigs: FilterConfig[] = [
     {
@@ -651,7 +644,7 @@ export class MarketplacePageComponent implements OnInit {
       key: 'search',
       label: this.transloco.translate('marketplace.search'),
       placeholder: this.transloco.translate('marketplace.searchPlaceholder'),
-      searchFields: ['name', 'description']
+      searchFields: ['name', 'description', 'brand']
     },
     {
       type: 'select',
@@ -718,25 +711,78 @@ export class MarketplacePageComponent implements OnInit {
     }
   ];
 
-  // Computed
-  isSeller = computed(() => this.authService.user()?.profileType?.toLowerCase() === 'seller');
-
   ngOnInit(): void {
-    this.loadProducts();
+    // Los cambios de filtro recargan desde la página 0 (con debounce para no
+    // disparar una petición por tecla). La clave inicial evita la carga doble
+    // cuando el grid emite sus filtros por defecto al montar.
+    this.lastFilterKey = this.filterKey();
+    this.filterSub = this.filterChanges
+      .pipe(debounceTime(300), distinctUntilChanged())
+      .subscribe(() => this.loadProducts(0, this.productsPageSize()));
+    this.loadProducts(0, 10);
   }
 
-  createProduct(): void {
-    this.router.navigate(['/marketplace/create']);
+  ngOnDestroy(): void {
+    this.filterSub?.unsubscribe();
   }
 
   onFiltersChange(filters: Record<string, any>): void {
     this.productFilters.set(filters);
+    const key = this.filterKey();
+    if (key === this.lastFilterKey) {
+      return; // nada cambió (p. ej. el grid emitiendo sus valores por defecto al montar)
+    }
+    this.lastFilterKey = key;
+    // Skeleton visible desde el instante en que cambia el filtro (no al terminar
+    // el debounce): mientras llegan los productos nuevos, la rejilla se sustituye
+    // por las tarjetas de carga del grid.
+    this.productsLoading.set(true);
+    this.filterChanges.next(key);
   }
 
-  loadProducts(): void {
-    this.marketplaceService.getAllProducts().subscribe({
-      next: (products: ProductResponse[]) => {
-        this.products.set(products.map(p => ({
+  /** Filtros del grid traducidos a los query params que entiende el backend. */
+  private buildProductFilters(): ProductListFilters {
+    const filters = this.productFilters();
+    const search = String(filters['search'] ?? '').trim();
+    const category = String(filters['category'] ?? '').trim();
+    const brand = String(filters['brand'] ?? '').trim();
+    const stock = String(filters['stock'] ?? '').trim();
+    return {
+      ...(search ? { term: search } : {}),
+      ...(category ? { category } : {}),
+      ...(brand ? { brand } : {}),
+      ...(stock === 'in-stock' ? { inStock: true } : {}),
+      ...(stock === 'out-of-stock' ? { inStock: false } : {}),
+    };
+  }
+
+  /** Clave estable de los filtros actuales (para no repetir peticiones equivalentes). */
+  private filterKey(): string {
+    return JSON.stringify(this.buildProductFilters());
+  }
+
+  loadProducts(page = 0, size = 10): void {
+    const isFirstPage = page === 0;
+    const requestId = ++this.productsRequestId;
+    if (isFirstPage) {
+      this.productsLoading.set(true);
+      this.loadingMore.set(false); // un reinicio de filtros invalida cualquier "cargar más" en vuelo
+    } else {
+      this.loadingMore.set(true);
+    }
+    this.productsPageError.set(null);
+    this.marketplaceService.getAllProducts(page, size, this.buildProductFilters()).subscribe({
+      next: (page) => {
+        if (requestId !== this.productsRequestId) {
+          return; // respuesta obsoleta: se lanzó otra recarga de filtros después
+        }
+        this.productsPage.set(page);
+        this.productsPageNumber.set(page.page);
+        this.productsPageSize.set(page.size);
+        this.productsTotalPages.set(page.totalPages);
+        this.productsTotalElements.set(page.totalElements);
+
+        const mapped = page.content.map(p => ({
           id: p.id,
           name: p.name,
           description: p.description || '',
@@ -752,19 +798,56 @@ export class MarketplacePageComponent implements OnInit {
           brand: p.brand || '',
           tags: p.tags ? p.tags.split(',') : undefined,
           discount: p.discount || undefined
-        })));
-        this.loading.set(false);
+        }));
+
+        if (isFirstPage) {
+          this.products.set(mapped);
+          this.productsLoading.set(false);
+        } else {
+          this.products.update(existing => [...existing, ...mapped]);
+          this.loadingMore.set(false);
+        }
       },
       error: (error) => {
+        if (requestId !== this.productsRequestId) {
+          return; // error de una petición ya superada por otra: no tocar el estado
+        }
         console.error('Error loading products:', error);
-        this.loading.set(false);
+        this.productsPageError.set(error?.message ?? 'error');
+        if (isFirstPage) {
+          this.productsLoading.set(false);
+        } else {
+          this.loadingMore.set(false);
+        }
         this.messageService.add({
           severity: 'error',
           summary: this.transloco.translate('marketplace.error'),
           detail: this.transloco.translate('marketplace.loadError')
         });
-      }
+      },
     });
+  }
+
+  prevPage(): void {
+    this.loadProducts(Math.max(0, this.productsPageNumber() - 1), this.productsPageSize());
+  }
+
+  nextPage(): void {
+    const next = this.productsPageNumber() + 1;
+    if (next < this.productsTotalPages()) {
+      this.loadProducts(next, this.productsPageSize());
+    }
+  }
+
+  @HostListener('window:scroll')
+  onScroll(): void {
+    if (this.productsLoading() || this.loadingMore()) return;
+    const scrollPosition = window.innerHeight + window.scrollY;
+    const threshold = document.body.offsetHeight - 200;
+    const hasMorePages = this.productsPageNumber() < this.productsTotalPages() - 1;
+    if (scrollPosition >= threshold && hasMorePages) {
+      this.loadProducts(this.productsPageNumber() + 1, this.productsPageSize());
+    }
   }
 
   toggleCart(): void {

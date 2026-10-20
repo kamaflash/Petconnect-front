@@ -35,7 +35,7 @@ export interface GeocodingResult {
   providedIn: 'root'
 })
 export class GeolocationService {
-  private readonly NOMINATIM_BASE_URL = 'https://nominatim.openstreetmap.org';
+  private readonly NOMINATIM_BASE_URL = '/api/v1/geocode';
   private readonly USER_AGENT = 'PetConnect-App/1.0 (contact@petconnect.app)';
 
   // Cache para evitar requests repetidos
@@ -82,7 +82,7 @@ export class GeolocationService {
         const geocodingResult: GeocodingResult = {
           lat: parseFloat(result.lat),
           lon: parseFloat(result.lon),
-          displayName: result.display_name,
+          displayName: result.display_name ?? result.displayName,
           address: result.address
         };
 
@@ -131,7 +131,7 @@ export class GeolocationService {
         const geocodingResult: GeocodingResult = {
           lat: parseFloat(result.lat),
           lon: parseFloat(result.lon),
-          displayName: result.display_name,
+          displayName: result.display_name ?? result.displayName,
           address: result.address
         };
 
@@ -173,8 +173,8 @@ export class GeolocationService {
         }
 
         return results.map(result => ({
-          placeId: result.place_id,
-          displayName: result.display_name,
+          placeId: result.place_id ?? result.id ?? '',
+          displayName: result.display_name ?? result.displayName,
           lat: parseFloat(result.lat),
           lon: parseFloat(result.lon),
           type: result.type

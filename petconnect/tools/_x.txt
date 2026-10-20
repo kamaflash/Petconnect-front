@@ -1,0 +1,100 @@
+            if (this.hasTargetChanged(event, target)) {
+                this.destroyCallback = () => {
+                    this.show(null, target || event.currentTarget || event.target);
+                };
+            }
+            this.hide();
+        }
+        else {
+            this.show(event, target);
+        }
+    }
+    /**
+     * Displays the panel.
+     * @param {Event} event - Browser event
+     * @param {Target} target - Target element.
+     * @group Method
+     */
+    show(event, target) {
+        target && event && event.stopPropagation();
+        // Clear container if it exists from previous show
+        if (this.container && !this.overlayVisible) {
+            this.container = null;
+        }
+        this.target = target || event.currentTarget || event.target;
+        this.overlayVisible = true;
+        this.render = true;
+        this.cd.markForCheck();
+    }
+    onOverlayClick(event) {
+        this.overlayService.add({
+            originalEvent: event,
+            target: this.el.nativeElement
+        });
+        this.selfClick = true;
+    }
+    onContentClick(event) {
+        const targetElement = event.target;
+        this.selfClick = event.offsetX < targetElement.clientWidth && event.offsetY < targetElement.clientHeight;
+    }
+    hasTargetChanged(event, target) {
+        return this.target != null && this.target !== (target || event.currentTarget || event.target);
+    }
+    appendOverlay() {
+        if (this.$appendTo() && this.$appendTo() !== 'self') {
+            if (this.$appendTo() === 'body') {
+                appendChild(this.document.body, this.container);
+            }
+            else {
+                appendChild(this.$appendTo(), this.container);
+            }
+        }
+    }
+    restoreAppend() {
+        if (this.container && this.$appendTo() && this.$appendTo() !== 'self') {
+            appendChild(this.el.nativeElement, this.container);
+        }
+    }
+    setZIndex() {
+        if (this.autoZIndex) {
+            ZIndexUtils.set('overlay', this.container, this.baseZIndex + this.config.zIndex.overlay);
+        }
+    }
+    align() {
+        if (this.target && this.container) {
+            absolutePosition(this.container, this.target, false);
+            const containerOffset = getOffset(this.container);
+            const targetOffset = getOffset(this.target);
+            const borderRadius = this.document.defaultView?.getComputedStyle(this.container).getPropertyValue('border-radius');
+            let arrowLeft = 0;
+            if (containerOffset.left < targetOffset.left) {
+                arrowLeft = targetOffset.left - containerOffset.left - parseFloat(borderRadius) * 2;
+            }
+            this.container.style.setProperty($dt('popover.arrow.left').name, `${arrowLeft}px`);
+            if (containerOffset.top < targetOffset.top) {
+                this.container.setAttribute('data-p-popover-flipped', 'true');
+                !this.$unstyled() && addClass(this.container, 'p-popover-flipped');
+            }
+        }
+    }
+    onAnimationStart(event) {
+        this.container = event.element;
+        this.container?.setAttribute(this.$attrSelector, '');
+        this.appendOverlay();
+        this.align();
+        this.setZIndex();
+        this.bindDocumentClickListener();
+        this.bindDocumentResizeListener();
+        this.bindScrollListener();
+        if (this.focusOnShow) {
+            this.focus();
+        }
+        this.overlayEventListener = (e) => {
+            if (this.container && this.container.contains(e.target)) {
+                this.selfClick = true;
+            }
+        };
+        this.overlaySubscription = this.overlayService.clickObservable.subscribe(this.overlayEventListener);
+        this.onShow.emit(null);
+    }
+    onAnimationEnd() {

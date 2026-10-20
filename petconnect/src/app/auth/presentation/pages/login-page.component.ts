@@ -1281,14 +1281,15 @@ export class LoginPageComponent {
     this.error.set(null);
 
     try {
-      await this.authService.login(this.email, this.password);
+      const user = await this.authService.login(this.email, this.password);
 
       // Si está en modal, emitir eventos
       if (this.inModal()) {
         this.loginSuccess.emit();
         this.closeModal.emit();
       } else {
-        this.router.navigate(['/']);
+        // Sin onboarding completado, el guard redirige a /onboarding.
+        this.router.navigate([user.profileComplete ? '/' : '/onboarding']);
       }
     } catch (err) {
       this.error.set(this.transloco.translate('auth.loginError'));
@@ -1350,17 +1351,15 @@ export class LoginPageComponent {
     try {
       const user = await this.authService.loginWithGoogle(response.credential);
 
-      // Si el perfil está incompleto (primer acceso con Google), ir al perfil
-      // para completar los datos faltantes.
-      const needsProfileCompletion =
-        !user.phone || !user.bio || !user.dateOfBirth || !user.location;
-
       if (this.inModal()) {
         this.loginSuccess.emit();
         this.closeModal.emit();
       }
 
-      void this.router.navigate([needsProfileCompletion ? '/profile' : '/']);
+      // Si el onboarding no está completado, se redirige allí. El guard de
+      // rutas protegidas también lo bloquea, pero esta redirección evita el
+      // parpadeo de la pantalla intermedia.
+      void this.router.navigate([user.profileComplete ? '/' : '/onboarding']);
     } catch (err) {
       this.error.set(this.transloco.translate('auth.googleError'));
     } finally {
@@ -1402,8 +1401,8 @@ export class LoginPageComponent {
     try {
       await this.authService.register(this.registerData);
 
-      // Tras el registro, llevar al perfil para completar los datos faltantes
-      void this.router.navigate(['/profile']);
+      // Tras el registro se completa el onboarding (tipo de cuenta + datos).
+      void this.router.navigate(['/onboarding']);
     } catch (err) {
       this.error.set(this.transloco.translate('auth.registerError'));
     } finally {

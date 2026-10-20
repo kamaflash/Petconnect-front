@@ -9,7 +9,7 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
 import { DynamicFormComponent, DynamicFormConfig, UploadedFile } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { SPECIES_BREEDS } from '../../../pets/domain/species-breeds.model';
 import { GeocodingResult } from '../../../shared/services/geolocation.service';
-import { CreateLostPetReport, LostPetsService } from '../../infrastructure/services/lost-pets.service';
+import { CreateLostPetReport, LostPetsService, LostPetReport } from '../../infrastructure/services/lost-pets.service';
 
 @Component({
   selector: 'app-lostpet-sighting-modal',
@@ -46,7 +46,7 @@ export class LostPetSightingModalComponent {
   private readonly i18n = inject(TranslocoService);
 
   readonly cancel = output<void>();
-  readonly submit = output<{ payload: CreateLostPetReport; files: UploadedFile[] }>();
+  readonly submit = output<{ report: LostPetReport; files: UploadedFile[] }>();
 
   readonly locationResult = signal<GeocodingResult | null>(null);
   readonly formData = model<Record<string, unknown>>({});
@@ -149,9 +149,9 @@ export class LostPetSightingModalComponent {
     const files = this.mapFiles(values);
     const request = this.lostPetsService.create(payload);
     request.subscribe({
-      next: () => {
+      next: (report) => {
         this.messages.add({ severity: 'success', summary: this.i18n.translate('common.success'), detail: this.i18n.translate('lostPets.sightingCreatedDetail') });
-        this.submit.emit({ payload, files });
+        this.submit.emit({ report, files });
       },
       error: () => {
         this.messages.add({ severity: 'error', summary: this.i18n.translate('lostPets.errorTitle'), detail: this.i18n.translate('lostPets.saveError') });

@@ -3,6 +3,7 @@ import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from 
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { providePrimeNG } from 'primeng/config';
+import { MessageService } from 'primeng/api';
 import Aura from '@primeuix/themes/aura';
 import { routes } from './app.routes';
 import { authInterceptor } from './shared/infrastructure/interceptors/auth.interceptor';
@@ -23,6 +24,7 @@ export const appConfig: ApplicationConfig = {
     ),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideAnimationsAsync(),
+    MessageService,
     providePrimeNG({
       theme: {
         preset: Aura,

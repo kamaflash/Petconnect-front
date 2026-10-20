@@ -1,0 +1,62 @@
+409|                [pBind]="ptm('root')"
+410|                [class]="cn(cx('root'), styleClass)"
+411|                [style]="sx('root')"
+412|                [ngStyle]="style"
+413|                (click)="onOverlayClick($event)"
+414|                role="dialog"
+415|                [attr.aria-modal]="overlayVisible"
+416|                [attr.aria-label]="ariaLabel"
+417|                [attr.aria-labelledBy]="ariaLabelledBy"
+418|                [pMotion]="overlayVisible"
+419|                pMotionName="p-anchored-overlay"
+420|                [pMotionAppear]="true"
+421|                (pMotionOnEnter)="onAnimationStart($event)"
+422|                (pMotionOnAfterLeave)="onAnimationEnd()"
+423|                [pMotionOptions]="computedMotionOptions()"
+424|            >
+425|                <div [pBind]="ptm('content')" [class]="cx('content')" (click)="onContentClick($event)" (mousedown)="onContentClick($event)">
+426|                    <ng-content></ng-content>
+427|                    <ng-template *ngTemplateOutlet="contentTemplate || _contentTemplate; context: { closeCallback: onCloseClick.bind(this) }"></ng-template>
+428|                </div>
+429|            </div>
+430|        }
+431|    `, isInline: true, dependencies: [{ kind: "ngmodule", type: CommonModule }, { kind: "directive", type: i2.NgTemplateOutlet, selector: "[ngTemplateOutlet]", inputs: ["ngTemplateOutletContext", "ngTemplateOutlet", "ngTemplateOutletInjector"] }, { kind: "directive", type: i2.NgStyle, selector: "[ngStyle]", inputs: ["ngStyle"] }, { kind: "ngmodule", type: SharedModule }, { kind: "directive", type: Bind, selector: "[pBind]", inputs: ["pBind"] }, { kind: "ngmodule", type: MotionModule }, { kind: "directive", type: i3.MotionDirective, selector: "[pMotion]", inputs: ["pMotion", "pMotionName", "pMotionType", "pMotionSafe", "pMotionDisabled", "pMotionAppear", "pMotionEnter", "pMotionLeave", "pMotionDuration", "pMotionHideStrategy", "pMotionEnterFromClass", "pMotionEnterToClass", "pMotionEnterActiveClass", "pMotionLeaveFromClass", "pMotionLeaveToClass", "pMotionLeaveActiveClass", "pMotionOptions"], outputs: ["pMotionOnBeforeEnter", "pMotionOnEnter", "pMotionOnAfterEnter", "pMotionOnEnterCancelled", "pMotionOnBeforeLeave", "pMotionOnLeave", "pMotionOnAfterLeave", "pMotionOnLeaveCancelled"] }], changeDetection: i0.ChangeDetectionStrategy.OnPush, encapsulation: i0.ViewEncapsulation.None });
+432|}
+433|i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.2.13", ngImport: i0, type: Popover, decorators: [{
+434|            type: Component,
+435|            args: [{
+436|                    selector: 'p-popover',
+437|                    standalone: true,
+438|                    imports: [CommonModule, SharedModule, Bind, MotionModule],
+439|                    providers: [PopoverStyle, { provide: POPOVER_INSTANCE, useExisting: Popover }, { provide: PARENT_INSTANCE, useExisting: Popover }],
+440|                    hostDirectives: [Bind],
+441|                    template: `
+442|        @if (render) {
+443|            <div
+444|                [pBind]="ptm('root')"
+445|                [class]="cn(cx('root'), styleClass)"
+446|                [style]="sx('root')"
+447|                [ngStyle]="style"
+448|                (click)="onOverlayClick($event)"
+449|                role="dialog"
+450|                [attr.aria-modal]="overlayVisible"
+451|                [attr.aria-label]="ariaLabel"
+452|                [attr.aria-labelledBy]="ariaLabelledBy"
+453|                [pMotion]="overlayVisible"
+454|                pMotionName="p-anchored-overlay"
+455|                [pMotionAppear]="true"
+456|                (pMotionOnEnter)="onAnimationStart($event)"
+457|                (pMotionOnAfterLeave)="onAnimationEnd()"
+458|                [pMotionOptions]="computedMotionOptions()"
+459|            >
+460|                <div [pBind]="ptm('content')" [class]="cx('content')" (click)="onContentClick($event)" (mousedown)="onContentClick($event)">
+461|                    <ng-content></ng-content>
+462|                    <ng-template *ngTemplateOutlet="contentTemplate || _contentTemplate; context: { closeCallback: onCloseClick.bind(this) }"></ng-template>
+463|                </div>
+464|            </div>
+465|        }
+466|    `,
+467|                    changeDetection: ChangeDetectionStrategy.OnPush,
+468|                    encapsulation: ViewEncapsulation.None
+469|                }]
+470|        }], propDecorators: { ariaLabel: [{

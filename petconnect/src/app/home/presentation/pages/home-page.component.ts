@@ -198,6 +198,24 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
         <!-- RIGHT COLUMN -->
         <div class="right-column">
+          <!-- GAMIFICACION (mini-card) -->
+          <div class="card-modern">
+            <div class="card-header">
+              <i class="pi pi-trophy card-header-icon"></i>
+              <span class="card-header-title"> {{ 'home.gamification' | transloco }} </span>
+            </div>
+            <div class="card-body">
+              <div class="level-text">
+                <span class="level-label">{{ 'home.level' | transloco }}</span>
+                <span class="level-number">{{ 'home.levelNumber' | transloco: { level: userLevel.level } }}</span>
+              </div>
+              <div class="level-bar-wrap">
+                <p-progressBar [value]="levelProgress" styleClass="level-progress-bar"></p-progressBar>
+                <span class="level-xp">{{ userLevel.currentXp }} / {{ userLevel.totalXp }} {{ 'home.xp' | transloco }}</span>
+              </div>
+              <a routerLink="/gamification" class="card-header-link gamification-link">{{ 'home.viewGamification' | transloco }}</a>
+            </div>
+          </div>
           <!-- A QUIEN SEGUIR (unificado) -->
           <div class="card-modern">
             <div class="card-header">
@@ -236,24 +254,7 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
             </div>
           </div>
 
-          <!-- GAMIFICACION (mini-card) -->
-          <div class="card-modern">
-            <div class="card-header">
-              <i class="pi pi-trophy card-header-icon"></i>
-              <span class="card-header-title"> {{ 'home.gamification' | transloco }} </span>
-            </div>
-            <div class="card-body">
-              <div class="level-text">
-                <span class="level-label">{{ 'home.level' | transloco }}</span>
-                <span class="level-number">{{ 'home.levelNumber' | transloco: { level: userLevel.level } }}</span>
-              </div>
-              <div class="level-bar-wrap">
-                <p-progressBar [value]="levelProgress" styleClass="level-progress-bar"></p-progressBar>
-                <span class="level-xp">{{ userLevel.currentXp }} / {{ userLevel.totalXp }} {{ 'home.xp' | transloco }}</span>
-              </div>
-              <a routerLink="/gamification" class="card-header-link gamification-link">{{ 'home.viewGamification' | transloco }}</a>
-            </div>
-          </div>
+
         </div>
       </div>
     </div>

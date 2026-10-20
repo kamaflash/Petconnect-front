@@ -2439,7 +2439,7 @@ export class PetProfilePageComponent implements OnInit, OnDestroy {
     }
     this.adoptionService.getMyAdoptionRequests().subscribe({
       next: (requests) => {
-                const active = requests.some(r =>
+                const active = requests.content.some(r =>
           r.petId === petId &&
           (r.status || '').toLowerCase() !== 'rejected' &&
           (r.status || '').toLowerCase() !== 'completed'

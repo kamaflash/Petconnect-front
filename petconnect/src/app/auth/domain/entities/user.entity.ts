@@ -19,4 +19,10 @@ export interface User {
   isVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
+  /**
+   * True cuando el perfil tiene toda la información obligatoria de su tipo.
+   * Determina si el usuario puede acceder a las rutas protegidas o debe
+   * pasar antes por el onboarding.
+   */
+  profileComplete: boolean;
 }

@@ -16,6 +16,7 @@ import { RouterLink } from '@angular/router';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../../../adoptions/presentation/components/pet-feed-grid/pet-feed-grid.component';
+import { SearchRadiusService } from '../../../shared/services/search-radius.service';
 
 interface Event {
   id: string;
@@ -89,6 +90,7 @@ interface Event {
         [itemLabel]="'events.itemLabel' | transloco"
         itemKeyField="id"
         [filterConfigs]="eventFilterConfigs"
+        [enableDistanceFilter]="true"
         [columnConfigs]="eventColumnConfigs"
         [initialFilters]="eventFilters()"
         (filtersChange)="onFiltersChange($event)"
@@ -481,6 +483,7 @@ export class EventsPageComponent implements OnInit {
   readonly i18n = inject(TranslocoService);
   private messageService = inject(MessageService);
   private readonly transloco = inject(TranslocoService);
+  private readonly searchRadius = inject(SearchRadiusService);
 
   // Events data
   events = signal<Event[]>([]);
@@ -560,6 +563,8 @@ export class EventsPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    // Ubicación de referencia para el filtro global de distancia
+    this.searchRadius.resolveOrigin().subscribe();
     this.loadEvents();
   }
 

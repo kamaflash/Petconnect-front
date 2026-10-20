@@ -17,6 +17,15 @@ export class AuthService extends AuthRepository {
   readonly user = this._user.asReadonly();
   readonly isAuthenticated = computed(() => !!this._token());
 
+  /**
+   * True si el usuario ha completado el onboarding (perfil con los datos
+   * obligatorios de su tipo). Se mantiene en un signal propio para poder
+   * actualizarlo de inmediato tras guardar el perfil, sin esperar al
+   * siguiente refresh del token (el claim JWT puede quedar desactualizado).
+   */
+  private readonly _profileComplete = signal(false);
+  readonly profileComplete = this._profileComplete.asReadonly();
+
   /** Controla el refresh concurrente (evita varios POST /auth/refresh simultáneos) */
   private readonly _isRefreshing = signal(false);
   readonly isRefreshing = this._isRefreshing.asReadonly();
@@ -129,12 +138,28 @@ export class AuthService extends AuthRepository {
       role: response.role as 'USER' | 'ADMIN' | 'PREMIUM',
       isVerified,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      profileComplete: response.profileComplete ?? response.profile.profileComplete ?? false
     };
     this._user.set(user);
+    this._profileComplete.set(user.profileComplete);
     this._token.set(response.accessToken);
     this.saveToStorage();
     return user;
+  }
+
+  /**
+   * Marca el perfil como completado en el estado local.
+   *
+   * Se llama justo después de guardar el perfil en el onboarding para que el
+   * guard no bloquee al usuario con un claim JWT desactualizado.
+   */
+  setProfileComplete(complete: boolean): void {
+    this._profileComplete.set(complete);
+    const current = this._user();
+    if (current) {
+      this.updateUser({ ...current, profileComplete: complete });
+    }
   }
 
     logout(): Promise<void> {
@@ -143,9 +168,11 @@ export class AuthService extends AuthRepository {
     // Limpiar TODO el storage de autenticación
     sessionStorage.removeItem('auth_token');
     sessionStorage.removeItem('auth_user');
+    sessionStorage.removeItem('auth_profile_complete');
     sessionStorage.removeItem('refresh_token');
     this._refreshSubject.next(null);
     this.clearRefreshTimer();
+    this._profileComplete.set(false);
     return Promise.resolve();
   }
 
@@ -183,6 +210,11 @@ export class AuthService extends AuthRepository {
       // Guardar el nuevo refresh token si viene en la respuesta
       if (response.refreshToken) {
         sessionStorage.setItem('refresh_token', response.refreshToken);
+      }
+      // El backend recalcula la completitud en cada refresh: se sincroniza
+      // para que el guard no use un estado obsoleto.
+      if (typeof response.profileComplete === 'boolean') {
+        this.setProfileComplete(response.profileComplete);
       }
       this.saveToStorage();
       this._refreshSubject.next(response.accessToken);
@@ -225,6 +257,7 @@ export class AuthService extends AuthRepository {
     if (this._user()) {
       sessionStorage.setItem('auth_user', JSON.stringify(this._user()));
     }
+    sessionStorage.setItem('auth_profile_complete', String(this._profileComplete()));
   }
 
   private loadFromStorage(): void {
@@ -236,6 +269,14 @@ export class AuthService extends AuthRepository {
     }
     if (userJson) {
             this._user.set(JSON.parse(userJson) as User);
+    }
+    // El estado de completitud se restaura desde el storage; si no está,
+    // se deduce del usuario persistido.
+    const storedComplete = sessionStorage.getItem('auth_profile_complete');
+    if (storedComplete !== null) {
+      this._profileComplete.set(storedComplete === 'true');
+    } else {
+      this._profileComplete.set(this._user()?.profileComplete ?? false);
     }
   }
 
@@ -296,6 +337,10 @@ interface AuthResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
+  /** True si la cuenta acaba de crearse (registro o primer acceso con Google). */
+  newUser?: boolean;
+  /** True si el perfil tiene los datos obligatorios de su tipo. */
+  profileComplete?: boolean;
   profile: {
     id: string;
     authUserId: string;
@@ -312,6 +357,7 @@ interface AuthResponse {
     profilePublic: boolean;
     notificationsEnabled: boolean;
     profileType: string;
+    profileComplete?: boolean;
   };
 }
 
@@ -319,4 +365,6 @@ interface RefreshTokenResponse {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
+  /** Completitud del perfil recalculada por el backend. */
+  profileComplete?: boolean;
 }

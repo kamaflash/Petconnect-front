@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
 import { Observable, BehaviorSubject, switchMap, map, of } from 'rxjs';
+import { PageResponse, pageParams } from '../../../shared/infrastructure/http/page-response';
 
 export interface AdoptionRequest {
   id: string;
@@ -172,8 +173,12 @@ export class AdoptionService {
 
   // Get all pets available for adoption
   // Uses /home/adoptions endpoint since GET /pets is not supported by the backend
-  getAvailablePets(): Observable<AvailablePetResponse[]> {
-    return this.http.get<AvailablePetResponse[]>(`${this.apiUrl}/home/adoptions`);
+  getAvailablePets(page = 0, size = 10): Observable<PageResponse<AvailablePetResponse>> {
+    const params = new HttpParams();
+    return this.http.get<PageResponse<AvailablePetResponse>>(
+      `${this.apiUrl}/home/adoptions`,
+      { params: pageParams(params, { page, size }) },
+    );
   }
 
   // Request adoption for a specific pet
@@ -186,10 +191,12 @@ export class AdoptionService {
     );
   }
 
-  // Get adoption requests for the current user (as adopter)
-  getMyAdoptionRequests(): Observable<AdoptionRequest[]> {
-    return this.http.get<AdoptionRequest[]>(`${this.apiUrl}/adoptions/my-requests`).pipe(
-      map((requests) => (requests ?? []).map((r) => this.normalizeRequest(r))),
+  // Get adoption requests for the current user (as adopter), paginated
+  getMyAdoptionRequests(page = 0, size = 10): Observable<PageResponse<AdoptionRequest>> {
+    const params = new HttpParams();
+    return this.http.get<PageResponse<AdoptionRequest>>(
+      `${this.apiUrl}/adoptions/my-requests`,
+      { params: pageParams(params, { page, size }) },
     );
   }
 
@@ -199,10 +206,12 @@ export class AdoptionService {
     );
   }
 
-  // Get adoption requests for pets owned by the current user (as shelter/owner)
-  getAdoptionRequestsForMyPets(): Observable<AdoptionRequest[]> {
-    return this.http.get<AdoptionRequest[]>(`${this.apiUrl}/adoptions/my-pets-requests`).pipe(
-      map((requests) => (requests ?? []).map((r) => this.normalizeRequest(r))),
+  // Get adoption requests for pets owned by the current user (as shelter/owner), paginated
+  getAdoptionRequestsForMyPets(page = 0, size = 10): Observable<PageResponse<AdoptionRequest>> {
+    const params = new HttpParams();
+    return this.http.get<PageResponse<AdoptionRequest>>(
+      `${this.apiUrl}/adoptions/my-pets-requests`,
+      { params: pageParams(params, { page, size }) },
     );
   }
 

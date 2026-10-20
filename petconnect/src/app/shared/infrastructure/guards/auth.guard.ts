@@ -24,3 +24,29 @@ export const authGuard: CanActivateFn = (): boolean | UrlTree => {
   void authService.logout();
   return router.createUrlTree(['/auth/login']);
 };
+
+/**
+ * Guard de onboarding.
+ *
+ * Impide el acceso a las rutas protegidas a los usuarios que aún no han
+ * completado su perfil (tras el registro o el primer acceso con Google),
+ * redirigiéndolos al flujo de onboarding.
+ *
+ * Usa el estado local de `AuthService.profileComplete`, que se actualiza de
+ * inmediato al guardar el perfil (el claim del JWT puede quedar obsoleto).
+ */
+export const profileCompletedGuard: CanActivateFn = (): boolean | UrlTree => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  // Sin sesión o con token vencido, el guard de autenticación se encarga.
+  if (!authService.isAuthenticated() || authService.isTokenExpired()) {
+    return true;
+  }
+
+  if (authService.profileComplete()) {
+    return true;
+  }
+
+  return router.createUrlTree(['/onboarding']);
+};

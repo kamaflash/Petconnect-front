@@ -16,8 +16,9 @@ import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/present
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { SocialService, PostResponse, EventResponse, GroupResponse, StoryResponse } from '../../../social/infrastructure/services/social.service';
 import { HomeService, VetServiceResponse } from '../../../home/infrastructure/services/home.service';
-import { MarketplaceService, CreateProductRequest } from '../../../marketplace/infrastructure/services/marketplace.service';
+import { MarketplaceService, CreateProductRequest, ProductResponse } from '../../../marketplace/infrastructure/services/marketplace.service';
 import { AdoptionService, AdoptionRequest, AdoptionStatus } from '../../../adoptions/infrastructure/services/adoption.service';
+import { PageResponse } from '../../../shared/infrastructure/http/page-response';
 import { ProfileService, UserProfileResponse } from '../../../profile/infrastructure/services/profile.service';
 import { PetOwnershipEventService } from '../../../shared/services/pet-ownership-event.service';
 
@@ -1077,9 +1078,9 @@ export class AdminPageComponent implements OnInit {
     });
     // Load products (for sellers)
     this.marketplaceService.getMyProducts().subscribe({
-      next: (products: any[]) => {
+      next: (products: PageResponse<ProductResponse>) => {
         console.log('Products loaded from API:', products);
-        const mapped = products.map(p => ({
+        const mapped = products.content.map(p => ({
           id: p.id,
           name: p.name,
           description: p.description || '',
@@ -1097,13 +1098,13 @@ export class AdminPageComponent implements OnInit {
 
         // Load adoption requests for pets owned by the current user
     this.adoptionService.getAdoptionRequestsForMyPets().subscribe({
-      next: (requests) => this.adminAdoptions.set(requests),
+      next: (requests: PageResponse<AdoptionRequest>) => this.adminAdoptions.set(requests.content),
       error: (err) => console.error('Error loading adoption requests:', err)
     });
 
     // Load adoption requests sent by the current user (solicitudes enviadas)
     this.adoptionService.getMyAdoptionRequests().subscribe({
-      next: (requests) => this.myAdoptionRequests.set(requests),
+      next: (requests: PageResponse<AdoptionRequest>) => this.myAdoptionRequests.set(requests.content),
       error: (err) => console.error('Error loading my adoption requests:', err)
     });
 

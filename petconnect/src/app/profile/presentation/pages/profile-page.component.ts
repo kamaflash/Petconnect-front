@@ -17,8 +17,10 @@ import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { ProfileService, UserProfileResponse, PetResponse } from '../../infrastructure/services/profile.service';
+import { VET_SERVICES, parseVetServiceCodes } from '../../domain/vet-services';
 import { User } from '../../../auth/domain/entities/user.entity';
 import { SocialService, EventResponse } from '../../../social/infrastructure/services/social.service';
+import { AdoptionService } from '../../../adoptions/infrastructure/services/adoption.service';
 import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
@@ -82,6 +84,8 @@ interface SellerProfile extends BaseProfile {
 interface VetProfile extends BaseProfile {
   type: 'vet';
   specialty: string;
+  /** Códigos del catálogo VET_SERVICES que ofrece este veterinario. */
+  services: string[];
   rating: number;
   reviews: number;
   stats: {
@@ -350,23 +354,9 @@ interface Pet {
 
           <!-- Conóceme - Edición (propio perfil) -->
           <div class="tab-panel" *ngIf="activeTab() === 'knowme' && isOwnProfile() && !loading() && renderForm()">
-            @if (pendingProfileType()) {
-              <div class="pending-type-banner" role="status">
-                <i class="pi pi-hourglass" aria-hidden="true"></i>
-                <span>{{ 'profile.pending.request' | transloco: { type: pendingTypeLabel() } }}</span>
-                <button
-                  pButton
-                  type="button"
-                  class="p-button-outlined p-button-sm"
-                  [label]="'profile.pending.cancel' | transloco"
-                  (click)="cancelPendingTypeRequest()"
-                ></button>
-              </div>
-            }
             <app-dynamic-form
               [config]="profileFormConfig()"
               [formData]="profileFormData()"
-              (formValueChange)="onProfileFormValueChange($event)"
               (onSubmitClick)="onProfileSubmit($event)"
               (onLocationPicked)="onLocationConfirmed($event)"
             />
@@ -435,8 +425,16 @@ interface Pet {
                   </h4>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-briefcase"></i></span>
-                    <span class="knowme-label">{{ 'profile.fields.specialty' | transloco }}</span>
-                    <span class="knowme-value">{{ vetSpecialty() }}</span>
+                    <span class="knowme-label">{{ 'profile.fields.services' | transloco }}</span>
+                    <span class="knowme-value knowme-services">
+                      @if (vetServices().length > 0) {
+                        @for (service of vetServices(); track service) {
+                          <span class="service-chip">{{ service }}</span>
+                        }
+                      } @else {
+                        {{ 'profile.fields.noServices' | transloco }}
+                      }
+                    </span>
                   </div>
                   <div class="knowme-item">
                     <span class="knowme-icon"><i class="pi pi-id-card"></i></span>
@@ -1326,6 +1324,22 @@ interface Pet {
       word-break: break-word;
     }
 
+    .knowme-services {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+    }
+
+    .service-chip {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      background: var(--surface-hover);
+      border: 1px solid var(--surface-border);
+      border-radius: 999px;
+      font-size: 0.8125rem;
+      color: var(--text-primary);
+    }
+
     .knowme-link {
       color: var(--primary-color);
       text-decoration: none;
@@ -1582,6 +1596,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly profileService = inject(ProfileService);
   private readonly socialService = inject(SocialService);
+  private readonly adoptionService = inject(AdoptionService);
   private readonly messageService = inject(MessageService);
   private readonly transloco = inject(TranslocoService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -1634,11 +1649,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   // Controla la recreación del formulario de edición tras guardar cambios
   renderForm = signal(true);
 
-  // Tipo de perfil seleccionado en el formulario de edición.
-  // null = se usa el tipo guardado en el perfil.
-  selectedProfileType = signal<ProfileType | null>(null);
-
-  // Cambio de tipo (vet/shelter) pendiente de aprobación del administrador
+  // Cambio de tipo pendiente de aprobación del administrador (solo lectura desde el perfil)
   pendingProfileType = signal<string | null>(null);
 
   // Modal de confirmación de cambios de perfil
@@ -1727,6 +1738,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   // Contadores de seguidores y seguidos
   followersCount = signal(0);
   followingCount = signal(0);
+  /** Adopciones completadas por el usuario del perfil propio (backend). */
+  completedAdoptions = signal(0);
 
   // Menu items for profile actions
   profileMenuItems: MenuItem[] = [];
@@ -1777,6 +1790,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     const typeSpecific: Record<string, any> = {};
     if (profileData) {
       if (profileData.specialty) typeSpecific['specialty'] = profileData.specialty;
+      if (profileData.services) typeSpecific['services'] = profileData.services;
       if (profileData.licenseNumber) typeSpecific['licenseNumber'] = profileData.licenseNumber;
       if (profileData.storeName) typeSpecific['storeName'] = profileData.storeName;
       if (profileData.charityNumber) typeSpecific['charityNumber'] = profileData.charityNumber;
@@ -1810,6 +1824,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           ...baseProfile,
           type: 'vet',
           specialty: typeSpecific['specialty'] || (this.ownProfile() as any)?.specialty || 'Veterinaria General',
+          services: parseVetServiceCodes(typeSpecific['services'] ?? (this.ownProfile() as any)?.services),
           licenseNumber: typeSpecific['licenseNumber'] || (this.ownProfile() as any)?.licenseNumber || null,
           rating: 4.5,
           reviews: 0,
@@ -1864,6 +1879,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         this.loadOwnProfile(user.id);
         this.loadFollowersCount(user.id);
         this.loadFollowingCount(user.id);
+        this.loadCompletedAdoptions();
       }
     } else {
       const id = this.profileId();
@@ -1872,6 +1888,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         this.loadFollowersCount(id);
         this.loadFollowingCount(id);
       }
+      // El backend solo expone las solicitudes del usuario autenticado.
+      this.completedAdoptions.set(0);
     }
 
     if (this.isOwnProfile() && user) {
@@ -1940,6 +1958,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           coverImage: profile.coverImageUrl || '',
           bio: profile.bio || '',
           location: profile.location || '',
+          phone: profile.phone || '',
           website: profile.website || '',
           joinDate: new Date(),
           isFollowing: false,
@@ -1961,6 +1980,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
               ...baseProfile,
               type: 'vet',
               specialty: (profile as any).specialty || 'Veterinaria General',
+              services: parseVetServiceCodes((profile as any).services),
               licenseNumber: (profile as any).licenseNumber || null,
               rating: 4.5,
               reviews: 0,
@@ -2015,7 +2035,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
           coverImage: profile.coverImageUrl || '',
           bio: profile.bio || '',
           location: profile.location || '',
-          website: '',
+          phone: profile.phone || '',
+          website: profile.website || '',
           joinDate: new Date(),
           isFollowing: false,
           type: normalizedProfileType,
@@ -2027,6 +2048,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
             loadedProfile = {
               ...baseProfile,
               type: 'shelter',
+              charityNumber: (profile as any).charityNumber || null,
               stats: { pets: 0, followers: 0, adoptions: 0, reviews: 0 },
             } as ShelterProfile;
             break;
@@ -2034,16 +2056,29 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
             loadedProfile = {
               ...baseProfile,
               type: 'vet',
-              specialty: 'Veterinaria General',
+              specialty: (profile as any).specialty || 'Veterinaria General',
+              services: parseVetServiceCodes((profile as any).services),
+              licenseNumber: (profile as any).licenseNumber || null,
               rating: 4.5,
               reviews: 0,
               stats: { patients: 0, followers: 0, posts: 0, likes: 0 },
             } as VetProfile;
             break;
+          case 'trainer':
+            loadedProfile = {
+              ...baseProfile,
+              type: 'trainer',
+              specialty: (profile as any).specialty || '',
+              rating: 0,
+              reviews: 0,
+              stats: { clients: 0, followers: 0, posts: 0, likes: 0 },
+            } as TrainerProfile;
+            break;
           case 'seller':
             loadedProfile = {
               ...baseProfile,
               type: 'seller',
+              storeName: (profile as any).storeName || null,
               stats: { products: 0, followers: 0, sales: 0, reviews: 0 },
             } as SellerProfile;
             break;
@@ -2072,7 +2107,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
               coverImage: profile.coverImageUrl || '',
               bio: profile.bio || '',
           location: profile.location || '',
-              website: '',
+              phone: profile.phone || '',
+              website: profile.website || '',
               joinDate: new Date(),
               isFollowing: false,
               type: normalizedProfileType,
@@ -2084,6 +2120,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
                 loadedProfile = {
                   ...baseProfile,
                   type: 'shelter',
+                  charityNumber: (profile as any).charityNumber || null,
                   stats: { pets: 0, followers: 0, adoptions: 0, reviews: 0 },
                 } as ShelterProfile;
                 break;
@@ -2091,16 +2128,29 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
                 loadedProfile = {
                   ...baseProfile,
                   type: 'vet',
-                  specialty: 'Veterinaria General',
+                  specialty: (profile as any).specialty || 'Veterinaria General',
+                  services: parseVetServiceCodes((profile as any).services),
+                  licenseNumber: (profile as any).licenseNumber || null,
                   rating: 4.5,
                   reviews: 0,
                   stats: { patients: 0, followers: 0, posts: 0, likes: 0 },
                 } as VetProfile;
                 break;
+              case 'trainer':
+                loadedProfile = {
+                  ...baseProfile,
+                  type: 'trainer',
+                  specialty: (profile as any).specialty || '',
+                  rating: 0,
+                  reviews: 0,
+                  stats: { clients: 0, followers: 0, posts: 0, likes: 0 },
+                } as TrainerProfile;
+                break;
               case 'seller':
                 loadedProfile = {
                   ...baseProfile,
                   type: 'seller',
+                  storeName: (profile as any).storeName || null,
                   stats: { products: 0, followers: 0, sales: 0, reviews: 0 },
                 } as SellerProfile;
                 break;
@@ -2170,6 +2220,27 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Cuenta las adopciones completadas por el usuario del perfil propio.
+   * El endpoint solo devuelve las solicitudes de mascotas del usuario
+   * autenticado, por lo que en perfiles ajenos la cifra no está disponible.
+   */
+  private loadCompletedAdoptions(): void {
+    this.adoptionService.getAdoptionRequestsForMyPets(0, 50).subscribe({
+      next: (page) => {
+        this.completedAdoptions.set(
+          (page?.content ?? []).filter(r => r.status === 'completed').length
+        );
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error loading completed adoptions:', err);
+        this.completedAdoptions.set(0);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
   private loadFollowStatus(authUserId: string): void {
     const currentUserId = this.authService.user()?.id;
     if (!currentUserId) return;
@@ -2232,7 +2303,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   userPhone = computed(() => {
     const profile = this.userProfile();
     if (this.isOwnProfile()) {
-      return this.authService.user()?.phone || '—';
+      // El usuario de auth puede quedar desactualizado (p. ej. tras el
+      // onboarding sin relogin): se usa el perfil cargado como fallback.
+      return this.authService.user()?.phone || profile?.phone || '—';
     }
     return profile?.phone || '—';
   });
@@ -2245,9 +2318,14 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   //  VET COMPUTED PROPERTIES
   // ============================================
 
-  vetSpecialty = computed(() => {
+  /** Etiquetas traducidas de los servicios que el vet tiene marcados. */
+  vetServices = computed(() => {
     const profile = this.userProfile();
-    return profile?.type === 'vet' ? (profile as VetProfile).specialty : 'No especificada';
+    if (profile?.type !== 'vet') return [];
+    const codes = parseVetServiceCodes((profile as VetProfile).services);
+    return VET_SERVICES
+      .filter(service => codes.includes(service.code))
+      .map(service => this.transloco.translate(service.labelKey));
   });
 
   vetLicenseNumber = computed(() => {
@@ -2335,12 +2413,20 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
   shelterPets = computed(() => {
     const profile = this.userProfile();
-    return profile?.type === 'shelter' ? (profile as ShelterProfile).stats.pets : 0;
+    if (profile?.type !== 'shelter') return 0;
+    // Mascotas del perfil cargadas en `userPets`; se cuentan las disponibles.
+    const available = this.userPets().filter(p => p.adoptionStatus === 'available').length;
+    return available || (profile as ShelterProfile).stats.pets;
   });
 
   shelterAdoptions = computed(() => {
     const profile = this.userProfile();
-    return profile?.type === 'shelter' ? (profile as ShelterProfile).stats.adoptions : 0;
+    if (profile?.type !== 'shelter') return 0;
+    // En el perfil propio se cuentan las adopciones completadas desde el
+    // backend; en perfiles ajenos no hay endpoint, así que queda 0.
+    return this.isOwnProfile()
+      ? this.completedAdoptions()
+      : (profile as ShelterProfile).stats.adoptions;
   });
 
   shelterReviews = computed(() => {
@@ -2350,7 +2436,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
   shelterFollowers = computed(() => {
     const profile = this.userProfile();
-    return profile?.type === 'shelter' ? (profile as ShelterProfile).stats.followers : 0;
+    // `followersCount` ya se carga desde el backend en ambos flujos
+    // (perfil propio y perfil por id).
+    return profile?.type === 'shelter' ? this.followersCount() : 0;
   });
 
   // ============================================
@@ -2484,23 +2572,9 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   profileFormConfig = computed(() => {
     // Usa el tipo elegido en el formulario (si lo hay) para mostrar al instante
     // los campos específicos del tipo; si no, el tipo guardado en el perfil.
-    const profileType = this.selectedProfileType() ?? (this.userProfile()?.type || 'user');
+    const profileType = this.userProfile()?.type || 'user';
 
     const baseFields = [
-      {
-        key: 'profileType',
-        label: this.transloco.translate('profile.form.profileType'),
-        type: 'select' as const,
-        placeholder: this.transloco.translate('profile.form.profileTypePlaceholder'),
-        validation: { required: true },
-        options: [
-          { label: this.transloco.translate('profile.form.user'), value: 'user' },
-          { label: this.transloco.translate('profile.form.vet'), value: 'vet' },
-          { label: this.transloco.translate('profile.form.shelter'), value: 'shelter' },
-          { label: this.transloco.translate('profile.form.seller'), value: 'seller' },
-          { label: this.transloco.translate('profile.form.trainer'), value: 'trainer' },
-        ],
-      },
       {
         key: 'firstName',
         label: this.transloco.translate('profile.form.firstName'),
@@ -2547,17 +2621,31 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
     const typeSpecificFields: any[] = [];
 
-    if (profileType === 'vet' || profileType === 'trainer') {
+    if (profileType === 'trainer') {
       typeSpecificFields.push({
         key: 'specialty',
-        label: this.transloco.translate(profileType === 'vet' ? 'profile.form.specialty' : 'profile.form.specialization'),
+        label: this.transloco.translate('profile.form.specialization'),
         type: 'input' as const,
-        placeholder: profileType === 'vet' ? 'Veterinaria General' : 'Adiestramiento canino',
+        placeholder: 'Adiestramiento canino',
         validation: { maxLength: 100 }
       });
     }
 
     if (profileType === 'vet') {
+      // El vet no "crea" servicios: marca del catálogo los que ofrece.
+      typeSpecificFields.push({
+        key: 'services',
+        label: this.transloco.translate('profile.form.services'),
+        type: 'checkgroup' as const,
+        options: VET_SERVICES.map(service => ({
+          label: this.transloco.translate(service.labelKey),
+          value: service.code,
+        })),
+        validation: {
+          required: true,
+          customMessage: this.transloco.translate('profile.form.servicesRequired'),
+        },
+      });
       typeSpecificFields.push({
         key: 'licenseNumber',
         label: this.transloco.translate('profile.form.licenseNumber'),
@@ -2614,19 +2702,21 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     const profileType = profile?.type || 'user';
 
     const baseData: any = {
-      profileType: ((profile as any)?.type || user?.profileType || 'user').toLowerCase(),
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
-      phone: user?.phone || '',
-      bio: user?.bio || '',
-      location: user?.location || '',
+      // Fallback al perfil cargado del backend: el snapshot de auth puede
+      // estar desactualizado en la misma sesión (p. ej. tras el onboarding).
+      phone: user?.phone || (profile as any)?.phone || '',
+      bio: user?.bio || (profile as any)?.bio || '',
+      location: user?.location || (profile as any)?.location || '',
       website: (profile as any)?.website || ''
     };
 
-    if (profileType === 'vet' || profileType === 'trainer') {
+    if (profileType === 'trainer') {
       baseData.specialty = (profile as any).specialty || '';
     }
     if (profileType === 'vet') {
+      baseData.services = parseVetServiceCodes((profile as VetProfile).services);
       baseData.licenseNumber = (profile as any).licenseNumber || '';
     }
     if (profileType === 'shelter') {
@@ -2690,11 +2780,8 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
 
   setActiveTab(tab: string) {
     if (this.activeTab() !== tab) {
-      // Al salir de la pestaña de edición se descarta la selección de tipo sin
-      // guardar; el formulario se recreará con el tipo guardado en el perfil.
-      this.selectedProfileType.set(null);
+      this.activeTab.set(tab);
     }
-    this.activeTab.set(tab);
   }
 
   initializeProfileMenu(): void {
@@ -2819,52 +2906,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // Mantiene sincronizado el tipo de perfil elegido en el formulario para
-  // regenerar la config al instante y mostrar los campos específicos del tipo
-  // (p.ej. el nº de registro de una protectora) sin necesidad de recargar.
-  onProfileFormValueChange(data: Record<string, unknown>): void {
-    const next = (data['profileType'] as ProfileType) || 'user';
-    const current = this.selectedProfileType() ?? (this.userProfile()?.type || 'user');
-    if (next !== current) {
-      this.selectedProfileType.set(next);
-    }
-  }
-
-  /** Etiqueta traducida del tipo de perfil pendiente de aprobación. */
-  pendingTypeLabel = computed(() => {
-    const type = this.pendingProfileType();
-    if (!type) return '';
-    const keys: Record<string, string> = {
-      vet: 'profile.form.vet',
-      shelter: 'profile.form.shelter',
-      user: 'profile.form.user',
-      trainer: 'profile.form.trainer',
-      seller: 'profile.form.seller',
-    };
-    return this.transloco.translate(keys[type] ?? 'profile.form.profileType');
-  });
-
-  /** Cancela la propia solicitud de cambio de tipo pendiente. */
-  cancelPendingTypeRequest(): void {
-    this.profileService.cancelPendingTypeRequest().subscribe({
-      next: (response) => {
-        this.pendingProfileType.set(response.pendingProfileType ?? null);
-        this.messageService.add({
-          severity: 'success',
-          summary: this.transloco.translate('profile.pending.cancelled'),
-          detail: this.transloco.translate('profile.pending.cancelledDetail'),
-        });
-      },
-      error: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: this.transloco.translate('profile.toasts.error'),
-          detail: this.transloco.translate('profile.pending.error'),
-        });
-      },
-    });
-  }
-
   // Confirmación del modal: realiza el guardado real
   confirmSaveProfile(): void {
     const data = this.pendingProfileData();
@@ -2910,11 +2951,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
       website: data.website
     };
 
-    if (profileType === 'vet' || profileType === 'trainer') {
+    if (profileType === 'trainer') {
       payload.specialty = data.specialty || '';
     }
     if (profileType === 'vet') {
       payload.licenseNumber = data.licenseNumber || '';
+      payload.services = Array.isArray(data.services) ? data.services.join(',') : '';
     }
     if (profileType === 'shelter') {
       payload.charityNumber = data.charityNumber || '';
@@ -2998,8 +3040,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         dateOfBirth: response.dateOfBirth || currentUser.dateOfBirth,
         latitude: response.latitude ?? currentUser.latitude,
         longitude: response.longitude ?? currentUser.longitude,
+        profileComplete: response.profileComplete ?? currentUser.profileComplete,
       };
       this.authService.updateUser(updatedUser);
+      // El estado de completitud se sincroniza por si el perfil se ha
+      // completado (o ha vuelto a quedar pendiente) tras la edición.
+      this.authService.setProfileComplete(updatedUser.profileComplete);
       this.buildOwnProfile(updatedUser, response);
     }
 

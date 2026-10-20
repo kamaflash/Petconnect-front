@@ -1,0 +1,78 @@
+IDX=1211
+export * from 'primeng/types/popover';
+import * as i2 from '@angular/common';
+import { isPlatformBrowser, CommonModule } from '@angular/common';
+import * as i0 from '@angular/core';
+import { Injectable, InjectionToken, inject, input, computed, EventEmitter, NgZone, booleanAttribute, numberAttribute, HostListener, ContentChildren, ContentChild, Output, Input, ViewEncapsulation, ChangeDetectionStrategy, Component, NgModule } from '@angular/core';
+import { $dt } from '@primeuix/styled';
+import { isIOS, appendChild, absolutePosition, getOffset, addClass, findSingle, isTouchDevice } from '@primeuix/utils';
+import { OverlayService, SharedModule, PrimeTemplate } from 'primeng/api';
+import { BaseComponent, PARENT_INSTANCE } from 'primeng/basecomponent';
+import * as i1 from 'primeng/bind';
+import { Bind } from 'primeng/bind';
+import { ConnectedOverlayScrollHandler } from 'primeng/dom';
+import * as i3 from 'primeng/motion';
+import { MotionModule } from 'primeng/motion';
+import { ZIndexUtils } from 'primeng/utils';
+import { style } from '@primeuix/styles/popover';
+import { BaseStyle } from 'primeng/base';
+
+const inlineStyles = {
+    root: () => ({ position: 'absolute' })
+};
+const classes = {
+    root: 'p-popover p-component',
+    content: 'p-popover-content'
+};
+class PopoverStyle extends BaseStyle {
+    name = 'popover';
+    style = style;
+    classes = classes;
+    inlineStyles = inlineStyles;
+    static ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "21.2.13", ngImport: i0, type: PopoverStyle, deps: null, target: i0.ɵɵFactoryTarget.Injectable });
+    static ɵprov = i0.ɵɵngDeclareInjectable({ minVersion: "12.0.0", version: "21.2.13", ngImport: i0, type: PopoverStyle });
+}
+i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "21.2.13", ngImport: i0, type: PopoverStyle, decorators: [{
+            type: Injectable
+        }] });
+
+const POPOVER_INSTANCE = new InjectionToken('POPOVER_INSTANCE');
+/**
+ * Popover is a container component that can overlay other components on page.
+ * @group Components
+ */
+class Popover extends BaseComponent {
+    componentName = 'Popover';
+    $pcPopover = inject(POPOVER_INSTANCE, { optional: true, skipSelf: true }) ?? undefined;
+    bindDirectiveInstance = inject(Bind, { self: true });
+    onAfterViewChecked() {
+        this.bindDirectiveInstance.setAttrs(this.ptm('host'));
+    }
+    /**
+     * Defines a string that labels the input for accessibility.
+     * @group Props
+     */
+    ariaLabel;
+    /**
+     * Establishes relationships between the component and label(s) where its value should be one or more element IDs.
+     * @group Props
+     */
+    ariaLabelledBy;
+    /**
+     * Enables to hide the overlay when outside is clicked.
+     * @group Props
+     */
+    dismissable = true;
+    /**
+     * Inline style of the component.
+     * @group Props
+     */
+    style;
+    /**
+     * Style class of the component.
+     * @group Props
+     */
+    styleClass;
+    /**
+     * Target element to attach the overlay, valid values are "body" or a local ng-template variable of another element (note: use binding with brackets for template variables, e.g. [appendTo]="mydiv" for a div element having #mydiv as variable name).
+     *

@@ -8,8 +8,10 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { SelectModule } from 'primeng/select';
+import { SliderModule } from 'primeng/slider';
 import { ThemeService } from '../../../shared/infrastructure/services/theme.service';
 import { LanguageService } from '../../../shared/infrastructure/i18n/language.service';
+import { SearchRadiusService } from '../../../shared/services/search-radius.service';
 import type { SupportedLang } from '../../../shared/infrastructure/i18n/language.provider';
 
 interface ThemeColor {
@@ -32,7 +34,7 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
 @Component({
   selector: 'app-settings-page',
   standalone: true,
-  imports: [CommonModule, ButtonModule, CardModule, ToggleSwitchModule, TooltipModule, FormsModule, RouterLink, TranslocoModule, SelectModule],
+  imports: [CommonModule, ButtonModule, CardModule, ToggleSwitchModule, TooltipModule, FormsModule, RouterLink, TranslocoModule, SelectModule, SliderModule],
   template: `
     <div class="settings-page">
       <div class="settings-container">
@@ -82,6 +84,56 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
                   }
                 </button>
               }
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección de Búsqueda (radio global estilo Tinder) -->
+        <div class="settings-section">
+          <h2 class="section-title">{{ 'settings.search' | transloco }}</h2>
+          <div class="settings-card">
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <span class="settings-item-label">{{ 'settings.searchRadius' | transloco }}</span>
+                <span class="settings-item-description">{{ 'settings.searchRadiusDesc' | transloco }}</span>
+              </div>
+              <span class="radius-value">@if (searchRadius.isUnlimited()) {
+                {{ 'settings.unlimited' | transloco }}
+              } @else {
+                {{ searchRadius.radiusKm() }} km
+              }</span>
+            </div>
+            <div class="radius-slider-row">
+              <p-slider
+                [min]="searchRadius.sliderMin"
+                [max]="searchRadius.sliderMax"
+                [step]="1"
+                [ngModel]="searchRadius.sliderPosition()"
+                (ngModelChange)="searchRadius.setSliderPosition($event)"
+                aria-label="{{ 'settings.searchRadius' | transloco }}"
+              />
+              <div class="radius-slider-scale" aria-hidden="true">
+                <span>{{ searchRadius.sliderMin }} km</span>
+                <span>{{ 'settings.unlimited' | transloco }}</span>
+              </div>
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <span class="settings-item-label">{{ 'settings.locationReference' | transloco }}</span>
+                <span class="settings-item-description">{{ originDescription() }}</span>
+              </div>
+              <p-button
+                icon="pi pi-crosshair"
+                [label]="'settings.useCurrentLocation' | transloco"
+                styleClass="p-button-outlined"
+                [loading]="searchRadius.originLoading()"
+                (onClick)="useCurrentLocation()"
+              />
+            </div>
+            <div class="settings-item">
+              <div class="settings-item-info">
+                <span class="settings-item-description">{{ 'settings.searchRadiusHint' | transloco }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -210,6 +262,30 @@ const themeColorValues: Record<string, { hover: string; active: string; light: s
       margin-top: 0.125rem;
     }
 
+    /* Radio de búsqueda (slider estilo Tinder) */
+    .radius-value {
+      font-weight: 700;
+      font-size: 0.9375rem;
+      color: var(--primary-color);
+      white-space: nowrap;
+    }
+
+    .radius-slider-row {
+      padding: 0.5rem 0 1rem;
+    }
+
+    .radius-slider-row ::ng-deep .p-slider {
+      width: 100%;
+    }
+
+    .radius-slider-scale {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      margin-top: 0.35rem;
+    }
+
     .settings-item-button {
       text-decoration: none;
       cursor: pointer;
@@ -270,6 +346,7 @@ export class SettingsPageComponent implements OnInit {
   readonly i18n = inject(TranslocoService);
   private readonly themeService = inject(ThemeService);
   private readonly languageService = inject(LanguageService);
+  readonly searchRadius = inject(SearchRadiusService);
 
   selectedColor = signal('#f97316');
 
@@ -296,6 +373,8 @@ export class SettingsPageComponent implements OnInit {
   publicProfile = signal(true);
 
   ngOnInit(): void {
+    // Muestra la ubicación de referencia usada por el filtro de distancia
+    this.searchRadius.resolveOrigin().subscribe();
     const saved = localStorage.getItem('theme-color');
     if (saved) {
       // Migrar el verde de la identidad anterior al naranja por defecto
@@ -312,6 +391,25 @@ export class SettingsPageComponent implements OnInit {
 
   onLanguageChange(lang: string): void {
     this.languageService.setLang(lang as SupportedLang);
+  }
+
+  /** Describe la ubicación de referencia del filtro de distancia. */
+  originDescription(): string {
+    if (this.searchRadius.originLoading()) {
+      return this.i18n.translate('settings.originPending');
+    }
+    if (this.searchRadius.originError()) {
+      return this.i18n.translate('settings.originError');
+    }
+    const source = this.searchRadius.originSource();
+    if (source === 'gps') return this.i18n.translate('settings.originGps');
+    if (source === 'profile') return this.i18n.translate('settings.originProfile');
+    return this.i18n.translate('settings.originNone');
+  }
+
+  /** Fuerza la obtención de la ubicación (GPS) como referencia del filtro. */
+  useCurrentLocation(): void {
+    this.searchRadius.resolveOrigin(true).subscribe();
   }
 
   private applyThemeColor(color: string): void {

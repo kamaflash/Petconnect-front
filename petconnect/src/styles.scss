@@ -928,6 +928,20 @@ button.primary-button {
   }
 }
 
+/* ===== POPOVER DE BÚSQUEDA DEL HEADER (overlay en <body>) ===== */
+.header-search-popover.p-popover {
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.header-search-popover .p-popover-content {
+  padding: 0;
+  background: transparent;
+  overflow: visible;
+}
+
 /* ===== OVERLAYS DE SELECT / MULTISELECT (dynamic-form) ===== */
 .p-select-overlay,
 .p-multiselect-overlay {

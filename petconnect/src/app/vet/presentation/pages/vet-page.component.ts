@@ -1,5 +1,5 @@
 import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, effect, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -19,6 +19,7 @@ import { ToastModule } from 'primeng/toast';
 import { ChipModule } from 'primeng/chip';
 import { BadgeModule } from 'primeng/badge';
 import { ProfileService, UserProfileResponse } from '../../../profile/infrastructure/services/profile.service';
+import { SearchRadiusService } from '../../../shared/services/search-radius.service';
 
 interface Vet {
   id: string;
@@ -133,6 +134,18 @@ interface Product {
         <!-- Veterinarios - 2 columnas: tabla + especialidades -->
         <div class="vet-layout" *ngIf="activeTab() === 'vets'">
           <div class="vet-main">
+            <a
+              routerLink="/settings"
+              class="radius-link"
+              [title]="'distanceFilter.editRadius' | transloco"
+            >
+              <i class="pi pi-map-marker" aria-hidden="true"></i>
+              {{ 'distanceFilter.radiusLabel' | transloco }}: @if (searchRadius.isUnlimited()) {
+                {{ 'distanceFilter.unlimited' | transloco }}
+              } @else {
+                {{ searchRadius.radiusKm() }} km
+              }
+            </a>
             <app-table-card
               [items]="vetTableItems()"
               [filters]="vetFilters"
@@ -425,6 +438,15 @@ interface Product {
     }
 
     /* Vet Layout - 2 columns */
+    .radius-link {
+      display: inline-flex; align-items: center; gap: .4rem; margin-bottom: 1rem;
+      padding: .5rem .85rem; border: 1px solid var(--surface-border); border-radius: var(--radius-sm);
+      background: var(--surface-card); color: var(--text-primary); font-size: .85rem;
+      font-weight: 600; text-decoration: none; box-sizing: border-box;
+    }
+    .radius-link i { color: var(--primary-color); }
+    .radius-link:hover { background: var(--surface-hover); }
+
     .vet-layout {
       display: grid;
       grid-template-columns: 1fr 350px;
@@ -892,6 +914,8 @@ interface Product {
 export class VetPageComponent implements OnInit {
   readonly i18n = inject(TranslocoService);
   private messageService = inject(MessageService);
+  /** Radio global de búsqueda (se configura en Configuración). */
+  readonly searchRadius = inject(SearchRadiusService);
   private readonly profileService = inject(ProfileService);
 
   // Tabs
@@ -918,6 +942,13 @@ export class VetPageComponent implements OnInit {
 
   // Vets
   vets = signal<Vet[]>([]);
+
+  /** Geocodifica las direcciones de los veterinarios (filtro de distancia). */
+  private readonly vetLocationsEffect = effect(() => {
+    const vets = this.vets();
+    if (!vets.length) return;
+    this.searchRadius.prefetchLocations(vets.map(v => v.location));
+  });
 
   // Vet Tips
   vetTips = signal<VetTip[]>([
@@ -1154,9 +1185,21 @@ export class VetPageComponent implements OnInit {
   });
 
   filteredVetItems = computed(() => {
+    let items = this.vetTableItems();
+
+    // Filtro global de distancia (radio configurado en Configuración).
+    // Los vets sin dirección resoluble no se filtran.
+    const origin = this.searchRadius.userOrigin();
+    if (origin) {
+      const radius = this.searchRadius.radiusKm();
+      items = items.filter(item =>
+        this.searchRadius.withinRadius(origin, this.searchRadius.resolveCoords(item.location), radius),
+      );
+    }
+
     const query = this.searchQuery().toLowerCase();
-    if (!query) return this.vetTableItems();
-    return this.vetTableItems().filter(item =>
+    if (!query) return items;
+    return items.filter(item =>
       item.name.toLowerCase().includes(query) ||
       item.description?.toLowerCase().includes(query) ||
       item.location?.toLowerCase().includes(query)
@@ -1194,6 +1237,8 @@ export class VetPageComponent implements OnInit {
 
   // Methods
   ngOnInit(): void {
+    // Ubicación de referencia para el filtro global de distancia
+    this.searchRadius.resolveOrigin().subscribe();
     this.loadVets();
   }
 

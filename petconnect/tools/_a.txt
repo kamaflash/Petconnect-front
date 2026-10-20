@@ -1,0 +1,40 @@
+1|/* eslint-disable import/order */
+2|import { Component, inject, signal, OnInit, OnDestroy, computed, HostListener } from '@angular/core';
+3|import { CommonModule } from '@angular/common';
+4|import { ButtonModule } from 'primeng/button';
+5|import { MenuModule } from 'primeng/menu';
+6|import { MenuItem } from 'primeng/api';
+7|import { ThemeService } from '../../../infrastructure/services/theme.service';
+8|import { TooltipModule } from 'primeng/tooltip';
+9|import { ModalComponent } from '../modal/modal';
+10|import { LoginPageComponent } from "../../../../auth/presentation/pages/login-page.component";
+11|import { Router } from '@angular/router';
+12|import { AvatarModule } from 'primeng/avatar';
+13|import { AuthService } from '../../../../auth/infrastructure/services/auth.service';
+14|import { WebSocketService } from '../../../infrastructure/websocket/websocket.service';
+15|import { RippleModule } from 'primeng/ripple';
+16|import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
+17|import { Subject, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs';
+18|import { GlobalSearchService, SearchResult } from '../../../infrastructure/services/global-search.service';
+19|/* eslint-enable import/order */
+20|
+21|@Component({
+22|  selector: 'app-header',
+23|  standalone: true,
+24|  imports: [
+25|    CommonModule,
+26|    ButtonModule,
+27|    MenuModule,
+28|    TooltipModule,
+29|    ModalComponent,
+30|    LoginPageComponent,
+31|    AvatarModule,
+32|    RippleModule,
+33|    TranslocoModule,
+34|  ],
+35|  template: `
+36|    <header class="app-header" [class.has-sidebar]="isLoggedIn()" [class.no-sidebar]="!isLoggedIn()">
+37|      <div class="header-content">
+38|        <!-- Keep the brand in the header only where the desktop sidebar is hidden. -->
+39|        <div class="header-left">
+40|           <div class="logo-container mobile-header-brand" routerLink="/" style="cursor: pointer;">

@@ -19,7 +19,7 @@ import { BadgeModule } from 'primeng/badge';
 import { LocationPickerComponent } from '../../../components/location-picker/location-picker.component';
 
 // Tipos de campo soportado
-export type FormFieldType = 'input' | 'number' | 'date' | 'select' | 'multiselect' | 'textarea' | 'checkbox' | 'radio' | 'password' | 'file' | 'location';
+export type FormFieldType = 'input' | 'number' | 'date' | 'select' | 'multiselect' | 'textarea' | 'checkbox' | 'checkgroup' | 'radio' | 'password' | 'file' | 'location';
 
 // Interfaz para opciones de select y radio
 export interface FormFieldOption {
@@ -243,6 +243,24 @@ export interface DynamicFormConfig {
                       [class.ng-invalid]="isFieldInvalid(field.key)"
                       [class.ng-dirty]="isFieldDirty(field.key)"
                     />
+                  </div>
+                }
+                @case ('checkgroup') {
+                  <!-- Lista visible de opciones que se van marcando (valor: string[]). -->
+                  <div class="checkgroup">
+                    @for (option of getFieldOptions(field); track option.value) {
+                      <div class="checkgroup-option">
+                        <p-checkbox
+                          [inputId]="field.key + '-' + option.value"
+                          [formControlName]="field.key"
+                          [value]="option.value"
+                          [disabled]="option.disabled || field.disabled || false"
+                        />
+                        <label [for]="field.key + '-' + option.value" class="checkgroup-label">
+                          {{ option.label }}
+                        </label>
+                      </div>
+                    }
                   </div>
                 }
                 @case ('radio') {
@@ -491,6 +509,25 @@ export interface DynamicFormConfig {
       padding: 0.5rem 0;
     }
 
+    .checkgroup {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 0.5rem 1rem;
+      padding: 0.5rem 0;
+    }
+
+    .checkgroup-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .checkgroup-label {
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: var(--bitbucket-text-primary);
+    }
+
     .radio-group {
       display: flex;
       flex-direction: column;
@@ -633,10 +670,28 @@ export interface DynamicFormConfig {
 
     :host ::ng-deep .p-fileupload {
       width: 100%;
+      background: var(--surface-section);
+      background-color: var(--surface-section);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem;
     }
 
-        :host ::ng-deep .p-fileupload-content {
+    :host ::ng-deep .p-fileupload-buttonbar {
+      background: var(--surface-section);
+      background-color: var(--surface-section);
+      border: 0;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      padding: 0 0 0.5rem 0;
+    }
+
+    :host ::ng-deep .p-fileupload-content {
       padding: 0;
+      background: var(--surface-section);
+      background-color: var(--surface-section);
+      border: 1px solid var(--surface-border);
+      border-top: 0;
+      border-radius: 0 0 var(--radius-sm) var(--radius-sm);
     }
 
         /* DatePicker panel: asegurar z-index e posición correcta para que non se vea cortado */
@@ -834,7 +889,16 @@ export class DynamicFormComponent implements OnInit, OnChanges, OnDestroy {
 
       if (field.validation) {
         if (field.validation.required) {
-          validators.push(Validators.required);
+          if (field.type === 'checkgroup') {
+            // Validators.required no sirve para arrays: [] lo pasa. Se exige
+            // al menos una opción marcada reutilizando el error 'required'.
+            validators.push((control: AbstractControl) => {
+              const value = control.value;
+              return Array.isArray(value) && value.length > 0 ? null : { required: true };
+            });
+          } else {
+            validators.push(Validators.required);
+          }
         }
         if (field.validation.minLength !== undefined) {
           validators.push(Validators.minLength(field.validation.minLength));
@@ -931,6 +995,8 @@ export class DynamicFormComponent implements OnInit, OnChanges, OnDestroy {
       case 'checkbox':
         return false;
       case 'multiselect':
+        return [];
+      case 'checkgroup':
         return [];
       case 'number':
         return null;

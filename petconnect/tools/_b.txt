@@ -1,0 +1,110 @@
+301|        if (!this.overlayVisible) {
+302|            if (this.destroyCallback) {
+303|                this.destroyCallback();
+304|                this.destroyCallback = null;
+305|            }
+306|            if (this.overlaySubscription) {
+307|                this.overlaySubscription.unsubscribe();
+308|            }
+309|            if (this.autoZIndex) {
+310|                ZIndexUtils.clear(this.container);
+311|            }
+312|            this.onContainerDestroy();
+313|            this.onHide.emit({});
+314|            this.render = false;
+315|            this.container = null;
+316|        }
+317|    }
+318|    focus() {
+319|        let focusable = findSingle(this.container, '[autofocus]');
+320|        if (focusable) {
+321|            this.zone.runOutsideAngular(() => {
+322|                setTimeout(() => focusable.focus(), 5);
+323|            });
+324|        }
+325|    }
+326|    /**
+327|     * Hides the panel.
+328|     * @group Method
+329|     */
+330|    hide() {
+331|        this.overlayVisible = false;
+332|        this.cd.markForCheck();
+333|    }
+334|    onCloseClick(event) {
+335|        this.hide();
+336|        event.preventDefault();
+337|    }
+338|    onEscapeKeydown(_event) {
+339|        this.hide();
+340|    }
+341|    onWindowResize() {
+342|        if (this.overlayVisible && !isTouchDevice()) {
+343|            this.hide();
+344|        }
+345|    }
+346|    bindDocumentResizeListener() {
+347|        if (isPlatformBrowser(this.platformId)) {
+348|            if (!this.documentResizeListener) {
+349|                const window = this.document.defaultView;
+350|                this.documentResizeListener = this.renderer.listen(window, 'resize', this.onWindowResize.bind(this));
+351|            }
+352|        }
+353|    }
+354|    unbindDocumentResizeListener() {
+355|        if (this.documentResizeListener) {
+356|            this.documentResizeListener();
+357|            this.documentResizeListener = null;
+358|        }
+359|    }
+360|    bindScrollListener() {
+361|        if (isPlatformBrowser(this.platformId)) {
+362|            if (!this.scrollHandler) {
+363|                this.scrollHandler = new ConnectedOverlayScrollHandler(this.target, () => {
+364|                    if (this.overlayVisible) {
+365|                        this.hide();
+366|                    }
+367|                });
+368|            }
+369|            this.scrollHandler.bindScrollListener();
+370|        }
+371|    }
+372|    unbindScrollListener() {
+373|        if (this.scrollHandler) {
+374|            this.scrollHandler.unbindScrollListener();
+375|        }
+376|    }
+377|    onContainerDestroy() {
+378|        if (!this.cd.destroyed) {
+379|            this.target = null;
+380|        }
+381|        this.unbindDocumentClickListener();
+382|        this.unbindDocumentResizeListener();
+383|        this.unbindScrollListener();
+384|    }
+385|    onDestroy() {
+386|        if (this.scrollHandler) {
+387|            this.scrollHandler.destroy();
+388|            this.scrollHandler = null;
+389|        }
+390|        if (this.container && this.autoZIndex) {
+391|            ZIndexUtils.clear(this.container);
+392|        }
+393|        if (!this.cd.destroyed) {
+394|            this.target = null;
+395|        }
+396|        this.destroyCallback = null;
+397|        if (this.container) {
+398|            this.restoreAppend();
+399|            this.onContainerDestroy();
+400|        }
+401|        if (this.overlaySubscription) {
+402|            this.overlaySubscription.unsubscribe();
+403|        }
+404|    }
+405|    static ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "21.2.13", ngImport: i0, type: Popover, deps: null, target: i0.ɵɵFactoryTarget.Component });
+406|    static ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "21.2.13", type: Popover, isStandalone: true, selector: "p-popover", inputs: { ariaLabel: { classPropertyName: "ariaLabel", publicName: "ariaLabel", isSignal: false, isRequired: false, transformFunction: null }, ariaLabelledBy: { classPropertyName: "ariaLabelledBy", publicName: "ariaLabelledBy", isSignal: false, isRequired: false, transformFunction: null }, dismissable: { classPropertyName: "dismissable", publicName: "dismissable", isSignal: false, isRequired: false, transformFunction: booleanAttribute }, style: { classPropertyName: "style", publicName: "style", isSignal: false, isRequired: false, transformFunction: null }, styleClass: { classPropertyName: "styleClass", publicName: "styleClass", isSignal: false, isRequired: false, transformFunction: null }, appendTo: { classPropertyName: "appendTo", publicName: "appendTo", isSignal: true, isRequired: false, transformFunction: null }, autoZIndex: { classPropertyName: "autoZIndex", publicName: "autoZIndex", isSignal: false, isRequired: false, transformFunction: booleanAttribute }, ariaCloseLabel: { classPropertyName: "ariaCloseLabel", publicName: "ariaCloseLabel", isSignal: false, isRequired: false, transformFunction: null }, baseZIndex: { classPropertyName: "baseZIndex", publicName: "baseZIndex", isSignal: false, isRequired: false, transformFunction: numberAttribute }, focusOnShow: { classPropertyName: "focusOnShow", publicName: "focusOnShow", isSignal: false, isRequired: false, transformFunction: booleanAttribute }, showTransitionOptions: { classPropertyName: "showTransitionOptions", publicName: "showTransitionOptions", isSignal: false, isRequired: false, transformFunction: null }, hideTransitionOptions: { classPropertyName: "hideTransitionOptions", publicName: "hideTransitionOptions", isSignal: false, isRequired: false, transformFunction: null }, motionOptions: { classPropertyName: "motionOptions", publicName: "motionOptions", isSignal: true, isRequired: false, transformFunction: null } }, outputs: { onShow: "onShow", onHide: "onHide" }, host: { listeners: { "document:keydown.escape": "onEscapeKeydown($event)" } }, providers: [PopoverStyle, { provide: POPOVER_INSTANCE, useExisting: Popover }, { provide: PARENT_INSTANCE, useExisting: Popover }], queries: [{ propertyName: "contentTemplate", first: true, predicate: ["content"] }, { propertyName: "templates", predicate: PrimeTemplate }], usesInheritance: true, hostDirectives: [{ directive: i1.Bind }], ngImport: i0, template: `
+407|        @if (render) {
+408|            <div
+409|                [pBind]="ptm('root')"
+410|                [class]="cn(cx('root'), styleClass)"

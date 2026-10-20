@@ -32,7 +32,7 @@ import { Subscription, debounceTime, distinctUntilChanged, switchMap, catchError
         <div class="search-section">
           <p-autoComplete
             [(ngModel)]="searchQueryValue"
-            [suggestions]="suggestions()"
+            [suggestions]="suggestions"
             (completeMethod)="onSearch($event)"
             (onSelect)="onAddressSelect($event)"
             [placeholder]="this.i18n.translate('locationPicker.searchPlaceholder')"
@@ -291,7 +291,7 @@ export class LocationPickerComponent implements OnInit, OnChanges, OnDestroy {
   searchQuery = signal<string>('');
   searchQueryValue: string = '';
   selectedAddress = signal<string>('');
-  suggestions = signal<AddressSuggestion[]>([]);
+  suggestions: AddressSuggestion[] = [];
   selectedLocation = signal<GeocodingResult | null>(null);
   loading = signal(false);
   error = signal<string | null>(null);
@@ -438,19 +438,19 @@ export class LocationPickerComponent implements OnInit, OnChanges, OnDestroy {
     const query = event.query || event;
 
     if (!query || query.length < 3) {
-      this.suggestions.set([]);
+      this.suggestions = [];
       return;
     }
 
     this.loading.set(true);
     this.geolocationService.autocompleteAddress(query, 5).subscribe({
       next: (results: AddressSuggestion[]) => {
-        this.suggestions.set(results);
+        this.suggestions = results;
         this.loading.set(false);
       },
       error: (err: any) => {
         console.error('Error en búsqueda de direcciones:', err);
-        this.suggestions.set([]);
+        this.suggestions = [];
         this.loading.set(false);
       }
     });

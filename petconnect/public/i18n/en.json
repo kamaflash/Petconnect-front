@@ -322,7 +322,15 @@
     "logout": "Log out",
     "access": "Account",
     "login": "Sign in",
-    "register": "Register"
+    "register": "Register",
+    "searchPlaceholder": "Search users, pets, services or events...",
+    "tooltipSearch": "Search",
+    "searchResults": "Results",
+    "searchNoResults": "No results found",
+    "searchTypeUser": "User",
+    "searchTypePet": "Pet",
+    "searchTypeService": "Service",
+    "searchTypeEvent": "Event"
   },
   "settings": {
     "title": "Settings",
@@ -611,6 +619,20 @@
       "cancelled": "Request cancelled",
       "cancelledDetail": "Your profile type remains unchanged.",
       "error": "Could not process the type change request."
+    },
+    "services": {
+      "consultations": "Consultations",
+      "vaccinations": "Vaccinations",
+      "deworming": "Deworming",
+      "microchip": "Microchip",
+      "surgery": "Surgery",
+      "emergency": "Emergency",
+      "dentistry": "Dentistry",
+      "laboratory": "Laboratory",
+      "imaging": "Imaging",
+      "nutrition": "Nutrition",
+      "grooming": "Grooming",
+      "boarding": "Boarding"
     }
   },
   "adoptions": {
@@ -1503,5 +1525,62 @@
   },
   "tableCard": {
     "search": "Search..."
+  },
+  "onboarding": {
+    "title": "Complete your profile",
+    "subtitle": "Tell us who you are so we can personalize your experience.",
+    "stepType": "Account type",
+    "stepProfile": "Your details",
+    "chooseType": "What type of account do you want to create?",
+    "chooseTypeHint": "Select the role that best fits you.",
+    "continue": "Continue",
+    "yourData": "Your personal details",
+    "yourDataHint": "Fill in the required fields to complete your registration.",
+    "types": {
+      "user": "Individual user",
+      "userDesc": "Pet owner looking to adopt or hire services",
+      "vet": "Veterinarian",
+      "vetDesc": "Licensed animal health professional",
+      "shelter": "Shelter",
+      "shelterDesc": "Animal rescue and adoption organization",
+      "trainer": "Trainer",
+      "trainerDesc": "Dog training and education specialist",
+      "seller": "Seller",
+      "sellerDesc": "Store or pet products business"
+    },
+    "fields": {
+      "firstName": "First name",
+      "firstNamePlaceholder": "Your first name",
+      "lastName": "Last name",
+      "lastNamePlaceholder": "Your last name",
+      "location": "Location",
+      "locationPlaceholder": "Select your location on the map",
+      "licenseNumber": "License number",
+      "licensePlaceholder": "Veterinary license number",
+      "licenseHint": "Your veterinary board registration number",
+      "services": "Services you offer",
+      "charityNumber": "Entity number",
+      "charityPlaceholder": "Tax ID or registration number",
+      "charityHint": "Shelter identification code",
+      "specialty": "Specialty",
+      "specialtyPlaceholder": "E.g. puppy training",
+      "storeName": "Store name",
+      "storePlaceholder": "Name of your business",
+      "phone": "Phone",
+      "bio": "Bio",
+      "bioPlaceholder": "Tell us about yourself...",
+      "website": "Website"
+    },
+    "optional": "Optional details",
+    "back": "Back",
+    "finish": "Complete registration",
+    "errors": {
+      "missingFields": "Please fill in all required fields.",
+      "generic": "An error occurred while saving your details. Please try again."
+    },
+    "toasts": {
+      "success": "Registration complete",
+      "successDetail": "Your profile is ready. Welcome to PetConnect!"
+    }
   }
 }

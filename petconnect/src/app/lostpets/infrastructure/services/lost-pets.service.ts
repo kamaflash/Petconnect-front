@@ -2,6 +2,11 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import {
+  PageRequest,
+  PageResponse,
+  pageParams,
+} from '../../../shared/infrastructure/http/page-response';
 
 /** Estados del ciclo de vida de un aviso (coinciden con el backend). */
 export type LostPetStatus = 'LOST' | 'FOUND' | 'REUNITED' | 'CLOSED';
@@ -69,7 +74,7 @@ export interface CreateLostPetSighting {
 }
 
 /** Filtros de búsqueda: especie, estado, rango de fechas y proximidad. */
-export interface LostPetFilters {
+export interface LostPetFilters extends PageRequest {
   species?: string;
   status?: LostPetStatus;
   from?: string;
@@ -84,8 +89,12 @@ export class LostPetsService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = environment.apiUrl;
 
-  search(filters: LostPetFilters = {}): Observable<LostPetReport[]> {
-    let params = new HttpParams();
+  /**
+   * Búsqueda paginada (10×10 por defecto, `createdAt` DESC en servidor).
+   * Cada cambio de filtro debe pasar `page: 0`.
+   */
+  search(filters: LostPetFilters = {}): Observable<PageResponse<LostPetReport>> {
+    let params = pageParams(new HttpParams(), filters);
     if (filters.species) params = params.set('species', filters.species);
     if (filters.status) params = params.set('status', filters.status);
     if (filters.from) params = params.set('from', filters.from);
@@ -93,15 +102,17 @@ export class LostPetsService {
     if (filters.latitude != null) params = params.set('latitude', String(filters.latitude));
     if (filters.longitude != null) params = params.set('longitude', String(filters.longitude));
     if (filters.radiusKm != null) params = params.set('radiusKm', String(filters.radiusKm));
-    return this.http.get<LostPetReport[]>(`${this.apiUrl}/lost-pets`, { params });
+    return this.http.get<PageResponse<LostPetReport>>(`${this.apiUrl}/lost-pets`, { params });
   }
 
   getById(id: string): Observable<LostPetReport> {
     return this.http.get<LostPetReport>(`${this.apiUrl}/lost-pets/${id}`);
   }
 
-  getMyReports(): Observable<LostPetReport[]> {
-    return this.http.get<LostPetReport[]>(`${this.apiUrl}/lost-pets/mine`);
+  getMyReports(pagination: PageRequest = {}): Observable<PageResponse<LostPetReport>> {
+    return this.http.get<PageResponse<LostPetReport>>(`${this.apiUrl}/lost-pets/mine`, {
+      params: pageParams(new HttpParams(), pagination),
+    });
   }
 
   create(request: CreateLostPetReport): Observable<LostPetReport> {
@@ -120,8 +131,14 @@ export class LostPetsService {
     return this.http.delete<void>(`${this.apiUrl}/lost-pets/${id}`);
   }
 
-  getSightings(id: string): Observable<LostPetSighting[]> {
-    return this.http.get<LostPetSighting[]>(`${this.apiUrl}/lost-pets/${id}/sightings`);
+  getSightings(
+    id: string,
+    pagination: PageRequest = {},
+  ): Observable<PageResponse<LostPetSighting>> {
+    return this.http.get<PageResponse<LostPetSighting>>(
+      `${this.apiUrl}/lost-pets/${id}/sightings`,
+      { params: pageParams(new HttpParams(), pagination) },
+    );
   }
 
   addSighting(id: string, request: CreateLostPetSighting): Observable<LostPetSighting> {

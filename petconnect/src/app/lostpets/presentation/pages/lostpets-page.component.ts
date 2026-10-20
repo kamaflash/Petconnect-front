@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -14,7 +14,8 @@ import { LostPetSightingModalComponent } from '../components/lostpet-sighting-mo
 import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { GeolocationService } from '../../../shared/services/geolocation.service';
-import { LostPetsService, LostPetReport, LostPetStatus, CreateLostPetReport } from '../../infrastructure/services/lost-pets.service';
+import { SearchRadiusService } from '../../../shared/services/search-radius.service';
+import { LostPetsService, LostPetReport, LostPetStatus } from '../../infrastructure/services/lost-pets.service';
 
 /** Especies ofrecidas en el filtro, alineadas con el enum del backend. */
 const SPECIES = [
@@ -38,6 +39,7 @@ const SPECIES = [
     LostPetSightingModalComponent,
     PageHeadingCardComponent,
     TabsComponent,
+    RouterLink,
   ],
   providers: [MessageService],
   template: `
@@ -63,7 +65,7 @@ const SPECIES = [
             </span>
             <span class="filters-summary-meta">
               <span class="results-count">
-                {{ filteredReports().length }} {{ filteredReports().length === 1 ? 'reporte' : 'reportes' }}
+                {{ totalElements() }} {{ totalElements() === 1 ? 'reporte' : 'reportes' }}
               </span>
               <i class="pi pi-chevron-down accordion-chevron" aria-hidden="true"></i>
             </span>
@@ -78,7 +80,7 @@ const SPECIES = [
                 [showClear]="true"
                 [placeholder]="'lostPets.species' | transloco"
                 [(ngModel)]="speciesFilter"
-                (onChange)="load()"
+                (onChange)="reload()"
                 class="filter-select"
               />
             </div>
@@ -91,7 +93,7 @@ const SPECIES = [
                 [showClear]="true"
                 [placeholder]="'lostPets.status' | transloco"
                 [(ngModel)]="statusFilter"
-                (onChange)="load()"
+                (onChange)="reload()"
                 class="filter-select"
               />
             </div>
@@ -102,7 +104,7 @@ const SPECIES = [
                   type="date"
                   class="form-input"
                   [(ngModel)]="fromFilter"
-                  (change)="load()"
+                  (change)="reload()"
                   [attr.aria-label]="'lostPets.lostDate' | transloco"
                 />
                 <span aria-hidden="true">–</span>
@@ -110,7 +112,7 @@ const SPECIES = [
                   type="date"
                   class="form-input"
                   [(ngModel)]="toFilter"
-                  (change)="load()"
+                  (change)="reload()"
                   [attr.aria-label]="'lostPets.lostDate' | transloco"
                 />
               </div>
@@ -118,15 +120,18 @@ const SPECIES = [
             <div class="filter-group">
               <label class="filter-label">&nbsp;</label>
               <div class="filter-actions">
-                <button
-                  type="button"
-                  pButton
-                  [icon]="nearbyOnly() ? 'pi pi-map-marker' : 'pi pi-compass'"
-                  [label]="'lostPets.nearby' | transloco"
-                  [class.p-button-primary]="nearbyOnly()"
-                  class="p-button-outlined"
-                  (click)="toggleNearby()"
-                ></button>
+                <a
+                  routerLink="/settings"
+                  class="radius-link"
+                  [title]="'distanceFilter.editRadius' | transloco"
+                >
+                  <i class="pi pi-map-marker" aria-hidden="true"></i>
+                  {{ 'distanceFilter.radiusLabel' | transloco }}: @if (searchRadius.isUnlimited()) {
+                    {{ 'distanceFilter.unlimited' | transloco }}
+                  } @else {
+                    {{ searchRadius.radiusKm() }} km
+                  }
+                </a>
                 <button
                   type="button"
                   pButton
@@ -143,7 +148,7 @@ const SPECIES = [
         <div class="tab-header">
           <h2 class="tab-title">
             {{ activeTab() === 'found' ? ('lostPets.tabFound' | transloco) : ('lostPets.tabLost' | transloco) }}
-            <span class="tab-count">({{ filteredReports().length }})</span>
+            <span class="tab-count">({{ totalElements() }})</span>
           </h2>
           <button
             type="button"
@@ -172,7 +177,7 @@ const SPECIES = [
             <i class="pi pi-exclamation-triangle" aria-hidden="true"></i>
             <h2>{{ 'lostPets.errorTitle' | transloco }}</h2>
             <p>{{ error() }}</p>
-            <button type="button" pButton [label]="'lostPets.retry' | transloco" (click)="load()"></button>
+            <button type="button" pButton [label]="'lostPets.retry' | transloco" (click)="reload()"></button>
           </section>
         } @else if (filteredReports().length === 0) {
           <section class="state-card">
@@ -238,6 +243,19 @@ const SPECIES = [
               </article>
             }
           </div>
+          @if (!lastPage()) {
+            <div class="load-more">
+              <button
+                type="button"
+                pButton
+                class="p-button-outlined"
+                icon="pi pi-plus"
+                [label]="'common.loadMore' | transloco"
+                [loading]="loadingMore()"
+                (click)="loadMore()"
+              ></button>
+            </div>
+          }
         }
       </div>
 
@@ -305,6 +323,14 @@ const SPECIES = [
       min-height: 2.75rem;
     }
     .filter-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .radius-link {
+      display: inline-flex; align-items: center; gap: .4rem; min-height: 2.75rem;
+      padding: .5rem .85rem; border: 1px solid var(--surface-border); border-radius: var(--radius-sm);
+      background: var(--surface-card); color: var(--text-primary); font-size: .85rem;
+      font-weight: 600; text-decoration: none; box-sizing: border-box;
+    }
+    .radius-link i { color: var(--primary-color); }
+    .radius-link:hover { background: var(--surface-hover); }
     .date-range { display: flex; align-items: center; gap: 0.4rem; }
     .form-input {
       width: 100%; padding: 0.5rem 0.65rem; border: 1px solid var(--surface-border);
@@ -346,6 +372,7 @@ const SPECIES = [
     .state-card i { font-size: 2rem; color: var(--text-secondary); }
     .state-card h2 { margin: 0; font-size: 1.1rem; }
     .state-card p { margin: 0 0 0.5rem; color: var(--text-secondary); }
+    .load-more { display: flex; justify-content: center; padding: 1.25rem 0 .5rem; }
     @media (max-width: 640px) {
       .filter-group { flex: 1 1 100%; }
       .reports-grid { grid-template-columns: 1fr; }
@@ -360,16 +387,21 @@ export class LostPetsPageComponent implements OnInit {
   private readonly messages = inject(MessageService);
 
   readonly geolocation = inject(GeolocationService);
+  readonly searchRadius = inject(SearchRadiusService);
 
   readonly reports = signal<LostPetReport[]>([]);
   readonly loading = signal(false);
+  readonly loadingMore = signal(false);
   readonly error = signal<string | null>(null);
-  readonly nearbyOnly = signal(false);
   readonly dialogOpen = signal(false);
   readonly sightingDialogOpen = signal(false);
   readonly editing = signal<LostPetReport | null>(null);
-  readonly userCoordinates = signal<{ lat: number; lng: number } | null>(null);
   readonly activeTab = signal<'found' | 'lost'>('found');
+
+  /** Paginación servidor: total y si queda más por cargar. */
+  readonly totalElements = signal(0);
+  readonly lastPage = signal(true);
+  private currentPage = 0;
 
   readonly tabs = computed<Tab[]>(() => [
     {
@@ -408,35 +440,66 @@ export class LostPetsPageComponent implements OnInit {
   ]);
 
   ngOnInit(): void {
-    this.load();
+    // Primero resolvemos la ubicación de referencia (GPS → dirección del
+    // perfil) para que la búsqueda aplique ya el radio global de Configuración.
+    this.searchRadius.resolveOrigin().subscribe({
+      next: () => this.load(),
+      error: () => this.load(),
+    });
   }
 
   onTabChange(tabId: string): void {
     this.activeTab.set(tabId as 'found' | 'lost');
+    // Las pestañas son tabs de estado: recargar desde la página 0.
+    this.reload();
   }
 
-  load(): void {
-    this.loading.set(true);
+  /** Recarga desde la página 0 (cambios de filtro, pestaña o reintento). */
+  reload(): void {
+    this.currentPage = 0;
+    this.load(false);
+  }
+
+  /** Carga la siguiente página y la acumula (scroll infinito manual). */
+  loadMore(): void {
+    if (this.lastPage() || this.loadingMore()) return;
+    this.currentPage += 1;
+    this.load(true);
+  }
+
+  load(append = false): void {
+    if (append) {
+      this.loadingMore.set(true);
+    } else {
+      this.loading.set(true);
+    }
     this.error.set(null);
-    const coordinates = this.nearbyOnly() ? this.userCoordinates() : null;
+    // Radio global (Configuración) aplicado en el propio backend
+    const origin = this.searchRadius.userOrigin();
     this.lostPetsService
       .search({
+        page: this.currentPage,
         species: this.speciesFilter ?? undefined,
         status: this.statusFilter ?? undefined,
         from: this.fromFilter || undefined,
         to: this.toFilter || undefined,
-        latitude: coordinates?.lat,
-        longitude: coordinates?.lng,
-        radiusKm: coordinates ? 50 : undefined,
+        latitude: origin?.lat,
+        longitude: origin?.lng,
+        radiusKm: origin && !this.searchRadius.isUnlimited() ? this.searchRadius.radiusKm() : undefined,
       })
       .subscribe({
-        next: (reports) => {
-          this.reports.set(reports);
+        next: (page) => {
+          this.reports.set(append ? [...this.reports(), ...page.content] : page.content);
+          this.totalElements.set(page.totalElements);
+          this.lastPage.set(page.last);
           this.loading.set(false);
+          this.loadingMore.set(false);
         },
         error: () => {
+          if (!append) this.reports.set([]);
           this.error.set(this.i18n.translate('lostPets.error'));
           this.loading.set(false);
+          this.loadingMore.set(false);
         },
       });
   }
@@ -446,27 +509,7 @@ export class LostPetsPageComponent implements OnInit {
     this.statusFilter = null;
     this.fromFilter = '';
     this.toFilter = '';
-    this.load();
-  }
-
-  toggleNearby(): void {
-    if (this.nearbyOnly()) {
-      this.nearbyOnly.set(false);
-      this.load();
-      return;
-    }
-    this.geolocation.getCurrentPosition().subscribe({
-      next: (coords) => {
-        this.userCoordinates.set(coords);
-        this.nearbyOnly.set(true);
-        this.load();
-      },
-      error: (err: Error) => this.messages.add({
-        severity: 'warn',
-        summary: this.i18n.translate('lostPets.geolocationErrorTitle'),
-        detail: err.message,
-      }),
-    });
+    this.reload();
   }
 
   openCreate(): void {
@@ -492,12 +535,17 @@ export class LostPetsPageComponent implements OnInit {
     this.sightingDialogOpen.set(false);
   }
 
-  onSightingSubmit(_event: { payload: CreateLostPetReport; files: any[] }): void {
+  onSightingSubmit(event: { report: LostPetReport; files: any[] }): void {
     this.closeSightingDialog();
     // El avistamiento se crea con estado FOUND: mostrarlo en la pestaña Avistamientos.
     this.activeTab.set('found');
-    // Recargar tras un tick para que el cambio de detección aplique la nueva pestaña y los datos.
-    setTimeout(() => this.load());
+    // Inserción optimista: el nuevo avistamiento aparece al instante sin esperar al backend.
+    this.reports.update((current) =>
+      current.some((r) => r.id === event.report.id) ? current : [event.report, ...current],
+    );
+    this.totalElements.update((total) => total + 1);
+    // Recarga de confirmación contra el backend (consistencia eventual / filtros activos).
+    this.reload();
   }
 
   goToDetail(report: LostPetReport): void {
@@ -534,8 +582,7 @@ export class LostPetsPageComponent implements OnInit {
     this.closeDialog();
     // El reporte se crea con estado LOST: mostrarlo en la pestaña Perdidas.
     this.activeTab.set('lost');
-    // Recargar tras un tick para que el cambio de detección aplique la nueva pestaña y los datos.
-    setTimeout(() => this.load());
+    this.reload();
   }
 
   statusLabel(status: LostPetStatus): string {

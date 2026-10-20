@@ -1,5 +1,5 @@
 /* eslint-disable import/order */
-import { Component, inject, signal, OnInit, OnDestroy, computed } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, computed, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
@@ -13,7 +13,10 @@ import { AvatarModule } from 'primeng/avatar';
 import { AuthService } from '../../../../auth/infrastructure/services/auth.service';
 import { WebSocketService } from '../../../infrastructure/websocket/websocket.service';
 import { RippleModule } from 'primeng/ripple';
+import { PopoverModule, Popover } from 'primeng/popover';
 import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
+import { Subject, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs';
+import { GlobalSearchService, SearchResult } from '../../../infrastructure/services/global-search.service';
 /* eslint-enable import/order */
 
 @Component({
@@ -28,6 +31,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
     LoginPageComponent,
     AvatarModule,
     RippleModule,
+    PopoverModule,
     TranslocoModule,
   ],
   template: `
@@ -38,7 +42,69 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
            <div class="logo-container mobile-header-brand" routerLink="/" style="cursor: pointer;">
                <img src="https://res.cloudinary.com/dxjcjee8f/image/upload/v1784374711/m9caz3kr9yusdgis1k42.png" alt="Pawly" class="logo-image" />
            </div>
-        </div>
+
+            <!-- Búsqueda global -->
+            <div class="header-search">
+              <input
+                #searchInput
+                type="text"
+                class="header-search-input"
+                [placeholder]="'header.searchPlaceholder' | transloco"
+                [value]="searchQuery()"
+                (input)="onSearchInput($event)"
+                (focus)="onSearchFocus()"
+                autocomplete="off"
+              />
+              <span class="header-search-icon">
+                <i class="pi pi-search"></i>
+              </span>
+            </div>
+
+            <!-- Resultados de búsqueda: overlay anclado al campo de búsqueda -->
+            <p-popover
+              #searchPopover
+              styleClass="header-search-popover"
+              appendTo="body"
+              [dismissable]="true"
+              [focusOnShow]="false"
+              (onHide)="onSearchOverlayHidden()"
+            >
+              <div class="header-search-results">
+                @if (searchQuery().trim()) {
+                  <div class="search-results-header">
+                    <span>{{ 'header.searchResults' | transloco }}</span>
+                    <button type="button" class="clear-search-btn" (click)="clearSearch()">
+                      <i class="pi pi-times"></i>
+                    </button>
+                  </div>
+                  @if (searchResults().length === 0) {
+                    <div class="search-result-empty">
+                      {{ 'header.searchNoResults' | transloco }}
+                    </div>
+                  } @else {
+                    @for (result of searchResults(); track result.type + result.id) {
+                      <button type="button" class="search-result-item" (click)="onSelectResult(result)">
+                        @if (result.image) {
+                          <img [src]="result.image" [alt]="result.title" class="search-result-img" />
+                        } @else {
+                          <span class="search-result-img search-result-img-placeholder">
+                            <i class="pi" [class]="typeIcon(result.type)"></i>
+                          </span>
+                        }
+                        <div class="search-result-info">
+                          <div class="search-result-title">{{ result.title }}</div>
+                          @if (result.subtitle) {
+                            <div class="search-result-subtitle">{{ result.subtitle }}</div>
+                          }
+                        </div>
+                        <span class="search-result-type">{{ typeLabel(result.type) }}</span>
+                      </button>
+                    }
+                  }
+                }
+              </div>
+            </p-popover>
+         </div>
 
         <!-- Right: Actions -->
         <div class="header-right">
@@ -421,6 +487,163 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
       gap: 0.5rem;
     }
 
+    /* ===== GLOBAL SEARCH ===== */
+    .header-search {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: min(320px, 30vw);
+      margin-left: 1rem;
+    }
+
+    .header-search-input {
+      width: 100%;
+      height: 38px;
+      padding: 0 2.4rem 0 0.9rem;
+      border: 1px solid var(--surface-border);
+      border-radius: 999px;
+      background: var(--surface-card, transparent);
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .header-search-input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .header-search-input:focus {
+      border-color: var(--primary-color, #6366f1);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    .header-search-icon {
+      position: absolute;
+      right: 0.85rem;
+      color: var(--text-secondary);
+      pointer-events: none;
+      font-size: 0.85rem;
+    }
+
+    /* Panel de resultados: se renderiza dentro de p-popover (overlay en body). */
+    .header-search-results {
+      width: 380px;
+      max-width: min(380px, calc(100vw - 2rem));
+      max-height: 420px;
+      overflow-y: auto;
+      padding: 0.35rem;
+      background: var(--surface-card, #fff);
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md, 12px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+    }
+
+    .search-results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.35rem 0.5rem 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--surface-border);
+      margin-bottom: 0.25rem;
+    }
+
+    .clear-search-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0.2rem;
+      border-radius: 4px;
+    }
+
+    .clear-search-btn:hover {
+      background: var(--surface-hover, rgba(99, 102, 241, 0.1));
+      color: var(--text-primary);
+    }
+
+    .search-result-item {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      width: 100%;
+      padding: 0.5rem;
+      border: none;
+      border-radius: var(--radius-sm, 8px);
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .search-result-item:hover,
+    .search-result-item:focus-visible {
+      background: var(--surface-hover, rgba(99, 102, 241, 0.08));
+      outline: none;
+    }
+
+    .search-result-img {
+      width: 38px;
+      height: 38px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .search-result-img-placeholder {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-hover, rgba(99, 102, 241, 0.12));
+      color: var(--primary-color, #6366f1);
+      font-size: 0.95rem;
+    }
+
+    .search-result-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .search-result-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .search-result-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .search-result-type {
+      flex-shrink: 0;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: var(--surface-hover, rgba(99, 102, 241, 0.12));
+      color: var(--primary-color, #6366f1);
+      font-size: 0.62rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .search-result-empty {
+      padding: 1rem 0.5rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
     /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
       :host ::ng-deep .app-header.has-sidebar {
@@ -438,6 +661,9 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
       .mobile-actions {
         display: flex;
       }
+      .header-search {
+        display: none;
+      }
     }
   `]
 })
@@ -447,6 +673,7 @@ export class HeaderComponent implements OnInit {
   private readonly webSocket = inject(WebSocketService);
   private readonly router = inject(Router);
   private readonly transloco = inject(TranslocoService);
+  private readonly searchService = inject(GlobalSearchService);
 
   // ===== Estados =====
   isLoggedIn = computed(() => this.authService.isAuthenticated());
@@ -458,7 +685,15 @@ export class HeaderComponent implements OnInit {
   isDarkMode = signal(false);
   showLoginModal = signal(false);
 
-    menuItems: MenuItem[] = [];
+  
+  // ===== Búsqueda global =====
+  searchQuery = signal<string>('');
+  searchResults = signal<SearchResult[]>([]);
+  isSearchOpen = signal<boolean>(false);
+  private readonly searchDebounce = new Subject<string>();
+  private searchRequestId = 0;
+
+  menuItems: MenuItem[] = [];
 
   // ===== User Data =====
   userAvatar = computed(() => this.authService.user()?.avatarUrl || 'https://i.pravatar.cc/150?img=1');
@@ -473,12 +708,109 @@ export class HeaderComponent implements OnInit {
   unreadMessagesDisplay = computed(() =>
     this.unreadMessages() > 99 ? '99+' : String(this.unreadMessages())
   );
-    ngOnInit(): void {
+  
+  // ===== Búsqueda global =====
+  @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('searchPopover') searchPopover?: Popover;
+
+  onSearchInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target?.value ?? '';
+    this.searchQuery.set(value);
+    if (!value.trim()) {
+      this.searchResults.set([]);
+      this.closeSearchOverlay();
+      return;
+    }
+    this.openSearchOverlay();
+    this.searchDebounce.next(value);
+  }
+
+  /** Abre el overlay al enfocar el campo de búsqueda. */
+  onSearchFocus(): void {
+    if (this.searchQuery().trim()) {
+      this.openSearchOverlay();
+    }
+  }
+
+  private openSearchOverlay(): void {
+    const input = this.searchInput?.nativeElement;
+    const popover = this.searchPopover;
+    if (!input || !popover) return;
+    this.isSearchOpen.set(true);
+    if (!popover.overlayVisible) {
+      popover.show(undefined, input);
+    }
+  }
+
+  private closeSearchOverlay(): void {
+    this.isSearchOpen.set(false);
+    const popover = this.searchPopover;
+    if (popover?.overlayVisible) {
+      popover.hide();
+    }
+  }
+
+  /** Se dispara cuando el overlay se oculta (click fuera, ESC, etc.). */
+  onSearchOverlayHidden(): void {
+    this.isSearchOpen.set(false);
+  }
+
+  onSelectResult(result: SearchResult): void {
+    this.searchQuery.set('');
+    this.searchResults.set([]);
+    this.closeSearchOverlay();
+    void this.router.navigateByUrl(result.route);
+  }
+
+  clearSearch(): void {
+    this.searchQuery.set('');
+    this.searchResults.set([]);
+    this.closeSearchOverlay();
+    this.searchInput?.nativeElement.focus();
+  }
+
+  typeLabel(type: SearchResult['type']): string {
+    const key = {
+      user: 'header.searchTypeUser',
+      pet: 'header.searchTypePet',
+      service: 'header.searchTypeService',
+      event: 'header.searchTypeEvent',
+    }[type];
+    return this.transloco.translate(key);
+  }
+
+  typeIcon(type: SearchResult['type']): string {
+    return {
+      user: 'pi-user',
+      pet: 'pi-heart',
+      service: 'pi-briefcase',
+      event: 'pi-calendar',
+    }[type];
+  }
+
+  // El cierre por clic fuera / ESC lo gestiona el propio popover (dismissable).
+
+  ngOnInit(): void {
     this.isDarkMode.set(this.themeService.isDarkMode());
     this.updateMenuItems();
     this.webSocket.connect();
     // Reconstruir el menú cuando cambie el idioma (rustle de texts TS).
     this.transloco.langChanges$.subscribe(() => this.updateMenuItems());
+    // Búsqueda global con debounce
+    this.searchDebounce
+      .pipe(
+        debounceTime(300),
+        distinctUntilChanged(),
+        switchMap((q) => {
+          const requestId = ++this.searchRequestId;
+          return this.searchService.search(q).pipe(
+            map((results) => (requestId === this.searchRequestId ? results : []))
+          );
+        })
+      )
+      .subscribe((results) => this.searchResults.set(results));
+
   }
 
   // ===== Theme =====
