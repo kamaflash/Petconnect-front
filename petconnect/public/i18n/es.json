@@ -1526,6 +1526,35 @@
   "tableCard": {
     "search": "Buscar..."
   },
+  "consent": {
+    "title": "Preferencias de cookies",
+    "description": "Usamos cookies estrictamente necesarias para mantener tu sesión (PC_AT, PC_RT) y protegerte frente a CSRF (XSRF-TOKEN). Las preferencias de idioma, tema y búsqueda solo se guardan en tu dispositivo si aceptas las cookies funcionales.",
+    "acceptAll": "Aceptar todas",
+    "onlyNecessary": "Solo necesarias",
+    "configure": "Configurar preferencias",
+    "preferencesTitle": "Elige qué cookies opcionales aceptas",
+    "necessaryTitle": "Estrictamente necesarias",
+    "necessaryDesc": "Sesión (PC_AT, PC_RT) y seguridad CSRF (XSRF-TOKEN). Siempre activas: sin ellas no puedes iniciar sesión.",
+    "necessaryLabel": "Sesión y seguridad (siempre activas)",
+    "alwaysOn": "Siempre activas",
+    "functionalTitle": "Funcionales",
+    "functionalDesc": "Idioma, tema y radio de búsqueda en este dispositivo (localStorage). Desactivadas por defecto.",
+    "functionalLabel": "Recordar idioma, tema y preferencias",
+    "savePreferences": "Guardar preferencias",
+    "back": "Volver"
+  },
+  "landing": {
+    "title": "El cuidado de tu compañero, en un solo lugar",
+    "subtitle": "Mascotas, citas, adopciones y comunidad: Pawly te acompaña en el día a día.",
+    "login": "Iniciar sesión",
+    "register": "Crear cuenta",
+    "feature1Title": "Familia y salud",
+    "feature1Desc": "Perfiles, pasaportes, vacunas y recordatorios de cuidado.",
+    "feature2Title": "Adopciones responsables",
+    "feature2Desc": "Descubre protectoras y sigue procesos de adopción transparentes.",
+    "feature3Title": "Comunidad",
+    "feature3Desc": "Comparte, pregunta y encuentra ayuda cerca de ti."
+  },
   "onboarding": {
     "title": "Completa tu perfil",
     "subtitle": "Cuéntanos quién eres para personalizar tu experiencia.",

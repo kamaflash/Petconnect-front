@@ -3,6 +3,7 @@ import { Observable, defer, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { ProfileService } from '../../profile/infrastructure/services/profile.service';
 import { Coordinates, GeolocationService } from './geolocation.service';
+import { FunctionalStorageService } from '../infrastructure/consent/functional-storage.service';
 
 /** Procedencia de la ubicación de referencia del usuario. */
 export type OriginSource = 'gps' | 'profile';
@@ -34,6 +35,7 @@ const UNLIMITED_RADIUS_KM = 0;
 export class SearchRadiusService {
   private readonly geolocation = inject(GeolocationService);
   private readonly profileService = inject(ProfileService);
+  private readonly storage = inject(FunctionalStorageService);
 
   readonly minRadius = MIN_RADIUS_KM;
   readonly maxRadius = MAX_RADIUS_KM;
@@ -78,7 +80,7 @@ export class SearchRadiusService {
   readonly geocodedLocations = computed(() => this.geocoded());
 
   /**
-   * Actualiza el radio y lo persiste en localStorage.
+   * Actualiza el radio y lo persiste (solo con consentimiento funcional).
    * `km <= 0` se interpreta como "sin límite" (0).
    */
   setRadius(km: number): void {
@@ -87,11 +89,7 @@ export class SearchRadiusService {
         ? UNLIMITED_RADIUS_KM
         : Math.min(MAX_RADIUS_KM, Math.max(MIN_RADIUS_KM, Math.round(km)));
     this.radiusKm.set(value);
-    try {
-      localStorage.setItem(STORAGE_KEY, String(value));
-    } catch {
-      // localStorage no disponible: el valor sigue vigente durante la sesión
-    }
+    this.storage.set(STORAGE_KEY, String(value));
   }
 
   /**
@@ -223,16 +221,13 @@ export class SearchRadiusService {
   }
 
   private readStoredRadius(): number {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw == null) return DEFAULT_RADIUS_KM;
-      const stored = Number(raw);
-      if (!Number.isFinite(stored)) return DEFAULT_RADIUS_KM;
-      if (stored === UNLIMITED_RADIUS_KM) return UNLIMITED_RADIUS_KM;
-      if (stored >= MIN_RADIUS_KM && stored <= MAX_RADIUS_KM) return Math.round(stored);
-    } catch {
-      // localStorage no disponible: usamos el valor por defecto
-    }
+    // Sin consentimiento funcional no se lee el radio guardado.
+    const raw = this.storage.get(STORAGE_KEY);
+    if (raw == null) return DEFAULT_RADIUS_KM;
+    const stored = Number(raw);
+    if (!Number.isFinite(stored)) return DEFAULT_RADIUS_KM;
+    if (stored === UNLIMITED_RADIUS_KM) return UNLIMITED_RADIUS_KM;
+    if (stored >= MIN_RADIUS_KM && stored <= MAX_RADIUS_KM) return Math.round(stored);
     return DEFAULT_RADIUS_KM;
   }
 }

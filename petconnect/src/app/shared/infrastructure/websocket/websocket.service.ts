@@ -53,9 +53,10 @@ export class WebSocketService {
 
   constructor() {
     // Mantener el contador global sincronizado mientras haya una sesión activa.
+    // La autenticación viaja en la cookie HttpOnly (handshake con credenciales).
     effect(() => {
-      const token = this.authService.token();
-      if (token) {
+      const user = this.authService.user();
+      if (user) {
         this.refreshUnreadCount();
         this.startUnreadCountSync();
         this.connect();
@@ -79,16 +80,14 @@ export class WebSocketService {
   }
 
   connect(): void {
-    const token = this.authService.token();
-    if (!token || this.client?.active) {
+    const user = this.authService.user();
+    if (!user || this.client?.active) {
       return;
     }
 
+    // Sin cabecera Authorization: la sesión viaja en la cookie HttpOnly.
     this.client = new Client({
       brokerURL: `${this.wsUrl}/ws`,
-      connectHeaders: {
-        Authorization: `Bearer ${token}`
-      },
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,

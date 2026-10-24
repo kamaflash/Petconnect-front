@@ -10,10 +10,18 @@ const getColorShades = (color: string) => ({
   active: color === '#f97316' ? '#c2410c' : color,
 });
 
-// Cargar color del tema desde localStorage
-// Si no hay guardado, usar el naranja por defecto.
-// Si es el verde antiguo (#94c748), migrar al naranja.
-const savedThemeColor = localStorage.getItem('theme-color');
+// Cargar color del tema inicial. Sin consentimiento funcional no se lee
+// la preferencia guardada: se usa el naranja por defecto (igual que el
+// ThemeService). El verde antiguo (#94c748) se migra siempre al naranja.
+// Intentar leer localStorage solo si el usuario aceptó funcionales.
+let savedThemeColor: string | null = null;
+try {
+  const raw = localStorage.getItem('petconnect-consent');
+  const parsed = raw ? JSON.parse(raw) as { version?: number; functional?: boolean } : null;
+  if (parsed?.version === 1 && parsed.functional === true) {
+    savedThemeColor = localStorage.getItem('theme-color');
+  }
+} catch { /* localStorage no disponible */ }
 const color = !savedThemeColor || savedThemeColor === '#94c748' ? DEFAULT_COLOR : savedThemeColor;
 const shades = getColorShades(color);
 

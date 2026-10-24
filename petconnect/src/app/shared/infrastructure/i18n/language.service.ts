@@ -1,6 +1,7 @@
 import { Injectable, computed, signal, inject } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import { DEFAULT_LANG, LANGUAGES, SupportedLang } from './language.provider';
+import { FunctionalStorageService } from '../consent/functional-storage.service';
 
 const STORAGE_KEY = 'petconnect-language';
 
@@ -14,6 +15,7 @@ const STORAGE_KEY = 'petconnect-language';
 })
 export class LanguageService {
   private readonly transloco = inject(TranslocoService);
+  private readonly storage = inject(FunctionalStorageService);
 
   /** Idioma activo, refleja Transloco.activeLang(). */
   readonly activeLang = this.transloco.activeLang;
@@ -38,17 +40,19 @@ export class LanguageService {
     }
   }
 
-  /** Cambia de idioma, persiste y refresca la UI. */
+  /** Cambia de idioma, persiste (si hay consentimiento funcional) y refresca la UI. */
   setLang(lang: SupportedLang): void {
     if (!this.availableLangs.includes(lang)) {
       return;
     }
-    localStorage.setItem(STORAGE_KEY, lang);
+    this.storage.set(STORAGE_KEY, lang);
     this.transloco.setActiveLang(lang);
   }
 
   private resolveInitialLang(): SupportedLang {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    // Sin consentimiento funcional no se lee el idioma guardado: se usa el
+    // del navegador o el de defecto (no se inicializan servicios opcionales).
+    const saved = this.storage.get(STORAGE_KEY);
     if (saved && this.availableLangs.includes(saved)) {
       return saved as SupportedLang;
     }

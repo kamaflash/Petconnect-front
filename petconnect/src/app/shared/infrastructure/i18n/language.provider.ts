@@ -15,18 +15,21 @@ export type SupportedLang = (typeof LANGUAGES)[number];
 export const DEFAULT_LANG: SupportedLang = 'es';
 
 const STORAGE_KEY = 'petconnect-language';
+const CONSENT_KEY = 'petconnect-consent';
 
 /**
- * Aplica el idioma guardado en localStorage (o el del navegador) justo después
- * de que Transloco quede registrado y antes de que la app renderice. Así el
- * idioma elegido en Ajustes sobrevive a recargas en cualquier página, sin
- * depender de que LanguageService se haya instanciado antes.
+ * Aplica el idioma guardado (o el del navegador) justo después
+ * de que Transloco quede registrado y antes de que la app renderice.
+ * Sin consentimiento funcional no se lee el idioma guardado.
  */
 function restoreSavedLang(): void {
   const transloco = inject(TranslocoService);
   let lang: string | null = null;
   try {
-    lang = localStorage.getItem(STORAGE_KEY);
+    // Gating: sin funcionales aceptadas no se lee el idioma guardado.
+    if (functionalAccepted()) {
+      lang = localStorage.getItem(STORAGE_KEY);
+    }
   } catch {
     // localStorage no disponible: usar el idioma por defecto.
   }
@@ -38,6 +41,18 @@ function restoreSavedLang(): void {
   }
   if (lang !== transloco.getActiveLang()) {
     transloco.setActiveLang(lang);
+  }
+}
+
+/** True si el consentimiento guardado acepta funcionales (versión 1). */
+function functionalAccepted(): boolean {
+  try {
+    const raw = localStorage.getItem(CONSENT_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as { version?: number; functional?: boolean };
+    return parsed?.version === 1 && parsed?.functional === true;
+  } catch {
+    return false;
   }
 }
 

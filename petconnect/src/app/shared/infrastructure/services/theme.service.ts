@@ -1,12 +1,14 @@
 import { Injectable } from '@angular/core';
 import { DOCUMENT } from '@angular/common';
 import { inject } from '@angular/core';
+import { FunctionalStorageService } from '../consent/functional-storage.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ThemeService {
   private readonly document = inject(DOCUMENT);
+  private readonly storage = inject(FunctionalStorageService);
 
   constructor() {
     const savedTheme = this.getSavedTheme();
@@ -19,9 +21,8 @@ export class ThemeService {
   toggleDarkMode(): void {
     const nextTheme = this.isDarkMode() ? 'light' : 'dark';
     this.applyTheme(nextTheme === 'dark');
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('petconnect-theme', nextTheme);
-    }
+    // Funcional: solo persiste con consentimiento explícito.
+    this.storage.set('petconnect-theme', nextTheme);
   }
 
   isDarkMode(): boolean {
@@ -43,11 +44,8 @@ export class ThemeService {
   }
 
   private getSavedTheme(): 'dark' | 'light' | null {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-
-    const savedTheme = window.localStorage.getItem('petconnect-theme');
+    // Sin consentimiento funcional no se lee el tema guardado (solo memoria).
+    const savedTheme = this.storage.get('petconnect-theme');
     return savedTheme === 'dark' || savedTheme === 'light' ? savedTheme : null;
   }
 

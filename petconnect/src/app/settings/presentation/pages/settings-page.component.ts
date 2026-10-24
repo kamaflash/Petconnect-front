@@ -12,6 +12,7 @@ import { SliderModule } from 'primeng/slider';
 import { ThemeService } from '../../../shared/infrastructure/services/theme.service';
 import { LanguageService } from '../../../shared/infrastructure/i18n/language.service';
 import { SearchRadiusService } from '../../../shared/services/search-radius.service';
+import { FunctionalStorageService } from '../../../shared/infrastructure/consent/functional-storage.service';
 import type { SupportedLang } from '../../../shared/infrastructure/i18n/language.provider';
 
 interface ThemeColor {
@@ -346,6 +347,7 @@ export class SettingsPageComponent implements OnInit {
   readonly i18n = inject(TranslocoService);
   private readonly themeService = inject(ThemeService);
   private readonly languageService = inject(LanguageService);
+  private readonly storage = inject(FunctionalStorageService);
   readonly searchRadius = inject(SearchRadiusService);
 
   selectedColor = signal('#f97316');
@@ -375,7 +377,7 @@ export class SettingsPageComponent implements OnInit {
   ngOnInit(): void {
     // Muestra la ubicación de referencia usada por el filtro de distancia
     this.searchRadius.resolveOrigin().subscribe();
-    const saved = localStorage.getItem('theme-color');
+    const saved = this.storage.get('theme-color') ?? null;
     if (saved) {
       // Migrar el verde de la identidad anterior al naranja por defecto
       const color = saved === '#94c748' ? '#f97316' : saved;
@@ -386,7 +388,7 @@ export class SettingsPageComponent implements OnInit {
   selectColor(color: ThemeColor): void {
     this.selectedColor.set(color.value);
     this.applyThemeColor(color.value);
-    localStorage.setItem('theme-color', color.value);
+    this.storage.set('theme-color', color.value);
   }
 
   onLanguageChange(lang: string): void {
@@ -434,7 +436,7 @@ export class SettingsPageComponent implements OnInit {
   }
 
   saveSettings(): void {
-    localStorage.setItem('theme-settings', JSON.stringify({
+    this.storage.setJson('theme-settings', JSON.stringify({
       selectedColor: this.selectedColor(),
       emailNotifications: this.emailNotifications(),
       pushNotifications: this.pushNotifications(),

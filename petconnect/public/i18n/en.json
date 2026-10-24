@@ -1526,6 +1526,35 @@
   "tableCard": {
     "search": "Search..."
   },
+  "consent": {
+    "title": "Cookie preferences",
+    "description": "We use strictly necessary cookies to keep you signed in (PC_AT, PC_RT) and to protect you against CSRF (XSRF-TOKEN). Language, theme and search preferences are only stored on your device if you accept functional cookies.",
+    "acceptAll": "Accept all",
+    "onlyNecessary": "Necessary only",
+    "configure": "Configure preferences",
+    "preferencesTitle": "Choose which optional cookies you accept",
+    "necessaryTitle": "Strictly necessary",
+    "necessaryDesc": "Sign-in session (PC_AT, PC_RT) and CSRF security (XSRF-TOKEN). Always on: without them you cannot sign in.",
+    "necessaryLabel": "Session and security (always on)",
+    "alwaysOn": "Always on",
+    "functionalTitle": "Functional",
+    "functionalDesc": "Language, theme and search radius on this device (localStorage). Off by default.",
+    "functionalLabel": "Remember language, theme and preferences",
+    "savePreferences": "Save preferences",
+    "back": "Back"
+  },
+  "landing": {
+    "title": "Your companion's care, in one place",
+    "subtitle": "Pets, appointments, adoptions and community: Pawly is with you every day.",
+    "login": "Sign in",
+    "register": "Create account",
+    "feature1Title": "Family and health",
+    "feature1Desc": "Profiles, passports, vaccines and care reminders.",
+    "feature2Title": "Responsible adoptions",
+    "feature2Desc": "Discover shelters and follow transparent adoption processes.",
+    "feature3Title": "Community",
+    "feature3Desc": "Share, ask and find help near you."
+  },
   "onboarding": {
     "title": "Complete your profile",
     "subtitle": "Tell us who you are so we can personalize your experience.",

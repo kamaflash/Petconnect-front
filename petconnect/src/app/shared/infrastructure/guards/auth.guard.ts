@@ -1,29 +1,34 @@
 import { CanActivateFn, Router, UrlTree } from '@angular/router';
 import { inject } from '@angular/core';
+import { Observable, from, map } from 'rxjs';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 
 /**
  * Guard de autenticación.
  *
- * Impide el acceso a las rutas protegidas cuando el usuario no está autenticado
- * o su token JWT está expirado, redirigiéndolo a la página de login.
- *
- * Nota: `AuthService.isAuthenticated()` solo verifica la presencia del token,
- * por eso aquí también se comprueba `isTokenExpired()` para no dejar pasar
- * sesiones vencidas que aún residen en sessionStorage.
+ * Con sesión por cookies HttpOnly no hay token visible en el frontend: la
+ * presencia de `AuthService.user()` (restaurada vía GET /session al
+ * arrancar) determina el acceso. Si la sesión aún se está restaurando, se
+ * espera a que termine antes de decidir.
  */
-export const authGuard: CanActivateFn = (): boolean | UrlTree => {
+export const authGuard: CanActivateFn = (): Observable<boolean | UrlTree> | boolean | UrlTree => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  if (authService.isAuthenticated() && !authService.isTokenExpired()) {
+  if (authService.sessionReady()) {
+    return decideAuth(authService, router);
+  }
+  return from(authService.restoreSession()).pipe(
+    map(() => decideAuth(authService, router))
+  );
+};
+
+function decideAuth(authService: AuthService, router: Router): boolean | UrlTree {
+  if (authService.isAuthenticated()) {
     return true;
   }
-
-  // Token inexistente o expirado → limpiar sesión y redirigir al login
-  void authService.logout();
   return router.createUrlTree(['/auth/login']);
-};
+}
 
 /**
  * Guard de onboarding.
@@ -35,12 +40,12 @@ export const authGuard: CanActivateFn = (): boolean | UrlTree => {
  * Usa el estado local de `AuthService.profileComplete`, que se actualiza de
  * inmediato al guardar el perfil (el claim del JWT puede quedar obsoleto).
  */
-export const profileCompletedGuard: CanActivateFn = (): boolean | UrlTree => {
+export const profileCompletedGuard: CanActivateFn = (): Observable<boolean | UrlTree> | boolean | UrlTree => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
-  // Sin sesión o con token vencido, el guard de autenticación se encarga.
-  if (!authService.isAuthenticated() || authService.isTokenExpired()) {
+  // Sin sesión el guard de autenticación se encarga.
+  if (!authService.isAuthenticated()) {
     return true;
   }
 

@@ -15,6 +15,12 @@ export const routes: Routes = [
         .then(m => m.PublicPetPassportPageComponent)
   },
   {
+    path: 'welcome',
+    loadComponent: () =>
+      import('./landing/landing-page.component')
+        .then(m => m.LandingPageComponent)
+  },
+  {
     // Onboarding post-registro: requiere sesión, pero no perfil completo.
     path: 'onboarding',
     canActivate: [authGuard],
