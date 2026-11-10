@@ -234,8 +234,11 @@ export class PetCarePageComponent implements OnInit {
   private petId = '';
 
   readonly passportLink = computed(() => {
-    const token = this.passport()?.token;
-    return token ? `${window.location.origin}/passport/${token}` : '';
+    const token = this.passport()?.token?.trim();
+    if (!token || !/^[A-Za-z0-9._~-]+$/.test(token)) {
+      return '';
+    }
+    return `${window.location.origin}/passport/${encodeURIComponent(token)}`;
   });
 
   readonly matchingUsers = computed(() => {

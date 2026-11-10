@@ -79,6 +79,12 @@ export class PublicPetPassportPageComponent implements OnInit {
 
   ngOnInit(): void {
     const token = this.route.snapshot.paramMap.get('token') ?? '';
+    if (!/^[A-Za-z0-9._~-]+$/.test(token)) {
+      this.error.set(true);
+      this.loading.set(false);
+      return;
+    }
+
     this.careService.getPublicPassport(token).subscribe({
       next: record => {
         this.passport.set(record);

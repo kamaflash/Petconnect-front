@@ -292,8 +292,9 @@ export class AuthService extends AuthRepository {
 
   private cacheSession(): void {
     try {
-      if (this._user()) {
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify(this._user()));
+      const cachedUser = this.sanitizeUserForCache(this._user());
+      if (cachedUser) {
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(cachedUser));
       }
       sessionStorage.setItem(SESSION_COMPLETE_KEY, String(this._profileComplete()));
     } catch { /* storage no disponible */ }
@@ -303,7 +304,11 @@ export class AuthService extends AuthRepository {
     try {
       const userJson = sessionStorage.getItem(SESSION_KEY);
       if (userJson) {
-        this._user.set(JSON.parse(userJson) as User);
+        const parsed = JSON.parse(userJson) as unknown;
+        const cachedUser = this.normalizeCachedUser(parsed);
+        if (cachedUser) {
+          this._user.set(cachedUser);
+        }
       }
       const storedComplete = sessionStorage.getItem(SESSION_COMPLETE_KEY);
       if (storedComplete !== null) {
@@ -312,6 +317,77 @@ export class AuthService extends AuthRepository {
         this._profileComplete.set(this._user()?.profileComplete ?? false);
       }
     } catch { /* storage no disponible */ }
+  }
+
+  private sanitizeUserForCache(user: User | null): User | null {
+    if (!user) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      phone: user.phone,
+      bio: user.bio,
+      avatarUrl: user.avatarUrl,
+      coverImageUrl: user.coverImageUrl,
+      dateOfBirth: user.dateOfBirth,
+      location: user.location,
+      latitude: user.latitude,
+      longitude: user.longitude,
+      profilePublic: user.profilePublic,
+      notificationsEnabled: user.notificationsEnabled,
+      profileType: user.profileType,
+      role: user.role,
+      isVerified: user.isVerified,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      profileComplete: user.profileComplete
+    };
+  }
+
+  private normalizeCachedUser(value: unknown): User | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const candidate = value as Partial<User>;
+    const id = typeof candidate.id === 'string' ? candidate.id : null;
+    const email = typeof candidate.email === 'string' ? candidate.email : null;
+    const firstName = typeof candidate.firstName === 'string' ? candidate.firstName : '';
+    const lastName = typeof candidate.lastName === 'string' ? candidate.lastName : '';
+    const role = candidate.role === 'USER' || candidate.role === 'ADMIN' || candidate.role === 'PREMIUM'
+      ? candidate.role
+      : 'USER';
+
+    if (!id || !email) {
+      return null;
+    }
+
+    return {
+      id,
+      email,
+      firstName,
+      lastName,
+      phone: typeof candidate.phone === 'string' || candidate.phone === null ? candidate.phone : null,
+      bio: typeof candidate.bio === 'string' || candidate.bio === null ? candidate.bio : null,
+      avatarUrl: typeof candidate.avatarUrl === 'string' || candidate.avatarUrl === null ? candidate.avatarUrl : null,
+      coverImageUrl: typeof candidate.coverImageUrl === 'string' || candidate.coverImageUrl === null ? candidate.coverImageUrl : null,
+      dateOfBirth: typeof candidate.dateOfBirth === 'string' || candidate.dateOfBirth === null ? candidate.dateOfBirth : null,
+      location: typeof candidate.location === 'string' || candidate.location === null ? candidate.location : null,
+      latitude: typeof candidate.latitude === 'number' || candidate.latitude === null ? candidate.latitude : null,
+      longitude: typeof candidate.longitude === 'number' || candidate.longitude === null ? candidate.longitude : null,
+      profilePublic: typeof candidate.profilePublic === 'boolean' ? candidate.profilePublic : true,
+      notificationsEnabled: typeof candidate.notificationsEnabled === 'boolean' ? candidate.notificationsEnabled : true,
+      profileType: typeof candidate.profileType === 'string' ? candidate.profileType : 'user',
+      role,
+      isVerified: typeof candidate.isVerified === 'boolean' ? candidate.isVerified : false,
+      createdAt: candidate.createdAt instanceof Date ? candidate.createdAt : new Date(),
+      updatedAt: candidate.updatedAt instanceof Date ? candidate.updatedAt : new Date(),
+      profileComplete: typeof candidate.profileComplete === 'boolean' ? candidate.profileComplete : false
+    };
   }
 
   // Actualizar usuario en el estado y en cache
