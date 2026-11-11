@@ -12,11 +12,14 @@ import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
+import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { PetFeedGridComponent, FilterConfig, ColumnConfig } from '../../../adoptions/presentation/components/pet-feed-grid/pet-feed-grid.component';
 import { SearchRadiusService } from '../../../shared/services/search-radius.service';
+import { AuthService } from '../../../auth/infrastructure/services/auth.service';
+import { SocialService, EventResponse } from '../../../social/infrastructure/services/social.service';
 
 interface Event {
   id: string;
@@ -58,6 +61,7 @@ interface Event {
     ToastModule,
     RouterLink,
     ModalComponent,
+    DynamicFormComponent,
     PetFeedGridComponent,
     TranslocoModule,
   ],
@@ -71,19 +75,29 @@ interface Event {
             <h1>{{ 'events.title' | transloco }}</h1>
             <p>{{ 'events.subtitle' | transloco }}</p>
           </div>
-          <div class="header-stats">
-            <div class="stat-item">
-              <span class="stat-value">{{ upcomingEvents().length }}</span>
-              <span class="stat-label">{{ 'events.upcoming' | transloco }}</span>
+          <div class="header-actions">
+            <div class="header-stats">
+              <div class="stat-item">
+                <span class="stat-value">{{ upcomingEvents().length }}</span>
+                <span class="stat-label">{{ 'events.upcoming' | transloco }}</span>
+              </div>
+              <div class="stat-divider"></div>
+              <div class="stat-item">
+                <span class="stat-value">{{ totalEvents() }}</span>
+                <span class="stat-label">{{ 'events.total' | transloco }}</span>
+              </div>
             </div>
-            <div class="stat-divider"></div>
-            <div class="stat-item">
-              <span class="stat-value">{{ totalEvents() }}</span>
-              <span class="stat-label">{{ 'events.total' | transloco }}</span>
-            </div>
+            <p-button
+              *ngIf="isAuthenticated()"
+              [label]="'events.createEvent' | transloco"
+              icon="pi pi-plus"
+              (onClick)="createEventVisible.set(true)"
+            />
           </div>
         </div>
       </header>
+
+      <p-toast />
 
       <app-pet-feed-grid
         [items]="events()"
@@ -96,6 +110,22 @@ interface Event {
         (filtersChange)="onFiltersChange($event)"
         (itemClick)="openEventDetail($event)"
       />
+
+      <app-modal
+        [visible]="createEventVisible()"
+        [header]="'events.createEvent' | transloco"
+        [showCancel]="false"
+        [showConfirm]="false"
+        [hideFooter]="true"
+        (onHide)="createEventVisible.set(false)"
+      >
+        <app-dynamic-form
+          [config]="createEventFormConfig"
+          [(formData)]="createEventFormData"
+          (onSubmitClick)="submitEvent($event)"
+          (onCancel)="createEventVisible.set(false)"
+        />
+      </app-modal>
 
       <!-- Event Detail Modal -->
       <app-modal
@@ -481,12 +511,67 @@ interface Event {
 })
 export class EventsPageComponent implements OnInit {
   readonly i18n = inject(TranslocoService);
-  private messageService = inject(MessageService);
+  private readonly messageService = inject(MessageService);
   private readonly transloco = inject(TranslocoService);
   private readonly searchRadius = inject(SearchRadiusService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly authService = inject(AuthService);
+  private readonly socialService = inject(SocialService);
 
   // Events data
   events = signal<Event[]>([]);
+  createEventVisible = signal(false);
+  createEventFormData = signal<Record<string, unknown>>({});
+  isAuthenticated = computed(() => this.authService.isAuthenticated());
+
+  readonly createEventFormConfig: DynamicFormConfig = {
+    columns: 1,
+    submitLabel: this.transloco.translate('events.createEvent'),
+    showCancel: true,
+    fields: [
+      {
+        key: 'title',
+        label: this.transloco.translate('events.eventTitle'),
+        type: 'input',
+        validation: { required: true, minLength: 2, maxLength: 200 }
+      },
+      {
+        key: 'description',
+        label: this.transloco.translate('events.eventDescription'),
+        type: 'textarea',
+        rows: 3,
+        validation: { maxLength: 1000 }
+      },
+      {
+        key: 'date',
+        label: this.transloco.translate('events.date'),
+        type: 'date',
+        showIcon: true,
+        validation: { required: true }
+      },
+      {
+        key: 'location',
+        label: this.transloco.translate('events.location'),
+        type: 'input',
+        validation: { required: true, maxLength: 255 }
+      },
+      {
+        key: 'category',
+        label: this.transloco.translate('events.type'),
+        type: 'select',
+        options: [
+          { label: this.transloco.translate('events.walk'), value: 'walk' },
+          { label: this.transloco.translate('events.fair'), value: 'fair' },
+          { label: this.transloco.translate('events.contest'), value: 'contest' },
+          { label: this.transloco.translate('events.meetup'), value: 'meetup' },
+          { label: this.transloco.translate('events.workshop'), value: 'workshop' },
+          { label: this.transloco.translate('events.charity'), value: 'charity' }
+        ],
+        validation: { required: true },
+        defaultValue: 'meetup'
+      }
+    ]
+  };
 
   // Event Detail
   eventDetailVisible = signal(false);
@@ -566,6 +651,9 @@ export class EventsPageComponent implements OnInit {
     // Ubicación de referencia para el filtro global de distancia
     this.searchRadius.resolveOrigin().subscribe();
     this.loadEvents();
+    if (this.route.snapshot.queryParamMap.get('crear') === '1' && this.isAuthenticated()) {
+      this.createEventVisible.set(true);
+    }
   }
 
   onFiltersChange(filters: Record<string, any>): void {
@@ -630,6 +718,77 @@ export class EventsPageComponent implements OnInit {
         isFree: false
       }
     ]);
+  }
+
+  submitEvent(formData: Record<string, unknown>): void {
+    const user = this.authService.user();
+    const selectedDate = formData['date'];
+    if (!user || !(selectedDate instanceof Date) || Number.isNaN(selectedDate.getTime())) {
+      this.messageService.add({
+        severity: 'error',
+        summary: this.transloco.translate('events.createError'),
+        detail: this.transloco.translate('events.createErrorDetail')
+      });
+      return;
+    }
+
+    const eventDate = [
+      selectedDate.getFullYear(),
+      String(selectedDate.getMonth() + 1).padStart(2, '0'),
+      String(selectedDate.getDate()).padStart(2, '0')
+    ].join('-') + `T${String(selectedDate.getHours()).padStart(2, '0')}:${String(selectedDate.getMinutes()).padStart(2, '0')}:00`;
+
+    this.socialService.createEvent({
+      title: String(formData['title'] ?? '').trim(),
+      description: String(formData['description'] ?? '').trim(),
+      eventDate,
+      location: String(formData['location'] ?? '').trim(),
+      organizerId: user.id,
+      imageUrl: '',
+      category: String(formData['category'] ?? 'meetup')
+    }).subscribe({
+      next: (createdEvent) => {
+        this.events.update(events => [this.toViewEvent(createdEvent), ...events]);
+        this.createEventVisible.set(false);
+        this.createEventFormData.set({});
+        this.messageService.add({
+          severity: 'success',
+          summary: this.transloco.translate('events.createSuccess'),
+          detail: this.transloco.translate('events.createSuccessDetail')
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: this.transloco.translate('events.createError'),
+          detail: this.transloco.translate('events.createErrorDetail')
+        });
+      }
+    });
+  }
+
+  private toViewEvent(event: EventResponse): Event {
+    const categories: Event['type'][] = ['walk', 'fair', 'contest', 'meetup', 'workshop', 'charity'];
+    const type = categories.find(category => category === event.category) ?? 'meetup';
+    const user = this.authService.user();
+
+    return {
+      id: event.id,
+      title: event.title,
+      description: event.description,
+      date: new Date(event.eventDate),
+      location: event.location,
+      address: event.location,
+      type,
+      category: this.getTypeLabel(type),
+      image: event.imageUrl || 'https://placehold.co/600x400',
+      organizer: user ? `${user.firstName} ${user.lastName}`.trim() : this.transloco.translate('events.organizer'),
+      organizerImage: user?.avatarUrl || 'https://placehold.co/150',
+      participants: event.attendeesCount,
+      price: 0,
+      isAttending: false,
+      isFree: true
+    };
   }
 
   openEventDetail(event: Event): void {

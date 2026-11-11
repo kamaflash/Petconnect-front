@@ -29,7 +29,17 @@ import { AuthService } from '../../../auth/infrastructure/services/auth.service'
  */
 
 /** Endpoints de autenticación: no se reintenta el refresh. */
-const AUTH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/google', '/auth/session'];
+const AUTH_ENDPOINTS = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh',
+  '/auth/google',
+  '/auth/session',
+  '/auth/logout',
+  '/auth/change-password',
+  '/auth/change-email',
+  '/auth/confirm-email'
+];
 const CSRF_ENDPOINT = '/csrf-token';
 const NO_RETRY = new HttpContextToken<boolean>(() => false);
 
@@ -83,7 +93,9 @@ export const authInterceptor: HttpInterceptorFn = (
           }),
           catchError(() => {
             // El refresh falló → cerrar sesión y redirigir al login
-            void authService.logout();
+            void authService.logout().catch((logoutError: unknown) => {
+              console.error('Could not complete logout after session refresh failed.', logoutError);
+            });
             void router.navigate(['/auth/login']);
             return throwError(() => new Error('Session expired'));
           })

@@ -52,11 +52,38 @@ export class MessagesApiService {
   /** Envía y persiste un mensaje (vía REST, almacenamiento garantizado). */
   sendMessage(
     conversationId: string,
-    request: { receiverId: string; content: string; type: string }
+    request: {
+      receiverId: string;
+      content: string;
+      type: string;
+      metadata?: string;
+      replyToMessageId?: string;
+    }
   ): Observable<Message> {
     return this.http.post<Message>(
       `${this.apiUrl}/conversations/${conversationId}/messages`,
       request
+    );
+  }
+
+  toggleReaction(conversationId: string, messageId: string, emoji: string): Observable<Message> {
+    return this.http.post<Message>(
+      `${this.apiUrl}/conversations/${conversationId}/messages/${messageId}/reactions`,
+      { emoji }
+    );
+  }
+
+  sendImage(
+    conversationId: string,
+    receiverId: string,
+    image: File
+  ): Observable<Message> {
+    const formData = new FormData();
+    formData.append('receiverId', receiverId);
+    formData.append('image', image, image.name);
+    return this.http.post<Message>(
+      `${this.apiUrl}/conversations/${conversationId}/images`,
+      formData
     );
   }
 

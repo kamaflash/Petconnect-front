@@ -10,7 +10,7 @@ import {
   OnInit,
   OnDestroy
 } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
@@ -28,6 +28,8 @@ import {
   UserProfileResponse
 } from '../../infrastructure/services/messages-api.service';
 import { MessageWebSocketService } from '../../infrastructure/services/message-websocket.service';
+import { PetService } from '../../../pets/infrastructure/services/pet.service';
+import { PetResponse } from '../../../pets/domain/pet.model';
 import { WebSocketService } from '../../../shared/infrastructure/websocket/websocket.service';
 import {
   ConversationDTO,
@@ -44,6 +46,7 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
   imports: [
     TranslocoModule,
     CommonModule,
+    RouterLink,
     ButtonModule,
     InputTextModule,
     FormsModule,
@@ -80,9 +83,22 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
               type="text"
               pInputText
               [placeholder]="'messages.searchConversations' | transloco"
-              [(ngModel)]="searchQuery"
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
               [attr.aria-label]="'messages.searchConversations' | transloco"
             />
+          </div>
+
+          <div class="conversation-filters" role="group" [attr.aria-label]="'messages.conversationFilters' | transloco">
+            <button type="button" class="conversation-filter" [class.active]="!unreadOnly()" [attr.aria-pressed]="!unreadOnly()" (click)="unreadOnly.set(false)">
+              {{ 'messages.allConversations' | transloco }}
+            </button>
+            <button type="button" class="conversation-filter" [class.active]="unreadOnly()" [attr.aria-pressed]="unreadOnly()" (click)="unreadOnly.set(true)">
+              {{ 'messages.unreadConversations' | transloco }}
+              @if (unreadConversationCount() > 0) {
+                <span class="filter-count">{{ unreadConversationCount() }}</span>
+              }
+            </button>
           </div>
 
           <div class="conversations-list" [attr.aria-busy]="loadingConversations()">
@@ -99,12 +115,30 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
                 }
               </div>
             }
+            @if (conversationsError()) {
+              <div class="conversation-list-state" role="alert">
+                <i class="pi pi-exclamation-circle" aria-hidden="true"></i>
+                <p>{{ 'messages.conversationsLoadError' | transloco }}</p>
+                <button type="button" (click)="loadConversations()">{{ 'messages.retry' | transloco }}</button>
+              </div>
+            } @else if (!loadingConversations() && filteredConversations().length === 0) {
+              <div class="conversation-list-state" role="status">
+                <i class="pi pi-comments" aria-hidden="true"></i>
+                <p>{{ searchQuery() || unreadOnly() ? ('messages.noMatchingConversations' | transloco) : ('messages.noConversations' | transloco) }}</p>
+              </div>
+            }
             @for (conversation of filteredConversations(); track conversation.id) {
               <div
                 class="conversation-item"
                 [class.conversation-item-hidden]="loadingConversations()"
                 [class.active]="selectedId() === conversation.id"
+                [attr.aria-current]="selectedId() === conversation.id ? 'true' : null"
+                [attr.aria-label]="'messages.openConversation' | transloco: { name: conversation.title, unread: conversation.unreadCount }"
+                role="button"
+                tabindex="0"
                 (click)="selectConversation(conversation)"
+                (keydown.enter)="selectConversation(conversation)"
+                (keydown.space)="$event.preventDefault(); selectConversation(conversation)"
               >
                 <div class="conversation-avatar">
                   <p-avatar [image]="conversation.partnerAvatarUrl ?? undefined" shape="circle" size="large"></p-avatar>
@@ -155,20 +189,16 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
                   </div>
                 </div>
                 <div class="chat-actions">
-                  <button class="action-btn">
-                    <i class="pi pi-phone"></i>
-                  </button>
-                  <button class="action-btn">
-                    <i class="pi pi-video"></i>
-                  </button>
-                  <button class="action-btn">
-                    <i class="pi pi-ellipsis-v"></i>
-                  </button>
+                  @if (conversation.partnerId) {
+                    <a class="action-btn" [routerLink]="['/profile', conversation.partnerId]" [attr.aria-label]="'messages.viewProfile' | transloco" [title]="'messages.viewProfile' | transloco">
+                      <i class="pi pi-user" aria-hidden="true"></i>
+                    </a>
+                  }
                 </div>
               </div>
 
               <!-- Messages -->
-                           <div class="chat-messages" #scrollContainer>
+                           <div class="chat-messages" #scrollContainer (scroll)="onMessagesScroll()">
                 <div class="messages-list">
                   @if (loadingMessages()) {
                     <div class="messages-loading">
@@ -178,8 +208,14 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
                         </div>
                       }
                     </div>
+                  } @else if (messagesError()) {
+                    <div class="messages-empty" role="alert">
+                      <i class="pi pi-exclamation-circle"></i>
+                      <p>{{ 'messages.messagesLoadError' | transloco }}</p>
+                      <button type="button" (click)="retryMessages()">{{ 'messages.retry' | transloco }}</button>
+                    </div>
                   } @else if (messages().length === 0) {
-                    <div class="messages-empty">
+                    <div class="messages-empty" role="status">
                       <i class="pi pi-comments"></i>
                       <p>{{ 'messages.empty' | transloco }}</p>
                     </div>
@@ -187,9 +223,104 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
                     @for (message of messages(); track message.id) {
                       <div class="message-item" [class.sent]="message.senderId === currentUserId()">
                         <div class="message-bubble">
-                          <p class="message-content">{{ message.content }}</p>
-                          <span class="message-time">{{ message.createdAt | date:'shortTime' }}</span>
+                          @if (message.replyToMessageId && message.replyToContent) {
+                            <div class="message-reply-quote">
+                              <strong>{{ message.replyToSenderId === currentUserId() ? ('messages.replyingToYou' | transloco) : conversation.title }}</strong>
+                              <span>{{ message.replyToContent }}</span>
+                            </div>
+                          }
+                          @if (message.type === 'IMAGE' && message.attachmentUrl) {
+                            <a [href]="message.attachmentUrl" target="_blank" rel="noopener noreferrer" class="message-image-link">
+                              <img class="message-image" [src]="message.attachmentUrl" [alt]="'messages.sharedImage' | transloco" loading="lazy" />
+                            </a>
+                          } @else if ((message.type === 'PET_CARD' || message.type === 'ADOPTION_CARD') && message.metadata) {
+                            <a class="shared-pet-card" [routerLink]="['/profile/pet', message.metadata]">
+                              @if (message.attachmentUrl) {
+                                <img [src]="message.attachmentUrl" [alt]="message.content" loading="lazy" />
+                              } @else {
+                                <span class="shared-pet-placeholder"><i class="pi pi-heart" aria-hidden="true"></i></span>
+                              }
+                              <span class="shared-pet-copy">
+                                <strong>{{ message.content }}</strong>
+                                <span>{{ message.type === 'ADOPTION_CARD' ? ('messages.adoptionListing' | transloco) : ('messages.petProfile' | transloco) }}</span>
+                                <span class="shared-pet-open">{{ 'messages.openSharedPet' | transloco }} <i class="pi pi-arrow-up-right" aria-hidden="true"></i></span>
+                              </span>
+                            </a>
+                          } @else {
+                            <p class="message-content">{{ message.content }}</p>
+                          }
+                          <span class="message-meta">
+                            <span class="message-time">{{ message.createdAt | date:'shortTime' }}</span>
+                            @if (message.senderId === currentUserId()) {
+                              <i class="pi message-status"
+                                [class.pi-check]="message.status === 'SENT'"
+                                [class.pi-check-circle]="message.status !== 'SENT'"
+                                [attr.aria-label]="'messages.status.' + message.status | transloco"
+                                [title]="'messages.status.' + message.status | transloco"></i>
+                            }
+                          </span>
+                          <div class="message-actions" [class.actions-open]="activeMessageActionsId() === message.id">
+                            @if (message.senderId !== currentUserId()) {
+                              <button
+                                class="message-actions-toggle"
+                                type="button"
+                                (click)="toggleMessageActions(message.id)"
+                                [attr.aria-label]="(activeMessageActionsId() === message.id ? 'messages.hideReactions' : 'messages.showReactions') | transloco"
+                                [attr.aria-expanded]="activeMessageActionsId() === message.id"
+                              >
+                                <i class="pi pi-face-smile" aria-hidden="true"></i>
+                              </button>
+                            }
+                            <button
+                              class="message-reply-action"
+                              type="button"
+                              (click)="replyTo(message)"
+                              [attr.aria-label]="'messages.reply' | transloco"
+                              [title]="'messages.reply' | transloco"
+                            >
+                              <i class="pi pi-reply" aria-hidden="true"></i>
+                            </button>
+                            @if (message.senderId !== currentUserId()) {
+                              @for (emoji of reactionOptions; track emoji) {
+                                <button
+                                  class="message-quick-reaction"
+                                  type="button"
+                                  [class.selected]="hasReacted(message, emoji)"
+                                  [attr.aria-pressed]="hasReacted(message, emoji)"
+                                  [disabled]="isReactionPending(message, emoji)"
+                                  (click)="toggleReaction(message, emoji)"
+                                  [attr.aria-label]="'messages.reactWith' | transloco: { emoji: emoji }"
+                                  [title]="'messages.reactWith' | transloco: { emoji: emoji }"
+                                >{{ emoji }}</button>
+                              }
+                            }
+                          </div>
                         </div>
+                        @if (reactionGroups(message).length > 0) {
+                          <div class="message-reactions" [attr.aria-label]="'messages.reactions' | transloco">
+                            @for (reaction of reactionGroups(message); track reaction.emoji) {
+                              @if (message.senderId !== currentUserId()) {
+                                <button
+                                  type="button"
+                                  class="message-reaction"
+                                  [class.selected]="reaction.selected"
+                                  [attr.aria-pressed]="reaction.selected"
+                                  [disabled]="isReactionPending(message, reaction.emoji)"
+                                  (click)="toggleReaction(message, reaction.emoji)"
+                                  [attr.aria-label]="'messages.toggleReaction' | transloco: { emoji: reaction.emoji, count: reaction.count }"
+                                >
+                                  <span>{{ reaction.emoji }}</span>
+                                  <span>{{ reaction.count }}</span>
+                                </button>
+                              } @else {
+                                <span class="message-reaction" [attr.aria-label]="'messages.toggleReaction' | transloco: { emoji: reaction.emoji, count: reaction.count }">
+                                  <span>{{ reaction.emoji }}</span>
+                                  <span>{{ reaction.count }}</span>
+                                </span>
+                              }
+                            }
+                          </div>
+                        }
                       </div>
                     }
                   }
@@ -197,10 +328,62 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
               </div>
 
               <!-- Message Input -->
+              @if (replyingTo(); as replyTarget) {
+                <div class="replying-banner">
+                  <div class="replying-banner-copy">
+                    <strong>{{ 'messages.replyingTo' | transloco }}{{ replyTarget.senderId === currentUserId() ? ('messages.replyingToYou' | transloco) : conversation.title }}</strong>
+                    <span>{{ replyTarget.content }}</span>
+                  </div>
+                  <button
+                    type="button"
+                    (click)="cancelReply()"
+                    [attr.aria-label]="'messages.cancelReply' | transloco"
+                    [title]="'messages.cancelReply' | transloco"
+                  ><i class="pi pi-times" aria-hidden="true"></i></button>
+                </div>
+              }
               <div class="message-input-container">
-                <button class="attach-btn" type="button" [attr.aria-label]="'messages.typePlaceholder' | transloco">
-                  <i class="pi pi-image"></i>
+                <input
+                  #imageInput
+                  class="visually-hidden-file-input"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  (change)="onImageSelected($event)"
+                  [disabled]="imageSending()"
+                  [attr.aria-label]="'messages.attachImage' | transloco"
+                />
+                <button
+                  class="composer-action-btn"
+                  type="button"
+                  (click)="imageInput.click()"
+                  [disabled]="imageSending()"
+                  [attr.aria-label]="'messages.attachImage' | transloco"
+                  [title]="'messages.attachImage' | transloco"
+                >
+                  <i [class]="imageSending() ? 'pi pi-spin pi-spinner' : 'pi pi-image'" aria-hidden="true"></i>
                 </button>
+                <div class="composer-emoji-picker">
+                  <button
+                    class="composer-emoji-toggle"
+                    type="button"
+                    (click)="showEmojiPicker.update(open => !open)"
+                    [attr.aria-label]="'messages.chooseEmoji' | transloco"
+                    [attr.aria-expanded]="showEmojiPicker()"
+                    aria-haspopup="true"
+                  >🙂</button>
+                  @if (showEmojiPicker()) {
+                    <div class="composer-emoji-menu" role="group" [attr.aria-label]="'messages.chooseEmoji' | transloco">
+                      @for (emoji of emojiSuggestions; track emoji) {
+                        <button
+                          class="composer-emoji-option"
+                          type="button"
+                          (click)="insertEmoji(emoji)"
+                          [attr.aria-label]="'messages.insertEmoji' | transloco: { emoji: emoji }"
+                        >{{ emoji }}</button>
+                      }
+                    </div>
+                  }
+                </div>
                 <input
                   type="text"
                   pInputText
@@ -210,7 +393,7 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
                   (keyup.enter)="sendMessage()"
                   [attr.aria-label]="'messages.typePlaceholder' | transloco"
                 />
-                <button class="send-btn" type="button" (click)="sendMessage()" [attr.aria-label]="'messages.typePlaceholder' | transloco">
+                <button class="send-btn" type="button" (click)="sendMessage()" [disabled]="!newMessage.trim() || !conversation.partnerId" [attr.aria-label]="'messages.send' | transloco" [title]="'messages.send' | transloco">
                   <i class="pi pi-send"></i>
                 </button>
               </div>
@@ -242,7 +425,9 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
             type="text"
             pInputText
             [placeholder]="'messages.searchPeople' | transloco"
-            [(ngModel)]="newUserSearch"
+            [ngModel]="newUserSearch()"
+            (ngModelChange)="newUserSearch.set($event)"
+            [attr.aria-label]="'messages.searchPeople' | transloco"
           />
         </div>
         <div class="new-message-users">
@@ -260,6 +445,53 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
                 {{ user.firstName }} {{ user.lastName }}
               </span>
             </div>
+          }
+        </div>
+      </app-modal>
+
+      <app-modal
+        [header]="'messages.sharePet' | transloco"
+        [visible]="showSharePetDialog()"
+        (onHide)="showSharePetDialog.set(false)"
+        [style]="{ width: '480px' }"
+        [showCancel]="false"
+        [showConfirm]="false"
+        [closable]="true"
+        [dismissableMask]="true"
+      >
+        <div class="share-pet-list" [attr.aria-busy]="sharePetsLoading()">
+          @if (sharePetsLoading()) {
+            <p>{{ 'messages.loadingShareablePets' | transloco }}</p>
+          } @else if (sharePetsError()) {
+            <div class="share-pet-error" role="alert">
+              <p>{{ 'messages.shareablePetsLoadError' | transloco }}</p>
+              <button type="button" (click)="loadShareablePets()">{{ 'messages.retry' | transloco }}</button>
+            </div>
+          } @else if (!shareablePets().length) {
+            <p class="empty-users">{{ 'messages.noShareablePets' | transloco }}</p>
+          }
+          @for (pet of shareablePets(); track pet.id) {
+            <article class="share-pet-item">
+              <img *ngIf="pet.avatarUrl" [src]="pet.avatarUrl" [alt]="pet.name" />
+              <span class="share-pet-item-copy">
+                <strong>{{ pet.name }}</strong>
+                <span>{{ pet.species }}<span *ngIf="pet.breed"> · {{ pet.breed }}</span></span>
+              </span>
+              <div class="share-pet-actions">
+                <button type="button" (click)="sendSharedPet(pet, 'PET_CARD')" [disabled]="sharedPetSending() === pet.id">
+                  {{ 'messages.shareProfile' | transloco }}
+                </button>
+                <button
+                  *ngIf="pet.availableForAdoption"
+                  type="button"
+                  class="adoption-share-btn"
+                  (click)="sendSharedPet(pet, 'ADOPTION_CARD')"
+                  [disabled]="sharedPetSending() === pet.id"
+                >
+                  {{ 'messages.shareAdoptionListing' | transloco }}
+                </button>
+              </div>
+            </article>
           }
         </div>
       </app-modal>
@@ -339,10 +571,83 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
       color: var(--text-primary);
     }
 
+    .conversation-filters {
+      display: flex;
+      gap: 0.375rem;
+      padding: 0.25rem 0.75rem 0.625rem;
+    }
+
+    .conversation-filter {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.375rem;
+      min-height: 2rem;
+      padding: 0.375rem 0.75rem;
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-full);
+      background: transparent;
+      color: var(--text-secondary);
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .conversation-filter.active {
+      border-color: color-mix(in srgb, var(--primary-color) 30%, var(--surface-border));
+      background: var(--primary-color-light);
+      color: var(--primary-color);
+    }
+
+    .filter-count {
+      display: grid;
+      place-items: center;
+      min-width: 1.125rem;
+      height: 1.125rem;
+      padding: 0 0.25rem;
+      border-radius: var(--radius-full);
+      background: var(--primary-color);
+      color: var(--on-primary, #fff);
+      font-size: 0.6875rem;
+    }
+
     .conversations-list {
       flex: 1;
       min-height: 0;
       overflow-y: auto;
+    }
+
+    .conversation-list-state {
+      display: grid;
+      justify-items: center;
+      gap: 0.5rem;
+      padding: 1.5rem 1rem;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    .conversation-list-state > i {
+      color: var(--text-tertiary);
+      font-size: 1.25rem;
+    }
+
+    .conversation-list-state p {
+      margin: 0;
+      font-size: 0.8125rem;
+    }
+
+    .conversation-list-state button,
+    .messages-empty button {
+      border: 0;
+      border-radius: var(--radius-full);
+      background: var(--primary-color-light);
+      color: var(--primary-color);
+      padding: 0.45rem 0.75rem;
+      font: inherit;
+      font-size: 0.75rem;
+      font-weight: 650;
+      cursor: pointer;
     }
 
     .conversation-item {
@@ -352,6 +657,11 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
       cursor: pointer;
       transition: background var(--transition-fast);
       border-bottom: 1px solid var(--surface-border);
+    }
+
+    .conversation-item:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: -2px;
     }
 
     .conversation-item:hover {
@@ -637,6 +947,22 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
       opacity: 0.7;
     }
 
+    .message-meta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.3rem;
+    }
+
+    .message-status {
+      color: var(--text-tertiary);
+      font-size: 0.7rem;
+    }
+
+    .message-item.sent .message-status {
+      color: var(--primary-color);
+    }
+
     /* Message Input */
     .message-input-container {
       display: flex;
@@ -650,24 +976,51 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
       box-sizing: border-box;
     }
 
-    .attach-btn {
-      width: 40px;
-      height: 40px;
-      background: none;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all var(--transition-fast);
-      flex-shrink: 0;
+    .composer-emoji-picker {
+      position: relative;
+      flex: 0 0 auto;
     }
 
-    .attach-btn:hover {
+    .composer-emoji-toggle,
+    .composer-emoji-option {
+      display: grid;
+      place-items: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      border: 1px solid var(--surface-border);
+      border-radius: 50%;
       background: var(--surface-hover);
       color: var(--text-primary);
+      cursor: pointer;
+      font-size: 1.15rem;
+      padding: 0;
+      transition: background var(--transition-fast), transform var(--transition-fast);
+    }
+
+    .composer-emoji-toggle:hover,
+    .composer-emoji-option:hover {
+      background: var(--surface-border);
+      transform: translateY(-1px);
+    }
+
+    .composer-emoji-menu {
+      position: absolute;
+      bottom: calc(100% + 0.5rem);
+      left: 0;
+      z-index: 5;
+      display: grid;
+      grid-template-columns: repeat(4, 2.5rem);
+      gap: 0.35rem;
+      padding: 0.5rem;
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      background: var(--surface-card);
+      box-shadow: 0 0.5rem 1.5rem rgb(0 0 0 / 15%);
+    }
+
+    .composer-emoji-option {
+      border-color: transparent;
+      background: transparent;
     }
 
     .message-input-container input {
@@ -699,6 +1052,12 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
       background: var(--surface-border);
       color: var(--text-primary);
     }
+
+    .send-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
     .new-message-btn:focus-visible, .send-btn:focus-visible, .action-btn:focus-visible, .mobile-back-btn:focus-visible {
       outline: 2px solid var(--primary-color);
       outline-offset: 2px;
@@ -834,7 +1193,8 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
       .messages-container { min-height: 420px; border-radius: var(--radius-md); }
       .chat-header { padding-inline: .75rem; }
       .message-input-container { gap: .4rem; padding: .75rem .5rem; }
-      .attach-btn, .send-btn { flex: 0 0 2.5rem; width: 2.5rem; height: 2.5rem; }
+      .composer-action-btn { flex-basis: 2rem; width: 2rem; height: 2rem; }
+      .send-btn { flex: 0 0 2.5rem; width: 2.5rem; height: 2.5rem; }
       .message-input-container input { padding: .65rem .75rem; }
       .chat-messages { padding: .9rem; }
     }
@@ -847,6 +1207,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly messagesApi = inject(MessagesApiService);
   private readonly webSocket = inject(MessageWebSocketService);
+  private readonly petService = inject(PetService);
 
   // ---------- Estado ----------
   currentUserId = signal('');
@@ -854,17 +1215,32 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
   selectedId = signal('');
   showChatOnMobile = signal(false);
   messages = signal<Message[]>([]);
-  searchQuery = '';
+  searchQuery = signal('');
+  unreadOnly = signal(false);
   newMessage = '';
   loadingConversations = signal(false);
   loadingMessages = signal(false);
+  conversationsError = signal(false);
+  messagesError = signal(false);
   readonly conversationSkeletons = [1, 2, 3, 4, 5, 6];
   readonly messageSkeletons = [1, 2, 3, 4];
 
   // Diálogo de nueva conversación
   showNewDialog = signal(false);
-  newUserSearch = '';
+  newUserSearch = signal('');
   allUsers = signal<UserProfileResponse[]>([]);
+  showSharePetDialog = signal(false);
+  shareablePets = signal<PetResponse[]>([]);
+  sharePetsLoading = signal(false);
+  sharePetsError = signal(false);
+  imageSending = signal(false);
+  sharedPetSending = signal('');
+  replyingTo = signal<Message | null>(null);
+  pendingReactions = signal<string[]>([]);
+  activeMessageActionsId = signal('');
+  readonly reactionOptions = ['❤️', '😂', '😮', '😢', '👏', '🐾'];
+  readonly emojiSuggestions = ['😊', '👍', '❤️', '😂', '🎉', '😎', '😺', '🐾'];
+  showEmojiPicker = signal(false);
 
   private notificationSub!: Subscription;
   private currentConversationSub!: Subscription;
@@ -883,13 +1259,20 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
   private messagesEl = viewChild<ElementRef<HTMLElement>>('scrollContainer');
   private typingSub!: Subscription;
   private typingTimer: any = null;
+  private shouldAutoScroll = signal(true);
 
-  /** Mantiene el scroll siempre abajo para ver el último mensaje al instante. */
+  /** Keeps the latest messages in view until the user scrolls away from the bottom. */
   private autoScroll = effect(() => {
     this.messages();
     this.loadingMessages();
     this.selectedId();
-    queueMicrotask(() => this.scrollToBottom());
+    if (this.shouldAutoScroll()) {
+      queueMicrotask(() => {
+        if (this.shouldAutoScroll()) {
+          this.scrollToBottom();
+        }
+      });
+    }
   });
 
   constructor() {
@@ -930,15 +1313,18 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
 
   // ---------- Conversaciones ----------
   filteredConversations = computed(() => {
-    const query = this.searchQuery.toLowerCase();
-    if (!query) {
-      return this.conversations();
-    }
+    const query = this.searchQuery().trim().toLowerCase();
     return this.conversations().filter(c =>
-      c.title?.toLowerCase().includes(query) ||
-      (c.lastMessage || '').toLowerCase().includes(query)
+      (!this.unreadOnly() || c.unreadCount > 0) &&
+      (!query ||
+        c.title?.toLowerCase().includes(query) ||
+        (c.lastMessage || '').toLowerCase().includes(query))
     );
   });
+
+  unreadConversationCount = computed(() =>
+    this.conversations().filter(conversation => conversation.unreadCount > 0).length
+  );
 
   selectedConversation = computed(
     () => this.conversations().find(c => c.id === this.selectedId()) ?? null
@@ -946,6 +1332,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
 
   loadConversations(): void {
     this.loadingConversations.set(true);
+    this.conversationsError.set(false);
     this.messagesApi.getConversations().subscribe({
       next: (convs) => {
         this.conversations.set(convs);
@@ -954,7 +1341,10 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
         // (refleja las conversaciones ya leídas en la página).
         this.webSocket.refreshUnreadCount();
       },
-      error: () => this.loadingConversations.set(false)
+      error: () => {
+        this.loadingConversations.set(false);
+        this.conversationsError.set(true);
+      }
     });
   }
 
@@ -965,7 +1355,9 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
     }
 
     this.selectedId.set(conversation.id);
+    this.shouldAutoScroll.set(true);
     this.showChatOnMobile.set(true);
+    this.replyingTo.set(null);
     this.activeConversationId = conversation.id;
     this.messages.set([]);
 
@@ -1002,6 +1394,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
 
   private loadMessagesRealtime(conversationId: string): void {
     this.loadingMessages.set(true);
+    this.messagesError.set(false);
     this.messagesApi.getMessages(conversationId).subscribe({
       next: (page) => {
         // El backend las devuelve de más nueva a más antigua; invertir para cronológico.
@@ -1017,8 +1410,18 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
           this.webSocket.decrementUnreadCount(previous);
         }
       },
-      error: () => this.loadingMessages.set(false)
+      error: () => {
+        this.loadingMessages.set(false);
+        this.messagesError.set(true);
+      }
     });
+  }
+
+  retryMessages(): void {
+    const conversation = this.selectedConversation();
+    if (conversation) {
+      this.loadMessagesRealtime(conversation.id);
+    }
   }
 
   // ---------- Enviar ----------
@@ -1029,6 +1432,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const replyTarget = this.replyingTo();
     const optimistic: Message = {
       id: `temp-${Date.now()}`,
       content,
@@ -1038,12 +1442,16 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
       status: 'SENT',
       type: 'TEXT',
       attachmentUrl: null,
+      replyToMessageId: replyTarget?.id ?? null,
+      replyToContent: replyTarget?.content ?? null,
+      replyToSenderId: replyTarget?.senderId ?? null,
       createdAt: new Date().toISOString(),
       readAt: null
     };
 
     this.upsertMessage(optimistic);
     this.newMessage = '';
+    this.replyingTo.set(null);
     this.bumpConversation(conversation.id, content);
 
     // Dejar de indicar "Escribiendo…" al enviar
@@ -1056,17 +1464,189 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
       .sendMessage(conversation.id, {
         receiverId: conversation.partnerId,
         content,
-        type: 'TEXT'
+        type: 'TEXT',
+        replyToMessageId: replyTarget?.id
       })
       .subscribe({
         next: (saved) => this.upsertMessage(saved),
-        error: () =>
+        error: () => {
+          if (replyTarget && this.selectedId() === conversation.id && !this.replyingTo()) {
+            this.replyingTo.set(replyTarget);
+          }
           this.messageService.add({
             severity: 'error',
             summary: this.i18n.translate('messages.error'),
       detail: this.i18n.translate('messages.sendError')
-          })
+          });
+        }
       });
+  }
+
+  replyTo(message: Message): void {
+    if (!message.id.startsWith('temp-')) {
+      this.replyingTo.set(message);
+    }
+  }
+
+  cancelReply(): void {
+    this.replyingTo.set(null);
+  }
+
+  toggleMessageActions(messageId: string): void {
+    this.activeMessageActionsId.update(activeId => activeId === messageId ? '' : messageId);
+  }
+
+  reactionGroups(message: Message): Array<{ emoji: string; count: number; selected: boolean }> {
+    const reactions = message.reactions ?? [];
+    const counts = new Map<string, number>();
+    for (const reaction of reactions) {
+      counts.set(reaction.emoji, (counts.get(reaction.emoji) ?? 0) + 1);
+    }
+    return Array.from(counts, ([emoji, count]) => ({
+      emoji,
+      count,
+      selected: reactions.some(
+        reaction => reaction.emoji === emoji && reaction.userId === this.currentUserId()
+      )
+    }));
+  }
+
+  hasReacted(message: Message, emoji: string): boolean {
+    return (message.reactions ?? []).some(
+      reaction => reaction.emoji === emoji && reaction.userId === this.currentUserId()
+    );
+  }
+
+  isReactionPending(message: Message, emoji: string): boolean {
+    return this.pendingReactions().includes(`${message.id}:${emoji}`);
+  }
+
+  toggleReaction(message: Message, emoji: string): void {
+    const conversation = this.selectedConversation();
+    if (!conversation || message.id.startsWith('temp-') || this.isReactionPending(message, emoji)) {
+      return;
+    }
+    const pendingKey = `${message.id}:${emoji}`;
+    this.pendingReactions.update(keys => [...keys, pendingKey]);
+    this.messagesApi.toggleReaction(conversation.id, message.id, emoji).subscribe({
+      next: updated => {
+        if (this.selectedId() === conversation.id) {
+          this.upsertMessage(updated);
+        }
+        this.clearPendingReaction(pendingKey);
+      },
+      error: error => {
+        console.error('Error updating chat message reaction:', error);
+        this.clearPendingReaction(pendingKey);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.i18n.translate('messages.error'),
+          detail: this.i18n.translate('messages.reactionError')
+        });
+      }
+    });
+  }
+
+  private clearPendingReaction(key: string): void {
+    this.pendingReactions.update(keys => keys.filter(pending => pending !== key));
+  }
+
+  insertEmoji(emoji: string): void {
+    const trimmed = this.newMessage.trimEnd();
+    this.newMessage = `${trimmed}${trimmed ? ' ' : ''}${emoji}`;
+    this.showEmojiPicker.set(false);
+    if (this.typingTimer) clearTimeout(this.typingTimer);
+    this.onTypingInput();
+  }
+
+  onImageSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type) || file.size === 0 || file.size > 5 * 1024 * 1024) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: this.i18n.translate('messages.error'),
+        detail: this.i18n.translate('messages.invalidImage')
+      });
+      return;
+    }
+
+    const conversation = this.selectedConversation();
+    if (!conversation?.partnerId) return;
+    this.imageSending.set(true);
+    this.messagesApi.sendImage(conversation.id, conversation.partnerId, file).subscribe({
+      next: message => {
+        this.upsertMessage(message);
+        this.bumpConversation(conversation.id, this.i18n.translate('messages.sharedImage'));
+        this.imageSending.set(false);
+      },
+      error: error => {
+        console.error('Error sending chat image:', error);
+        this.imageSending.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.i18n.translate('messages.error'),
+          detail: this.i18n.translate('messages.imageSendError')
+        });
+      }
+    });
+  }
+
+  openSharePetDialog(): void {
+    this.showSharePetDialog.set(true);
+    if (!this.shareablePets().length) this.loadShareablePets();
+  }
+
+  loadShareablePets(): void {
+    const ownerId = this.currentUserId();
+    if (!ownerId) return;
+    this.sharePetsLoading.set(true);
+    this.sharePetsError.set(false);
+    this.petService.getPetsByOwner(ownerId).subscribe({
+      next: pets => {
+        this.shareablePets.set(pets.filter(pet => pet.active));
+        this.sharePetsLoading.set(false);
+      },
+      error: error => {
+        console.error('Error loading pets to share in chat:', error);
+        this.sharePetsLoading.set(false);
+        this.sharePetsError.set(true);
+      }
+    });
+  }
+
+  sendSharedPet(pet: PetResponse, type: 'PET_CARD' | 'ADOPTION_CARD'): void {
+    const conversation = this.selectedConversation();
+    if (!conversation?.partnerId) return;
+    if (type === 'ADOPTION_CARD' && !pet.availableForAdoption) return;
+
+    this.sharedPetSending.set(pet.id);
+    this.messagesApi.sendMessage(conversation.id, {
+      receiverId: conversation.partnerId,
+      content: pet.name,
+      type,
+      metadata: pet.id
+    }).subscribe({
+      next: message => {
+        this.upsertMessage(message);
+        this.bumpConversation(conversation.id, pet.name);
+        this.sharedPetSending.set('');
+        this.showSharePetDialog.set(false);
+      },
+      error: error => {
+        console.error('Error sharing pet in chat:', error);
+        this.sharedPetSending.set('');
+        this.messageService.add({
+          severity: 'error',
+          summary: this.i18n.translate('messages.error'),
+          detail: this.i18n.translate('messages.sharePetError')
+        });
+      }
+    });
   }
 
   /** Se llama al escribir en el input: indica "Escribiendo…" con un debounce de 1.2s. */
@@ -1085,6 +1665,13 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
     const el = this.messagesEl()?.nativeElement;
     if (el) {
       el.scrollTop = el.scrollHeight;
+    }
+  }
+
+  onMessagesScroll(): void {
+    const el = this.messagesEl()?.nativeElement;
+    if (el) {
+      this.shouldAutoScroll.set(el.scrollHeight - el.scrollTop - el.clientHeight <= 24);
     }
   }
 
@@ -1133,8 +1720,11 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
         copy[optimisticIndex] = message;
         return copy;
       }
-      if (list.some(m => m.id === message.id)) {
-        return list;
+      const existingIndex = list.findIndex(m => m.id === message.id);
+      if (existingIndex >= 0) {
+        const copy = [...list];
+        copy[existingIndex] = message;
+        return copy;
       }
       return [...list, message];
     });
@@ -1180,7 +1770,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
 
   // ---------- Nueva conversación ----------
   openNewConversationDialog(): void {
-    this.newUserSearch = '';
+    this.newUserSearch.set('');
     this.showNewDialog.set(true);
     if (this.allUsers().length === 0) {
       this.messagesApi.getAllProfiles().subscribe({
@@ -1200,7 +1790,7 @@ export class MessagesPageComponent implements OnInit, OnDestroy {
   }
 
   newUserResults = computed(() => {
-    const query = this.newUserSearch.toLowerCase();
+    const query = this.newUserSearch().trim().toLowerCase();
     return this.allUsers().filter(u =>
       !query ||
       `${u.firstName} ${u.lastName}`.toLowerCase().includes(query)

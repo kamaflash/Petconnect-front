@@ -1,4 +1,5 @@
 import { Component, signal, computed, inject, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { PageResponse } from '../../../shared/infrastructure/http/page-response';
 import { ButtonModule } from 'primeng/button';
@@ -151,58 +152,6 @@ interface CartItem {
         </div>
       </div>
 
-      <!-- Product Detail Modal -->
-      <app-modal
-        [visible]="productDetailVisible()"
-        [showCancel]="false"
-        (onHide)="productDetailVisible.set(false)"
-      >
-        @if (selectedProduct(); as product) {
-          <div class="product-detail">
-            <div class="product-detail-image">
-              <img [src]="product.image" [alt]="product.name" />
-            </div>
-            <div class="product-detail-info">
-              <span class="product-category">{{ product.category }}</span>
-              <h2>{{ product.name }}</h2>
-              <div class="product-rating">
-                <div class="stars">
-                  @for (star of [1,2,3,4,5]; track star) {
-                    <i class="pi pi-star-fill" [class.filled]="star <= product.rating"></i>
-                  }
-                </div>
-                <span>({{ product.reviews }} {{ 'marketplace.reviews' | transloco }})</span>
-              </div>
-              <p class="product-description">{{ product.description }}</p>
-              <div class="product-price-section">
-                @if (product.originalPrice) {
-                  <span class="original-price">{{ product.originalPrice | currency:'EUR' }}</span>
-                }
-                <span class="current-price">{{ product.price | currency:'EUR' }}</span>
-                @if (product.discount) {
-                  <span class="discount-badge">-{{ product.discount }}%</span>
-                }
-              </div>
-              <div class="product-stock">
-                <i class="pi pi-box"></i>
-                <span [class.in-stock]="product.stock > 0" [class.out-stock]="product.stock === 0">
-                  {{ product.stock > 0 ? ('marketplace.inStock' | transloco: { count: product.stock }) : ('marketplace.outOfStock' | transloco) }}
-                </span>
-              </div>
-              <div class="product-actions">
-                <button
-                  class="add-to-cart-btn-large"
-                  (click)="addToCart(product)"
-                  [disabled]="product.stock === 0"
-                >
-                  <i class="pi pi-shopping-cart"></i>
-                  {{ product.stock === 0 ? ('marketplace.outOfStock' | transloco) : ('marketplace.addToCart' | transloco) }}
-                </button>
-              </div>
-            </div>
-          </div>
-        }
-      </app-modal>
     </div>
   `,
   styles: [`
@@ -598,6 +547,7 @@ export class MarketplacePageComponent implements OnInit, OnDestroy {
   private messageService = inject(MessageService);
   private readonly marketplaceService = inject(MarketplaceService);
   private readonly transloco = inject(TranslocoService);
+  private readonly router = inject(Router);
 
   /**
    * Cambios de filtro del grid con debounce (patrón de communities-page):
@@ -619,10 +569,6 @@ export class MarketplacePageComponent implements OnInit, OnDestroy {
   products = signal<Product[]>([]);
   cartItems = signal<CartItem[]>([]);
   cartOpen = signal(false);
-
-  // Product Detail
-  productDetailVisible = signal(false);
-  selectedProduct = signal<Product | null>(null);
 
   // Filters
   productFilters = signal<Record<string, any>>({});
@@ -855,9 +801,13 @@ export class MarketplacePageComponent implements OnInit, OnDestroy {
   }
 
   openProductDetail(product: Product): void {
-    this.selectedProduct.set(product);
-    this.productDetailVisible.set(true);
-  }
+    console.log('Navigating to product detail, product.id:', product.id);
+    console.log('Full product:', product);
+    // Ir a la página de detalle del producto (estilo Amazon) en vez de abrir modal
+    this.router.navigate(['/marketplace/product', product.id])
+      .then(() => console.log('Navigation successful'))
+      .catch((err) => console.error('Navigation failed', err));
+}
 
   addToCart(product: Product): void {
     if (product.stock === 0) return;

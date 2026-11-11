@@ -1,4 +1,4 @@
-import { Component, signal, inject, input, output } from '@angular/core';
+import { Component, signal, inject, input, output, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -169,18 +169,7 @@ interface RegisterStep {
               </div>
 
               <!-- Botón Google -->
-              <button
-                type="button"
-                class="google-button-instagram"
-                (click)="onGoogleLogin()"
-                [class.loading]="googleLoading()"
-                [disabled]="loading() || googleLoading()"
-              >
-                <span class="button-content">
-                                    <i class="pi pi-google"></i>
-                  {{ 'auth.googleButton' | transloco }}
-                </span>
-              </button>
+              <div #googleButtonContainer class="google-button-container"></div>
             </form>
           }
 
@@ -951,49 +940,11 @@ interface RegisterStep {
       font-size: 1.1rem;
     }
 
-    /* ===== GOOGLE BUTTON ===== */
-    .google-button-instagram {
+    .google-button-container {
       width: 100%;
-      padding: 0.875rem 1rem;
-      border: 1.5px solid var(--surface-border);
-      border-radius: 12px;
-      background: var(--surface-card);
-      color: var(--text-primary);
-      font-size: 0.95rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      outline: none;
-    }
-
-    .google-button-instagram:hover:not(:disabled) {
-      background: var(--surface-hover);
-      border-color: #cbd5e1;
-      transform: translateY(-1px);
-    }
-
-    .google-button-instagram:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    .google-button-instagram:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .google-button-instagram.loading {
-      opacity: 0.85;
-    }
-
-    .dark .google-button-instagram {
-      background: var(--surface-hover);
-      border-color: var(--surface-border);
-      color: var(--text-primary);
-    }
-
-    .dark .google-button-instagram:hover:not(:disabled) {
-      background: var(--surface-card);
-      border-color: #525252;
+      min-height: 44px;
+      display: flex;
+      justify-content: center;
     }
 
     /* ===== DIVIDER ===== */
@@ -1239,11 +1190,20 @@ export class LoginPageComponent {
 
   // ===== Estado =====
   loading = signal(false);
-  googleLoading = signal(false);
   registerLoading = signal(false);
   error = signal<string | null>(null);
   activeTab = signal<'login' | 'register'>('login');
   registerStep = signal(1);
+  private renderedGoogleButton?: HTMLElement;
+
+  @ViewChild('googleButtonContainer')
+  set googleButtonContainer(ref: ElementRef<HTMLDivElement> | undefined) {
+    if (ref) {
+      void this.renderGoogleButton(ref.nativeElement);
+    } else {
+      this.renderedGoogleButton = undefined;
+    }
+  }
 
   // ===== Pasos del registro =====
   registerSteps: RegisterStep[] = [
@@ -1298,7 +1258,7 @@ export class LoginPageComponent {
     }
   }
 
-    private googleScriptLoaded = false;
+  private googleScriptLoaded = false;
   private googleInitialized = false;
 
   /** Carga el script de Google Identity Services y lo inicializa una sola vez. */
@@ -1343,7 +1303,6 @@ export class LoginPageComponent {
   /** Callback de GIS: recibe el ID token y lo envía al backend. */
   private async handleGoogleCredential(response: { credential?: string }): Promise<void> {
     if (!response?.credential) {
-      this.googleLoading.set(false);
       this.error.set(this.transloco.translate('auth.googleNoCredential'));
       return;
     }
@@ -1362,26 +1321,27 @@ export class LoginPageComponent {
       void this.router.navigate([user.profileComplete ? '/' : '/onboarding']);
     } catch (err) {
       this.error.set(this.transloco.translate('auth.googleError'));
-    } finally {
-      this.googleLoading.set(false);
     }
   }
 
-  async onGoogleLogin(): Promise<void> {
-    this.googleLoading.set(true);
-    this.error.set(null);
-
+  private async renderGoogleButton(container: HTMLDivElement): Promise<void> {
     try {
       await this.loadGoogle();
-      // `prompt` abre el selector de cuenta de Google (Sign in with Google).
-      google.accounts.id.prompt({
-        context: 'signin',
-        // Si el usuario cierra el diálogo sin elegir cuenta, no bloqueamos el loading.
-        cancel_on_click: true
+      if (!container.isConnected || this.renderedGoogleButton === container) return;
+      container.replaceChildren();
+      const containerWidth = Math.floor(container.getBoundingClientRect().width);
+      const width = Math.min(400, Math.max(240, containerWidth || 320));
+      google.accounts.id.renderButton(container, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        width,
+        locale: this.transloco.getActiveLang()
       });
-      // El callback handleGoogleCredential se encarga de navegar / cerrar el modal.
-    } catch (err) {
-      this.googleLoading.set(false);
+      this.renderedGoogleButton = container;
+    } catch {
       this.error.set(this.transloco.translate('auth.googleUnavailable'));
     }
   }

@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit, effect, AfterViewInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, effect, AfterViewInit, OnDestroy, ViewChild, ElementRef, DestroyRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
@@ -7,7 +7,8 @@ import { AvatarModule } from 'primeng/avatar';
 import { AvatarGroupModule } from 'primeng/avatargroup';
 import { InputTextModule } from 'primeng/inputtext';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { DividerModule } from 'primeng/divider';
@@ -23,8 +24,10 @@ import { ModalComponent } from '../../../shared/presentation/components/modal/mo
 import { PostFeedComponent, PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { CloudinaryService, CloudinaryUploadResponse } from '../../../shared/infrastructure/services/cloudinary.service';
-import { SocialService, PostResponse, EventResponse, GroupResponse, NotificationResponse, TrendingTopicResponse, FollowResponse, UserProfileResponse, PageResponse, PostIntent } from '../../infrastructure/services/social.service';
+import { SocialService, PostResponse, EventResponse, GroupResponse, NotificationResponse, TrendingTopicResponse, FollowResponse, UserProfileResponse, PageResponse, PostAudience, PostIntent } from '../../infrastructure/services/social.service';
 import { LikeService } from '../../../shared/infrastructure/services/like.service';
+import { ProfileService } from '../../../profile/infrastructure/services/profile.service';
+import { SearchRadiusService } from '../../../shared/services/search-radius.service';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
@@ -95,6 +98,10 @@ interface CommunityPost {
   latitude?: number | null;
   /** Solo presente cuando el autor confirmó la ubicación en el mapa. */
   longitude?: number | null;
+  authorProfileType?: string;
+  authorLatitude?: number | null;
+  authorLongitude?: number | null;
+  audience?: PostAudience;
   type?: 'update' | 'question' | 'event' | 'tip' | 'milestone';
   petMention?: {
     id: string;
@@ -159,6 +166,8 @@ interface Notification {
   postContent?: string;
 }
 
+const PROVIDER_PROFILE_TYPES = new Set(['vet', 'trainer', 'shelter', 'seller']);
+
 @Component({
   selector: 'app-social-page',
   standalone: true,
@@ -214,7 +223,15 @@ interface Notification {
         <!-- Loading state is now handled by PostFeedComponent with Skeleton -->
         <div class="feed-layout" *ngIf="activeTab() === 'feed'">
           <div class="feed-column">
-            <div class="create-post-input" (click)="showCreatePostDialog()" (keydown.enter)="showCreatePostDialog()" tabindex="0" role="link">
+            <div
+              class="create-post-input"
+              (click)="showCreatePostDialog()"
+              (keydown.enter)="showCreatePostDialog()"
+              (keydown.space)="$event.preventDefault(); showCreatePostDialog()"
+              tabindex="0"
+              role="button"
+              [attr.aria-label]="'social.createPost' | transloco"
+            >
               <p-avatar [image]="currentUserAvatar()" shape="circle" size="normal"></p-avatar>
               <input
                 type="text"
@@ -228,14 +245,131 @@ interface Notification {
               </div>
             </div>
 
+            <section class="feed-controls" [attr.aria-label]="'social.feedControls.label' | transloco">
+              <div class="feed-source-tabs" role="group" [attr.aria-label]="'social.feedControls.sourceLabel' | transloco">
+                <button
+                  type="button"
+                  class="feed-source-tab"
+                  [class.active]="feedSource() === 'following'"
+                  [attr.aria-pressed]="feedSource() === 'following'"
+                  (click)="selectFeedSource('following')"
+                >
+                  <i class="pi pi-users" aria-hidden="true"></i>
+                  {{ 'social.feedControls.following' | transloco }}
+                </button>
+                <button
+                  type="button"
+                  class="feed-source-tab"
+                  [class.active]="feedSource() === 'nearby'"
+                  [attr.aria-pressed]="feedSource() === 'nearby'"
+                  (click)="selectFeedSource('nearby')"
+                >
+                  <i class="pi pi-map-marker" aria-hidden="true"></i>
+                  {{ 'social.feedControls.nearby' | transloco }}
+                </button>
+                <button
+                  type="button"
+                  class="feed-source-tab"
+                  [class.active]="feedSource() === 'trending'"
+                  [attr.aria-pressed]="feedSource() === 'trending'"
+                  (click)="selectFeedSource('trending')"
+                >
+                  <i class="pi pi-chart-line" aria-hidden="true"></i>
+                  {{ 'social.feedControls.trending' | transloco }}
+                </button>
+              </div>
+              @if (feedSource() === 'following') {
+                <p class="feed-source-hint">{{ 'social.feedControls.followingHint' | transloco }}</p>
+              }
+              @if (feedSource() === 'nearby') {
+                <p class="feed-source-hint">{{ 'social.feedControls.nearbyHint' | transloco: { radius: searchRadius.radiusKm() === 0 ? ('settings.unlimited' | transloco) : searchRadius.radiusKm() + ' km' } }}</p>
+              }
+              @if (feedSource() === 'trending') {
+                <p class="feed-source-hint">{{ 'social.feedControls.trendingHint' | transloco }}</p>
+              }
+              @if (feedSource() === 'following' && followingLoadError()) {
+                <div class="following-feed-error" role="alert">
+                  <span>{{ 'social.feedControls.followingErrorDescription' | transloco }}</span>
+                  <button type="button" (click)="retryFollowing()">
+                    {{ 'social.feedControls.retryFollowing' | transloco }}
+                  </button>
+                </div>
+              }
+
+              <div class="intent-filter-section">
+                <span class="intent-filter-label">{{ 'social.feedControls.intentLabel' | transloco }}</span>
+                <div class="intent-filter-bar" role="group" [attr.aria-label]="'social.feedControls.intentLabel' | transloco">
+                  <button
+                    type="button"
+                    class="intent-chip"
+                    [class.active]="selectedFeedIntent() === null"
+                    [attr.aria-pressed]="selectedFeedIntent() === null"
+                    (click)="selectedFeedIntent.set(null)"
+                  >{{ 'social.feedControls.anyIntent' | transloco }}</button>
+                  @for (intent of feedIntentOptions; track intent) {
+                    <button
+                      type="button"
+                      class="intent-chip"
+                      [class.active]="selectedFeedIntent() === intent"
+                      [attr.aria-pressed]="selectedFeedIntent() === intent"
+                      (click)="selectedFeedIntent.set(intent)"
+                    >{{ 'post.postIntent.' + intent | transloco }}</button>
+                  }
+                </div>
+              </div>
+
+              @if (hiddenAuthorIds().size > 0) {
+                <button type="button" class="restore-hidden-posts" (click)="restoreHiddenAuthors()">
+                  <i class="pi pi-eye" aria-hidden="true"></i>
+                  {{ 'social.feedControls.restoreHidden' | transloco: { count: hiddenAuthorIds().size } }}
+                </button>
+              }
+            </section>
+
             <app-post-feed
               [posts]="postItems()"
               [loading]="loading()"
               [currentUserId]="currentUserId()"
+              [allowHidingAuthors]="true"
               (likeToggled)="onLikeToggled($event)"
               (saveToggled)="onSaveToggled($event)"
               (commentsChanged)="onCommentsChanged($event)"
+              (authorHidden)="hideAuthor($event)"
             />
+
+            @if (!loading() && postItems().length === 0) {
+              <div class="feed-empty-state" role="status">
+                <span class="feed-empty-icon material-symbols-rounded" aria-hidden="true">
+                  {{ feedSource() === 'following' ? 'person_search' : feedSource() === 'nearby' ? 'location_off' : 'filter_alt_off' }}
+                </span>
+                <h3>
+                  @if (allLoadedPostsHidden()) {
+                    {{ 'social.feedControls.hiddenEmptyTitle' | transloco }}
+                  } @else if (feedSource() === 'following' && followingLoaded() && !followingLoadError() && followedUserIds().size === 0) {
+                    {{ 'social.feedControls.noFollowingTitle' | transloco }}
+                  } @else if (feedSource() === 'nearby' && searchRadius.radiusKm() !== 0 && !searchRadius.userOrigin()) {
+                    {{ 'social.feedControls.nearbyUnavailableTitle' | transloco }}
+                  } @else {
+                    {{ 'social.feedControls.emptyTitle' | transloco }}
+                  }
+                </h3>
+                <p>
+                  @if (feedSource() === 'following' && followingLoaded() && !followingLoadError() && followedUserIds().size === 0) {
+                    {{ 'social.feedControls.noFollowingDescription' | transloco }}
+                  } @else if (feedSource() === 'nearby' && searchRadius.radiusKm() !== 0 && !searchRadius.userOrigin()) {
+                    {{ 'social.feedControls.nearbyUnavailableDescription' | transloco }}
+                  } @else {
+                    {{ 'social.feedControls.emptyDescription' | transloco }}
+                  }
+                </p>
+                <button
+                  type="button"
+                  class="feed-empty-action"
+                  (click)="resetFeedFilters()"
+                  [hidden]="feedSource() === 'trending' && selectedFeedIntent() === null && hiddenAuthorIds().size === 0"
+                >{{ 'social.feedControls.reset' | transloco }}</button>
+              </div>
+            }
 
             <div class="load-more-container">
               <p-button
@@ -552,14 +686,15 @@ interface Notification {
     /* Feed Layout */
     .feed-layout {
       display: grid;
-      grid-template-columns: 1fr 380px;
-      gap: 2rem;
+      grid-template-columns: minmax(0, 680px) minmax(260px, 320px);
+      justify-content: center;
+      gap: 1.5rem;
     }
 
     .feed-column {
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
+      gap: 1rem;
     }
 
     /* Intent filter chips */
@@ -629,6 +764,11 @@ interface Notification {
     .create-post-input:hover {
       background-color: var(--surface-hover);
       border-color: var(--surface-border);
+    }
+
+    .create-post-input:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 3px;
     }
 
     .post-input-field {
@@ -1667,9 +1807,12 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
   private transloco = inject(TranslocoService);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private destroyRef = inject(DestroyRef);
   private cloudinaryService = inject(CloudinaryService);
   private socialService = inject(SocialService);
   private likeService = inject(LikeService);
+  private profileService = inject(ProfileService);
   private http = inject(HttpClient);
 
   private readonly apiUrl = environment.apiUrl;
@@ -1681,6 +1824,7 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
   // Pagination state (client-side: the feed endpoint returns a plain array)
   private readonly pageSize = 10;
   private appendMode = false;
+  private postLoadRequestId = 0;
   currentPage = signal(0);
   isLastPage = signal(false);
 
@@ -1693,6 +1837,23 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
   currentUserName = signal('Usuario');
   currentUserAvatar = signal('https://i.pravatar.cc/150?img=1');
   currentUserUsername = signal('@usuario');
+
+  readonly feedIntentOptions: PostIntent[] = [
+    'UPDATE',
+    'QUESTION',
+    'RECOMMENDATION',
+    'ACHIEVEMENT',
+    'MEETUP',
+    'URGENT_LOST'
+  ];
+  feedSource = signal<'following' | 'nearby' | 'trending'>('following');
+  private feedSourceTouched = false;
+  selectedFeedIntent = signal<PostIntent | null>(null);
+  followedUserIds = signal<Set<string>>(new Set());
+  hiddenAuthorIds = signal<Set<string>>(new Set());
+  followingLoaded = signal(false);
+  followingLoadError = signal(false);
+  readonly searchRadius = inject(SearchRadiusService);
 
   // Tabs
   activeTab = signal('feed');
@@ -1725,6 +1886,17 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
           placeholder: this.transloco.translate('social.whatsOnYourMind'),
           validation: { required: true, minLength: 1, maxLength: 500 },
           rows: 4
+        },
+        {
+          key: 'audience',
+          label: this.transloco.translate('social.form.audience'),
+          type: 'select',
+          defaultValue: 'PUBLIC',
+          options: [
+            { label: this.transloco.translate('social.form.audiencePublic'), value: 'PUBLIC' },
+            { label: this.transloco.translate('social.form.audienceFollowers'), value: 'FOLLOWERS' },
+            { label: this.transloco.translate('social.form.audienceOnlyMe'), value: 'ONLY_ME' }
+          ]
         },
         {
           key: 'tags',
@@ -1791,10 +1963,44 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
   notifications = signal<Notification[]>([]);
 
   // Computed
-  // El feed muestra todas las publicaciones ordenadas; el filtro por tipo se
-  // eliminó. El badge de cada tarjeta sigue informando del origen.
+  // The API provides chronological source feeds; nearby filtering and trend
+  // ranking are applied to the posts currently loaded in this page.
   filteredFeedPosts = computed(() => {
-    return this.communityPosts().sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    const followedIds = this.followedUserIds();
+    const hiddenIds = this.hiddenAuthorIds();
+    const selectedIntent = this.selectedFeedIntent();
+    const source = this.feedSource();
+    const origin = this.searchRadius.userOrigin();
+    const radiusKm = this.searchRadius.radiusKm();
+    const now = Date.now();
+
+    const filtered = [...this.communityPosts()]
+      .filter(post => !hiddenIds.has(post.user.userId))
+      .filter(post => source !== 'following' || followedIds.has(post.user.userId))
+      .filter(post => source !== 'nearby' || this.isNearbyProviderPost(post, origin, radiusKm))
+      .filter(post => !selectedIntent || (post.intent ?? 'UPDATE') === selectedIntent);
+
+    if (source === 'trending') {
+      return filtered.sort((a, b) =>
+        this.trendScore(b, now) - this.trendScore(a, now) ||
+        b.timestamp.getTime() - a.timestamp.getTime()
+      );
+    }
+
+    if (source === 'nearby' && origin) {
+      return filtered.sort((a, b) =>
+        this.postDistanceKm(a, origin) - this.postDistanceKm(b, origin) ||
+        b.timestamp.getTime() - a.timestamp.getTime()
+      );
+    }
+
+    return filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  });
+
+  allLoadedPostsHidden = computed(() => {
+    const posts = this.communityPosts();
+    const hiddenIds = this.hiddenAuthorIds();
+    return posts.length > 0 && posts.every(post => hiddenIds.has(post.user.userId));
   });
 
   // Convert CommunityPost[] to PostItem[] for the shared component
@@ -1822,8 +2028,101 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
   });
 
   ngOnInit(): void {
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        if (params.get('compose') !== 'true') {
+          return;
+        }
+
+        this.showCreatePostDialog();
+        void this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { compose: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true
+        });
+      });
+
     this.initializeCurrentUser();
+    this.profileService.getPreferences()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (preferences) => {
+          if (!this.feedSourceTouched) {
+            const preferredSource = preferences.feedDefault === 'FOLLOWING' ? 'following' : 'trending';
+            if (this.feedSource() !== preferredSource) {
+              this.feedSource.set(preferredSource);
+              this.loadPosts();
+            }
+          }
+        }
+      });
     this.loadAllData();
+  }
+
+  selectFeedSource(source: 'following' | 'nearby' | 'trending'): void {
+    const changed = this.feedSource() !== source;
+    this.feedSourceTouched = true;
+    this.feedSource.set(source);
+    if (changed) {
+      this.loadPosts();
+    }
+    if (source === 'nearby' && this.searchRadius.radiusKm() !== 0 && !this.searchRadius.userOrigin()) {
+      this.searchRadius.resolveOrigin().subscribe({
+        next: origin => {
+          if (!origin) {
+            this.messageService.add({
+              severity: 'warn',
+              summary: this.transloco.translate('social.feedControls.nearbyUnavailableTitle'),
+              detail: this.transloco.translate('social.feedControls.nearbyUnavailableDescription')
+            });
+          }
+        },
+        error: error => {
+          console.error('Error resolving the location for nearby posts:', error);
+          this.messageService.add({
+            severity: 'error',
+            summary: this.transloco.translate('social.toasts.error'),
+            detail: this.transloco.translate('social.feedControls.nearbyUnavailableDescription')
+          });
+        }
+      });
+    }
+  }
+
+  private isNearbyProviderPost(
+    post: CommunityPost,
+    origin: { lat: number; lng: number } | null,
+    radiusKm: number
+  ): boolean {
+    if (!PROVIDER_PROFILE_TYPES.has((post.authorProfileType ?? '').toLowerCase())) {
+      return false;
+    }
+
+    const latitude = post.authorLatitude ?? post.latitude;
+    const longitude = post.authorLongitude ?? post.longitude;
+    if (latitude == null || longitude == null) {
+      return false;
+    }
+    return radiusKm === 0 || (
+      origin != null &&
+      this.searchRadius.distanceKm(origin, { lat: latitude, lng: longitude }) <= radiusKm
+    );
+  }
+
+  private postDistanceKm(post: CommunityPost, origin: { lat: number; lng: number }): number {
+    const latitude = post.authorLatitude ?? post.latitude;
+    const longitude = post.authorLongitude ?? post.longitude;
+    return latitude == null || longitude == null
+      ? Number.POSITIVE_INFINITY
+      : this.searchRadius.distanceKm(origin, { lat: latitude, lng: longitude });
+  }
+
+  private trendScore(post: CommunityPost, now: number): number {
+    const ageHours = Math.max(0, (now - post.timestamp.getTime()) / 3_600_000);
+    const engagement = post.likes + post.comments * 2.5;
+    return (engagement + 1) / Math.pow(ageHours + 2, 0.75);
   }
 
   private initializeCurrentUser(): void {
@@ -1855,11 +2154,18 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private loadFollowingData(): void {
     const userId = this.currentUserId();
-    if (!userId) return;
+    if (!userId) {
+      this.followingLoaded.set(true);
+      return;
+    }
+    this.followingLoaded.set(false);
+    this.followingLoadError.set(false);
 
     // Load following users
     this.socialService.getFollowing(userId).subscribe({
       next: (following) => {
+        this.followedUserIds.set(new Set(following.map(relation => relation.followingId)));
+        this.followingLoaded.set(true);
         // Fetch real user profiles for each following relationship
         const profileRequests = following.map(f =>
           this.socialService.getProfileByAuthUserId(f.followingId).pipe(
@@ -1903,6 +2209,8 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       },
       error: (error) => {
+        this.followingLoaded.set(true);
+        this.followingLoadError.set(true);
         console.error('Error loading following:', error);
       }
     });
@@ -1960,16 +2268,25 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private loadPosts(append: boolean = false): void {
     this.appendMode = append;
+    const requestId = append ? this.postLoadRequestId : ++this.postLoadRequestId;
     if (append) {
       this.loadingMore.set(true);
     } else {
       this.loading.set(true);
+      this.communityPosts.set([]);
+      this.currentPage.set(0);
+      this.isLastPage.set(false);
     }
 
     const page = append ? this.currentPage() : 0;
+    const userId = this.currentUserId();
+    const request = this.feedSource() === 'following' && userId
+      ? this.socialService.getPostsByFollowing(userId, page, this.pageSize)
+      : this.socialService.getPublicFeed(page, this.pageSize);
 
-    this.socialService.getPublicFeed(page, this.pageSize).subscribe({
+    request.subscribe({
       next: (rawResponse) => {
+        if (requestId !== this.postLoadRequestId) return;
         // El backend puede devolver un Page JSON ({content, last, totalElements})
         // o un array plano si la versión en ejecución no pagina. Normalizamos:
         const pageResponse: PageResponse<PostResponse> = Array.isArray(rawResponse)
@@ -1980,6 +2297,7 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
         // Load all profiles to map author data
         this.socialService.getAllProfiles().subscribe({
           next: (profiles) => {
+            if (requestId !== this.postLoadRequestId) return;
             // Create a map for faster lookup (keyed by authUserId)
             const profileMap = new Map(profiles.map(p => [p.authUserId, p]));
 
@@ -1998,6 +2316,7 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
               forkJoin(likeStatusRequests).subscribe({
                 next: (likeStatuses) => {
+                  if (requestId !== this.postLoadRequestId) return;
                   // Update liked status and likes count
                   mappedPosts.forEach((post, index) => {
                     post.liked = likeStatuses[index].liked;
@@ -2013,6 +2332,7 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
 
                   forkJoin(likeAvatarsRequests).subscribe({
                     next: (likesArrays) => {
+                      if (requestId !== this.postLoadRequestId) return;
                       mappedPosts.forEach((post, index) => {
                         const likes = likesArrays[index] || [];
                         // Map likes to real avatar URLs using profileMap
@@ -2024,33 +2344,37 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
                           .filter((url): url is string => !!url)
                           .slice(0, 3);
                       });
-                      this.applyPosts(mappedPosts, pageResponse);
+                      this.applyPosts(mappedPosts, pageResponse, requestId);
                     },
                     error: () => {
+                      if (requestId !== this.postLoadRequestId) return;
                       // If avatars fail, continue without them
-                      this.applyPosts(mappedPosts, pageResponse);
+                      this.applyPosts(mappedPosts, pageResponse, requestId);
                     }
                   });
                 },
                 error: () => {
+                  if (requestId !== this.postLoadRequestId) return;
                   // If like status fails, use default values
-                  this.applyPosts(mappedPosts, pageResponse);
+                  this.applyPosts(mappedPosts, pageResponse, requestId);
                 }
               });
             } else {
-              this.applyPosts(mappedPosts, pageResponse);
+              this.applyPosts(mappedPosts, pageResponse, requestId);
             }
           },
           error: () => {
+            if (requestId !== this.postLoadRequestId) return;
             // If profiles fail to load, use default mapping
             const mappedPosts = posts.map(post =>
               this.mapPostToCommunityPost(post, new Map())
             );
-            this.applyPosts(mappedPosts, pageResponse);
+            this.applyPosts(mappedPosts, pageResponse, requestId);
           }
         });
       },
       error: (error) => {
+        if (requestId !== this.postLoadRequestId) return;
         console.error('Error loading posts:', error);
         this.loading.set(false);
         this.loadingMore.set(false);
@@ -2068,7 +2392,12 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
    * The backend paginates the feed (?page=&size=), so "Cargar más" /
    * infinite scroll triggers a new request for the next page.
    */
-  private applyPosts(mappedPosts: CommunityPost[], pageResponse: PageResponse<PostResponse>): void {
+  private applyPosts(
+    mappedPosts: CommunityPost[],
+    pageResponse: PageResponse<PostResponse>,
+    requestId: number
+  ): void {
+    if (requestId !== this.postLoadRequestId) return;
     if (this.appendMode) {
       this.communityPosts.update(current => [...current, ...mappedPosts]);
     } else {
@@ -2108,6 +2437,8 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
         if (
           entry.isIntersecting &&
           this.activeTab() === 'feed' &&
+          this.selectedFeedIntent() === null &&
+          this.hiddenAuthorIds().size === 0 &&
           !this.isLastPage() &&
           !this.loadingMore()
         ) {
@@ -2218,6 +2549,10 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
       location: post.location ?? null,
       latitude: post.latitude ?? null,
       longitude: post.longitude ?? null,
+      authorProfileType: profile?.profileType ?? '',
+      authorLatitude: profile?.latitude ?? null,
+      authorLongitude: profile?.longitude ?? null,
+      audience: post.audience,
       tags: tags
     };
   }
@@ -2349,6 +2684,37 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
       post.saved = postItem.saved;
       this.communityPosts.set([...currentPosts]);
     }
+  }
+
+  hideAuthor(authorId: string): void {
+    if (!authorId || authorId === this.currentUserId()) {
+      return;
+    }
+
+    this.hiddenAuthorIds.update(hidden => new Set(hidden).add(authorId));
+    this.messageService.add({
+      severity: 'success',
+      summary: this.transloco.translate('social.feedControls.hiddenToastTitle'),
+      detail: this.transloco.translate('social.feedControls.hiddenToastDetail'),
+      life: 3500
+    });
+  }
+
+  restoreHiddenAuthors(): void {
+    this.hiddenAuthorIds.set(new Set());
+  }
+
+  retryFollowing(): void {
+    this.loadFollowingData();
+    if (this.feedSource() === 'following') {
+      this.loadPosts();
+    }
+  }
+
+  resetFeedFilters(): void {
+    this.selectFeedSource('trending');
+    this.selectedFeedIntent.set(null);
+    this.restoreHiddenAuthors();
   }
 
   onCommentsChanged(event: { postId: string; count: number }): void {
@@ -2568,6 +2934,7 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
       imageUrl: '',
       tags: tags,
       intent: 'UPDATE',
+      audience: formData.audience || 'PUBLIC',
       location: null,
       latitude: null,
       longitude: null
@@ -2592,6 +2959,7 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
             liked: false,
             saved: false,
             intent: createdPost.intent,
+            audience: createdPost.audience,
             solved: createdPost.solved,
             location: createdPost.location ?? null,
             latitude: createdPost.latitude ?? null,
@@ -2626,6 +2994,7 @@ export class SocialPageComponent implements OnInit, AfterViewInit, OnDestroy {
             shares: 0,
             liked: false,
             saved: false,
+            audience: formData.audience || 'PUBLIC',
             intent: 'UPDATE',
             tags: tags
           };

@@ -116,9 +116,19 @@ export type PostViewMode = 'feed' | 'grid';
                 <span class="post-name">{{ post.user.name }}</span>
               </div>
             </div>
-            <button class="post-more-btn">
-              <i class="pi pi-ellipsis-h"></i>
-            </button>
+            @if (allowHidingAuthors() && post.user.userId !== currentUserId()) {
+              <details class="post-menu">
+                <summary class="post-more-btn" [attr.aria-label]="'post.hideAuthor' | transloco">
+                  <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
+                </summary>
+                <div class="post-menu-content">
+                  <button type="button" (click)="authorHidden.emit(post.user.userId)">
+                    <i class="pi pi-eye-slash" aria-hidden="true"></i>
+                    {{ 'post.hideAuthor' | transloco }}
+                  </button>
+                </div>
+              </details>
+            }
           </div>
 
           <!-- Image -->
@@ -332,10 +342,15 @@ export type PostViewMode = 'feed' | 'grid';
     .post-card {
       background: var(--surface-card);
       border: 1px solid var(--surface-border);
-      border-radius: var(--radius-lg);
+      border-radius: var(--radius-xl);
       overflow: hidden;
       box-shadow: var(--shadow-sm);
-      transition: box-shadow var(--transition-normal);
+      transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+    }
+
+    .post-card:hover {
+      border-color: color-mix(in srgb, var(--primary-color) 18%, var(--surface-border));
+      box-shadow: var(--shadow-md);
     }
 
     .skeleton-post {
@@ -346,7 +361,7 @@ export type PostViewMode = 'feed' | 'grid';
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.75rem 1rem;
+      padding: 0.875rem 1rem;
     }
 
     .post-user {
@@ -388,6 +403,7 @@ export type PostViewMode = 'feed' | 'grid';
     }
 
     .post-more-btn {
+      list-style: none;
       background: none;
       border: none;
       cursor: pointer;
@@ -402,15 +418,59 @@ export type PostViewMode = 'feed' | 'grid';
       justify-content: center;
     }
 
+    .post-more-btn::-webkit-details-marker {
+      display: none;
+    }
+
     .post-more-btn:hover {
       background: var(--surface-hover);
       color: var(--text-primary);
+    }
+
+    .post-menu {
+      position: relative;
+    }
+
+    .post-menu-content {
+      position: absolute;
+      top: calc(100% + 0.375rem);
+      right: 0;
+      z-index: 5;
+      min-width: 13rem;
+      padding: 0.375rem;
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-md);
+      background: var(--surface-card);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .post-menu-content button {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.625rem 0.75rem;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-primary);
+      font: inherit;
+      font-size: 0.8125rem;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .post-menu-content button:hover,
+    .post-menu-content button:focus-visible {
+      outline: none;
+      background: var(--surface-hover);
     }
 
     .post-image-wrap {
       position: relative;
       width: 100%;
       background: var(--surface-card);
+      overflow: hidden;
     }
 
     .post-image {
@@ -584,10 +644,12 @@ export class PostFeedComponent {
   loading = input(false);
   mode = input<PostViewMode>('feed');
   currentUserId = input<string>('');
+  allowHidingAuthors = input(false);
 
   likeToggled = output<PostItem>();
   saveToggled = output<PostItem>();
   commentsChanged = output<{ postId: string; count: number }>();
+  authorHidden = output<string>();
 
   // Track which post has comments section open
   expandedComments = signal<Set<string>>(new Set());

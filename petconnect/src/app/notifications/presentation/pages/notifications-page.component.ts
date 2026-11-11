@@ -8,6 +8,7 @@ import { ToastModule } from 'primeng/toast';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { PageHeadingCardComponent } from '../../../shared/presentation/components/page-heading-card/page-heading-card.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
+import { NotificationBadgeService } from '../../infrastructure/services/notification-badge.service';
 import {
   NotificationResponse,
   SocialService,
@@ -303,6 +304,7 @@ import {
 export class NotificationsPageComponent implements OnInit {
   private readonly socialService = inject(SocialService);
   private readonly authService = inject(AuthService);
+  private readonly notificationBadge = inject(NotificationBadgeService);
   private readonly transloco = inject(TranslocoService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
@@ -341,13 +343,17 @@ export class NotificationsPageComponent implements OnInit {
         this.loading.set(false);
       },
     });
+    this.notificationBadge.refresh(userId);
   }
 
   markAsRead(notification: NotificationResponse): void {
     if (notification.read) return;
 
     this.socialService.markNotificationAsRead(notification.id).subscribe({
-      next: (updated) => this.patchNotification(updated),
+      next: (updated) => {
+        this.patchNotification(updated);
+        this.notificationBadge.refresh();
+      },
       error: () => this.notifyUpdateError(),
     });
   }
@@ -361,6 +367,7 @@ export class NotificationsPageComponent implements OnInit {
         this.notifications.set(
           this.notifications().map((n) => ({ ...n, read: true }))
         );
+        this.notificationBadge.refresh(userId);
         this.messageService.add({
           severity: 'success',
           detail: this.transloco.translate('notifications.allMarkedRead'),
@@ -399,6 +406,10 @@ export class NotificationsPageComponent implements OnInit {
       case 'ADOPTION_REQUEST':
       case 'ADOPTION_UPDATE':
         return ['/adoptions'];
+      case 'SHELTER_VISIT_REQUEST':
+        return ['/management'];
+      case 'SHELTER_VISIT_UPDATE':
+        return notification.actorId ? ['/profile', notification.actorId] : null;
       default:
         return null;
     }
@@ -427,6 +438,8 @@ export class NotificationsPageComponent implements OnInit {
       achievement: 'pi pi-star-fill',
       ADOPTION_REQUEST: 'pi pi-heart',
       ADOPTION_UPDATE: 'pi pi-paw',
+      SHELTER_VISIT_REQUEST: 'pi pi-calendar-plus',
+      SHELTER_VISIT_UPDATE: 'pi pi-calendar',
     };
     return icons[type] || 'pi pi-bell';
   }

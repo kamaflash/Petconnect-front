@@ -169,13 +169,45 @@ export class AuthService extends AuthRepository {
   /** Cierra la sesion: revoca en backend (borra cookies) y limpia el estado. */
   async logout(): Promise<void> {
     try {
-      await firstValueFrom(
-        this.http.post<void>(`${this.apiUrl}/auth/logout`, {}, { withCredentials: true })
-      );
+      await this.ensureCsrfToken();
+      if (this.getCsrfToken()) {
+        await firstValueFrom(
+          this.http.post<void>(`${this.apiUrl}/auth/logout`, {}, { withCredentials: true })
+        );
+      }
     } catch {
-      // Aunque falle la red, la sesion local se limpia igual.
+      // Si el backend falla, igual continuamos para limpiar la sesion local.
+    } finally {
+      this.clearLocalSession();
     }
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.apiUrl}/auth/change-password`, {
+        currentPassword,
+        newPassword
+      }, { withCredentials: true })
+    );
     this.clearLocalSession();
+  }
+
+  async requestEmailChange(newEmail: string): Promise<void> {
+    await this.ensureCsrfToken();
+    await firstValueFrom(
+      this.http.post<void>(`${this.apiUrl}/auth/change-email`, { newEmail }, { withCredentials: true })
+    );
+  }
+
+  async confirmEmailChange(token: string): Promise<void> {
+    await this.ensureCsrfToken();
+    await firstValueFrom(
+      this.http.post<void>(`${this.apiUrl}/auth/confirm-email`, null, {
+        params: { token },
+        withCredentials: true
+      })
+    );
+    await this.logout();
   }
 
   private clearLocalSession(): void {

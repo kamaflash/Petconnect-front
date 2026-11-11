@@ -14,7 +14,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription, catchError, of } from 'rxjs';
 import { TableCardComponent, TableCardItem } from '../../../shared/presentation/components/table-card/table-card.component';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
-import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
+import { DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { ProfileService, UserProfileResponse, PetResponse } from '../../infrastructure/services/profile.service';
 import { VET_SERVICES, parseVetServiceCodes } from '../../domain/vet-services';
@@ -27,11 +27,14 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { SkeletonModule } from 'primeng/skeleton';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem } from 'primeng/api';
-import { LocationPickerComponent } from '../../../shared/components/location-picker/location-picker.component';
 import { GeocodingResult } from '../../../shared/services/geolocation.service';
 import { PostItem } from '../../../shared/presentation/components/post-feed/post-feed.component';
 import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
+import {
+  ShelterManagementService,
+  ShelterVisitRequest
+} from '../../../shelter/infrastructure/services/shelter-management.service';
 
 type ProfileType = 'user' | 'shelter' | 'seller' | 'vet' | 'pet' | 'trainer';
 
@@ -151,13 +154,11 @@ interface Pet {
     FormsModule,
     RouterLink,
     TableCardComponent,
-    DynamicFormComponent,
     ToastModule,
     ProgressBarModule,
     SkeletonModule,
     TabsComponent,
     MenuModule,
-    LocationPickerComponent,
     ModalComponent,
     TranslocoModule
   ],
@@ -179,9 +180,6 @@ interface Pet {
             </ng-container>
             <ng-template #coverLoaded>
               <img [src]="userCoverAvatar()" alt="Cover" class="cover-image-instagram" />
-              <button *ngIf="isOwnProfile()" class="cover-change-btn" (click)="triggerCoverUpload()">
-                <i class="pi pi-camera"></i>
-              </button>
             </ng-template>
           </div>
 
@@ -196,9 +194,6 @@ interface Pet {
                 <div class="avatar-ring">
                   <div class="avatar-wrapper">
                     <img [src]="userAvatar()" alt="Avatar" class="profile-avatar-instagram" />
-                    <button *ngIf="isOwnProfile()" class="avatar-change-btn" (click)="triggerAvatarUpload()">
-                      <i class="pi pi-camera"></i>
-                    </button>
                   </div>
                 </div>
               </ng-template>
@@ -240,8 +235,12 @@ interface Pet {
                   <span *ngIf="userProfile()?.location" class="contact-item">
                     <i class="pi pi-map-marker"></i> {{ userProfile()?.location }}
                   </span>
-                  <span *ngIf="userPhone() !== '—'" class="contact-item">
+                  <span *ngIf="isOwnProfile() && userPhone() !== '—'" class="contact-item">
                     <i class="pi pi-phone"></i> {{ userPhone() }}
+                  </span>
+                  <span *ngIf="!isOwnProfile() && userProfile()?.phone" class="contact-item contact-privacy-note">
+                    <i class="pi pi-lock" aria-hidden="true"></i>
+                    {{ 'profile.phoneHidden' | transloco }}
                   </span>
                   <span *ngIf="userProfile()?.website" class="contact-item">
                     <i class="pi pi-globe"></i>
@@ -254,23 +253,36 @@ interface Pet {
             <!-- Action Buttons -->
             <div class="profile-actions-instagram">
               <ng-container *ngIf="!loading()">
-                <button *ngIf="isOwnProfile()" class="btn-action btn-edit" (click)="setActiveTab('knowme')">
-                  <i class="pi pi-pencil"></i>
-                  <span>{{ 'profile.edit' | transloco }}</span>
+                <button class="btn-action btn-icon btn-share" type="button" (click)="shareProfile()"
+                  [attr.aria-label]="'profile.shareProfile' | transloco"
+                  [attr.title]="'profile.shareProfile' | transloco">
+                  <i class="pi pi-share-alt" aria-hidden="true"></i>
                 </button>
 
-                <button *ngIf="!isOwnProfile()" class="btn-action" [class.btn-following]="userProfile()?.isFollowing" (click)="toggleFollow()">
-                  <i [class]="userProfile()?.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'"></i>
-                  <span>{{ userProfile()?.isFollowing ? ('profile.following' | transloco) : ('profile.follow' | transloco) }}</span>
+                <button *ngIf="!isOwnProfile()" class="btn-action btn-icon" [class.btn-following]="userProfile()?.isFollowing"
+                  type="button" (click)="toggleFollow()"
+                  [attr.aria-label]="(userProfile()?.isFollowing ? 'profile.following' : 'profile.follow') | transloco"
+                  [attr.title]="(userProfile()?.isFollowing ? 'profile.following' : 'profile.follow') | transloco">
+                  <i [class]="userProfile()?.isFollowing ? 'pi pi-check' : 'pi pi-user-plus'" aria-hidden="true"></i>
                 </button>
 
-                <button *ngIf="!isOwnProfile()" class="btn-action btn-message" (click)="openChat()">
-                  <i class="pi pi-send"></i>
-                  <span>{{ 'profile.message' | transloco }}</span>
+                <button *ngIf="!isOwnProfile()" class="btn-action btn-icon btn-message" type="button" (click)="openChat()"
+                  [attr.aria-label]="'profile.message' | transloco"
+                  [attr.title]="'profile.message' | transloco">
+                  <i class="pi pi-send" aria-hidden="true"></i>
+                </button>
+                <button *ngIf="!isOwnProfile() && userProfile()?.type !== 'pet'"
+                  class="btn-action btn-icon btn-block-user" type="button" (click)="blockUser()"
+                  [attr.aria-label]="'settings.blockUser' | transloco"
+                  [attr.title]="'settings.blockUser' | transloco">
+                  <i class="pi pi-ban" aria-hidden="true"></i>
                 </button>
 
-                <button *ngIf="isOwnProfile()" class="btn-action btn-more" (click)="profileMenu.toggle($event)">
-                  <i class="pi pi-ellipsis-h"></i>
+                <button *ngIf="isOwnProfile()" class="btn-action btn-icon btn-more" type="button"
+                  (click)="profileMenu.toggle($event)"
+                  [attr.aria-label]="'profile.moreActions' | transloco"
+                  [attr.title]="'profile.moreActions' | transloco">
+                  <i class="pi pi-ellipsis-h" aria-hidden="true"></i>
                 </button>
               </ng-container>
             </div>
@@ -308,7 +320,7 @@ interface Pet {
                   <div class="post-name" *ngIf="post.caption">{{ post.caption }}</div>
                   <div class="post-stats">
                     <span class="post-stat"><span class="material-symbols-rounded stat-icon">favorite</span> {{ post.likes }}</span>
-                    <span class="post-stat"><span class="material-symbols-rounded stat-icon">share</span> {{ post.comments }}</span>
+                    <span class="post-stat"><span class="material-symbols-rounded stat-icon">chat_bubble</span> {{ post.comments }}</span>
                   </div>
                 </div>
               </div>
@@ -352,18 +364,8 @@ interface Pet {
             </app-table-card>
           </div>
 
-          <!-- Conóceme - Edición (propio perfil) -->
-          <div class="tab-panel" *ngIf="activeTab() === 'knowme' && isOwnProfile() && !loading() && renderForm()">
-            <app-dynamic-form
-              [config]="profileFormConfig()"
-              [formData]="profileFormData()"
-              (onSubmitClick)="onProfileSubmit($event)"
-              (onLocationPicked)="onLocationConfirmed($event)"
-            />
-          </div>
-
-          <!-- Conóceme - Información (otros perfiles) - TODOS LOS DATOS -->
-          <div class="tab-panel knowme-view" *ngIf="activeTab() === 'knowme' && !isOwnProfile() && !loading()">
+          <!-- Conóceme siempre es una vista de solo lectura; la edición está en Configuración. -->
+          <div class="tab-panel knowme-view" *ngIf="activeTab() === 'knowme' && !loading()">
             <div class="knowme-card">
               <div class="knowme-bio" *ngIf="userProfile()?.bio">
                 <p>{{ userProfile()?.bio }}</p>
@@ -535,6 +537,62 @@ interface Pet {
                     <span class="knowme-label">{{ 'profile.fields.followers' | transloco }}</span>
                     <span class="knowme-value">{{ shelterFollowers() }}</span>
                   </div>
+                  <div class="shelter-visit-action" *ngIf="!isOwnProfile()">
+                    <div class="shelter-visit-action-copy">
+                      <h4>{{ 'profile.shelterVisitTitle' | transloco }}</h4>
+                      <p>{{ 'profile.shelterVisitDescription' | transloco }}</p>
+                    </div>
+                    <p-button
+                      *ngIf="isAuthenticated()"
+                      icon="pi pi-car"
+                      [rounded]="true"
+                      [text]="true"
+                      [attr.aria-label]="'profile.requestShelterVisit' | transloco"
+                      [attr.title]="'profile.requestShelterVisit' | transloco"
+                      (onClick)="openShelterVisitDialog()"
+                    />
+                    <p-button
+                      *ngIf="!isAuthenticated()"
+                      icon="pi pi-car"
+                      [rounded]="true"
+                      [text]="true"
+                      [attr.aria-label]="'profile.loginToRequestShelterVisit' | transloco"
+                      [attr.title]="'profile.loginToRequestShelterVisit' | transloco"
+                      (onClick)="goToLogin()"
+                    />
+                  </div>
+                  <div class="shelter-donation-action" *ngIf="!isOwnProfile() && shelterDonationUrl()">
+                    <a
+                      class="donation-icon-button"
+                      [href]="shelterDonationUrl()"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      [attr.aria-label]="'profile.donate' | transloco"
+                      [attr.title]="'profile.donate' | transloco"
+                    >
+                      <i class="pi pi-heart-fill" aria-hidden="true"></i>
+                    </a>
+                  </div>
+                  <div class="visitor-request-list" *ngIf="!isOwnProfile() && myShelterVisitRequests().length">
+                    <h4>{{ 'profile.myShelterVisitRequests' | transloco }}</h4>
+                    <article class="visitor-request-card" *ngFor="let visit of myShelterVisitRequests()">
+                      <div>
+                        <p-tag [value]="('admin.visitStatus.' + visit.status.toLowerCase()) | transloco" />
+                        <p>{{ 'profile.requestedVisitDate' | transloco }}: {{ visit.visitAt | date:'dd/MM/yyyy HH:mm' }}</p>
+                        <p *ngIf="visit.proposedVisitAt">
+                          {{ 'profile.proposedVisitDate' | transloco }}: {{ visit.proposedVisitAt | date:'dd/MM/yyyy HH:mm' }}
+                        </p>
+                        <p *ngIf="visit.responseNote">{{ visit.responseNote }}</p>
+                      </div>
+                      <div class="visitor-request-actions" *ngIf="visit.status === 'ALTERNATIVE_PROPOSED'">
+                        <p-button [label]="'profile.acceptVisitProposal' | transloco" icon="pi pi-check" (onClick)="respondToShelterVisit(visit.id, 'CONFIRMED')" />
+                        <p-button [label]="'profile.cancelVisitRequest' | transloco" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="respondToShelterVisit(visit.id, 'CANCELLED')" />
+                      </div>
+                      <div class="visitor-request-actions" *ngIf="visit.status === 'PENDING' || visit.status === 'CONFIRMED'">
+                        <p-button [label]="'profile.cancelVisitRequest' | transloco" icon="pi pi-times" severity="secondary" [outlined]="true" (onClick)="respondToShelterVisit(visit.id, 'CANCELLED')" />
+                      </div>
+                    </article>
+                  </div>
                 </div>
 
                 <div class="knowme-section" *ngIf="userProfile()?.type === 'seller'">
@@ -652,6 +710,35 @@ interface Pet {
           </p>
         </div>
       </app-modal>
+
+      <app-modal
+        [visible]="showShelterVisitDialog()"
+        [header]="'profile.requestShelterVisit' | transloco"
+        [showConfirm]="false"
+        [showCancel]="false"
+        size="medium"
+        (onHide)="showShelterVisitDialog.set(false)"
+      >
+        <form class="shelter-visit-form" (ngSubmit)="submitShelterVisitRequest()">
+          <p>{{ 'profile.shelterVisitDescription' | transloco }}</p>
+          <label>
+            {{ 'profile.shelterVisitDate' | transloco }}
+            <input name="visitAt" type="datetime-local" required [min]="minimumVisitDateTime" [(ngModel)]="shelterVisitForm.visitAt" />
+          </label>
+          <label>
+            {{ 'profile.shelterVisitPartySize' | transloco }}
+            <input name="partySize" type="number" required min="1" max="20" [(ngModel)]="shelterVisitForm.partySize" />
+          </label>
+          <label>
+            {{ 'profile.shelterVisitMessage' | transloco }}
+            <textarea name="message" rows="3" maxlength="1000" [(ngModel)]="shelterVisitForm.message"></textarea>
+          </label>
+          <div class="shelter-visit-form-actions">
+            <p-button type="button" [label]="'common.cancel' | transloco" severity="secondary" [outlined]="true" (onClick)="showShelterVisitDialog.set(false)" />
+            <p-button type="submit" [label]="'profile.sendShelterVisitRequest' | transloco" icon="pi pi-send" [loading]="submittingShelterVisit()" />
+          </div>
+        </form>
+      </app-modal>
     </div>
   `,
   styles: [`
@@ -767,34 +854,6 @@ interface Pet {
       height: 100%;
     }
 
-    .cover-change-btn {
-      position: absolute;
-      bottom: 16px;
-      right: 16px;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(8px);
-      color: white;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      z-index: 10;
-    }
-
-    .cover-change-btn:hover {
-      background: rgba(0, 0, 0, 0.8);
-      transform: scale(1.05);
-    }
-
-    .cover-change-btn i {
-      font-size: 1rem;
-    }
-
     /* Profile Info */
     .profile-info-instagram {
       display: flex;
@@ -835,34 +894,6 @@ interface Pet {
 
     .avatar-skeleton-instagram {
       display: block;
-    }
-
-    .avatar-change-btn {
-      position: absolute;
-      bottom: 4px;
-      right: 4px;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: var(--primary-color);
-      color: white;
-      border: 2px solid var(--surface-card);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-      z-index: 10;
-    }
-
-    .avatar-change-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    .avatar-change-btn i {
-      font-size: 0.875rem;
     }
 
     /* Profile Details */
@@ -970,6 +1001,11 @@ interface Pet {
       text-decoration: underline;
     }
 
+    .contact-privacy-note {
+      color: var(--text-tertiary);
+      font-size: 0.75rem;
+    }
+
     /* Action Buttons */
     .profile-actions-instagram {
       display: flex;
@@ -999,7 +1035,32 @@ interface Pet {
       border-color: var(--text-secondary);
     }
 
+    .btn-action.btn-icon {
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      justify-content: center;
+      flex: 0 0 40px;
+      border: 0;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    .btn-action.btn-icon > i {
+      font-size: 1rem;
+    }
+
+    .btn-action.btn-icon:hover {
+      background: var(--surface-hover);
+      color: var(--text-primary);
+    }
+
     .btn-edit {
+      background: var(--surface-card);
+    }
+
+    .btn-share {
       background: var(--surface-card);
     }
 
@@ -1008,26 +1069,21 @@ interface Pet {
     }
 
     .btn-following {
-      background: var(--surface-card);
-      border-color: var(--surface-border);
       color: var(--text-secondary);
     }
 
     .btn-following:hover {
-      border-color: #ef4444;
+      background: color-mix(in srgb, #ef4444 10%, transparent);
       color: #ef4444;
     }
 
     .btn-message {
-      background: var(--primary-color);
-      border-color: var(--primary-color);
-      color: #fff;
+      color: var(--primary-color);
     }
 
     .btn-message:hover {
-      background: var(--primary-color-dark);
-      border-color: var(--primary-color-dark);
-      color: #fff;
+      background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+      color: var(--primary-color-dark);
     }
 
     .btn-following:hover i {
@@ -1036,6 +1092,10 @@ interface Pet {
 
     .btn-more {
       padding: 8px 12px;
+    }
+
+    .btn-action.btn-icon.btn-more {
+      padding: 0;
     }
 
     .btn-more i {
@@ -1435,10 +1495,6 @@ interface Pet {
       border-color: var(--surface-card-dark);
     }
 
-    .dark .avatar-change-btn {
-      border-color: var(--surface-card-dark);
-    }
-
     /* ============================================
        RESPONSIVE
     ============================================ */
@@ -1511,24 +1567,6 @@ interface Pet {
         height: 80px;
       }
 
-      .avatar-change-btn {
-        width: 28px;
-        height: 28px;
-      }
-
-      .avatar-change-btn i {
-        font-size: 0.75rem;
-      }
-
-      .cover-change-btn {
-        width: 32px;
-        height: 32px;
-      }
-
-      .cover-change-btn i {
-        font-size: 0.75rem;
-      }
-
       .profile-username {
         font-size: 1.125rem;
       }
@@ -1597,6 +1635,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   private readonly profileService = inject(ProfileService);
   private readonly socialService = inject(SocialService);
   private readonly adoptionService = inject(AdoptionService);
+  private readonly shelterManagementService = inject(ShelterManagementService);
   private readonly messageService = inject(MessageService);
   private readonly transloco = inject(TranslocoService);
   private readonly cdr = inject(ChangeDetectorRef);
@@ -1608,6 +1647,12 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   activeTab = signal('posts');
   profileId = signal<string | null>(null);
   profileType = signal<ProfileType>('user');
+  shelterDonationUrl = signal<string | null>(null);
+  myShelterVisitRequests = signal<ShelterVisitRequest[]>([]);
+  showShelterVisitDialog = signal(false);
+  submittingShelterVisit = signal(false);
+  shelterVisitForm = { visitAt: '', partySize: 1, message: '' };
+  minimumVisitDateTime = this.toDateTimeLocal(new Date());
 
   // Dark mode detection
   isDarkMode = signal(false);
@@ -2028,6 +2073,11 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
     this.profileService.getProfileByAuthUserId(authUserId).subscribe({
       next: (profile) => {
         const normalizedProfileType = profile.profileType?.toLowerCase() as ProfileType || 'user';
+        if (normalizedProfileType === 'shelter') {
+          this.loadShelterDonationLink(authUserId);
+        } else {
+          this.shelterDonationUrl.set(null);
+        }
         const baseProfile: BaseProfile = {
           id: profile.id,
           name: profile.firstName + ' ' + profile.lastName,
@@ -2100,6 +2150,11 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         this.profileService.getProfileById(authUserId).subscribe({
           next: (profile) => {
             const normalizedProfileType = profile.profileType?.toLowerCase() as ProfileType || 'user';
+            if (normalizedProfileType === 'shelter') {
+              this.loadShelterDonationLink(authUserId);
+            } else {
+              this.shelterDonationUrl.set(null);
+            }
             const baseProfile: BaseProfile = {
               id: profile.id,
               name: profile.firstName + ' ' + profile.lastName,
@@ -2173,6 +2228,109 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         });
       },
     });
+  }
+
+  private loadShelterDonationLink(shelterUserId: string): void {
+    this.shelterDonationUrl.set(null);
+    if (this.isAuthenticated()) {
+      this.loadMyShelterVisitRequests(shelterUserId);
+    }
+    this.shelterManagementService.getPublicDonationLink(shelterUserId).subscribe({
+      next: link => this.shelterDonationUrl.set(link.donationUrl || null),
+      error: err => {
+        console.error('Error loading shelter donation link:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.transloco.translate('profile.shelterVisitErrorTitle'),
+          detail: this.transloco.translate('profile.donationLinkLoadError')
+        });
+      }
+    });
+  }
+
+  private loadMyShelterVisitRequests(shelterUserId: string): void {
+    this.shelterManagementService.getMyVisitorRequests(shelterUserId).subscribe({
+      next: requests => this.myShelterVisitRequests.set(requests),
+      error: err => {
+        console.error('Error loading my shelter visit requests:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.transloco.translate('profile.shelterVisitErrorTitle'),
+          detail: this.transloco.translate('profile.myShelterVisitRequestsLoadError')
+        });
+      }
+    });
+  }
+
+  openShelterVisitDialog(): void {
+    const suggestedDate = new Date();
+    suggestedDate.setDate(suggestedDate.getDate() + 1);
+    suggestedDate.setHours(10, 0, 0, 0);
+    this.shelterVisitForm = {
+      visitAt: this.toDateTimeLocal(suggestedDate),
+      partySize: 1,
+      message: ''
+    };
+    this.minimumVisitDateTime = this.toDateTimeLocal(new Date());
+    this.showShelterVisitDialog.set(true);
+  }
+
+  submitShelterVisitRequest(): void {
+    const shelterUserId = this.profileId();
+    if (!shelterUserId || !this.authService.user()) return;
+
+    this.submittingShelterVisit.set(true);
+    this.shelterManagementService.requestVisit({
+      shelterUserId,
+      visitAt: this.shelterVisitForm.visitAt,
+      partySize: Number(this.shelterVisitForm.partySize),
+      message: this.shelterVisitForm.message.trim() || undefined
+    }).subscribe({
+      next: () => {
+        this.showShelterVisitDialog.set(false);
+        this.submittingShelterVisit.set(false);
+        this.loadMyShelterVisitRequests(shelterUserId);
+        this.messageService.add({
+          severity: 'success',
+          summary: this.transloco.translate('profile.shelterVisitRequestSent'),
+          detail: this.transloco.translate('profile.shelterVisitRequestSentDetail')
+        });
+      },
+      error: err => {
+        console.error('Error requesting shelter visit:', err);
+        this.submittingShelterVisit.set(false);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.transloco.translate('profile.shelterVisitErrorTitle'),
+          detail: this.transloco.translate('profile.shelterVisitRequestError')
+        });
+      }
+    });
+  }
+
+  respondToShelterVisit(requestId: string, status: 'CONFIRMED' | 'CANCELLED'): void {
+    this.shelterManagementService.respondToVisit(requestId, status).subscribe({
+      next: updated => this.myShelterVisitRequests.update(requests =>
+        requests.map(request => request.id === updated.id ? updated : request)
+      ),
+      error: err => {
+        console.error('Error responding to shelter visit:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.transloco.translate('profile.shelterVisitErrorTitle'),
+          detail: this.transloco.translate('profile.shelterVisitRequestError')
+        });
+      }
+    });
+  }
+
+  private toDateTimeLocal(date: Date): string {
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return localDate.toISOString().slice(0, 16);
+  }
+
+  goToLogin(): void {
+    void this.router.navigate(['/login']);
   }
 
   private loadPetsForProfile(profileId: string): void {
@@ -2265,6 +2423,7 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   // ============================================
 
   isOwnProfile = computed(() => !this.profileId());
+  isAuthenticated = computed(() => !!this.authService.user());
 
   userProfile = computed(() => {
     const id = this.profileId();
@@ -2787,11 +2946,6 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
   initializeProfileMenu(): void {
     this.profileMenuItems = [
       {
-        label: this.transloco.translate('profile.menu.editProfile'),
-        icon: 'pi pi-pencil',
-        command: () => this.setActiveTab('knowme')
-      },
-      {
         label: this.transloco.translate('profile.menu.manage'),
         icon: 'pi pi-cog',
         command: () => this.router.navigate(['/management'])
@@ -2869,6 +3023,87 @@ export class ProfilePageComponent implements OnInit, OnDestroy {
         userId: targetUserId,
         name: this.userProfile()?.name || ''
       }
+    });
+  }
+
+  blockUser(): void {
+    const targetUserId = this.profileId();
+    if (!targetUserId || this.isOwnProfile()) {
+      return;
+    }
+    if (!window.confirm(this.transloco.translate('settings.blockUserConfirm'))) {
+      return;
+    }
+
+    this.profileService.blockUser(targetUserId).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: this.transloco.translate('settings.userBlocked')
+        });
+        void this.router.navigate(['/social']);
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: this.transloco.translate('settings.blockUserError')
+        });
+      }
+    });
+  }
+
+  shareProfile(): void {
+    const profileId = this.isOwnProfile()
+      ? this.authService.user()?.id
+      : this.profileId();
+    if (!profileId) {
+      return;
+    }
+
+    const profileUrl = new URL(
+      this.router.serializeUrl(this.router.createUrlTree(['/profile', profileId])),
+      window.location.origin
+    ).toString();
+    const title = this.userProfile()?.name || this.transloco.translate('profile.shareProfile');
+
+    if (navigator.share) {
+      void navigator.share({
+        title,
+        text: this.transloco.translate('profile.shareProfileText', { name: title }),
+        url: profileUrl
+      }).catch((error: unknown) => {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          this.messageService.add({
+            severity: 'error',
+            summary: this.transloco.translate('profile.shareErrorTitle'),
+            detail: this.transloco.translate('profile.shareError')
+          });
+        }
+      });
+      return;
+    }
+
+    if (navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(profileUrl).then(
+        () => this.messageService.add({
+          severity: 'success',
+          summary: this.transloco.translate('profile.shareCopiedTitle'),
+          detail: this.transloco.translate('profile.shareCopied')
+        }),
+        () => this.messageService.add({
+          severity: 'info',
+          summary: this.transloco.translate('profile.shareProfile'),
+          detail: profileUrl
+        })
+      );
+      return;
+    }
+
+    this.messageService.add({
+      severity: 'info',
+      summary: this.transloco.translate('profile.shareProfile'),
+      detail: profileUrl,
+      sticky: true
     });
   }
 

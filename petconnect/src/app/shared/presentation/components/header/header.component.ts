@@ -11,12 +11,14 @@ import { LoginPageComponent } from "../../../../auth/presentation/pages/login-pa
 import { Router } from '@angular/router';
 import { AvatarModule } from 'primeng/avatar';
 import { AuthService } from '../../../../auth/infrastructure/services/auth.service';
+import { isProfessionalProfile } from '../../../../auth/domain/management-access';
 import { WebSocketService } from '../../../infrastructure/websocket/websocket.service';
 import { RippleModule } from 'primeng/ripple';
 import { PopoverModule, Popover } from 'primeng/popover';
 import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Subject, debounceTime, distinctUntilChanged, switchMap, map } from 'rxjs';
 import { GlobalSearchService, SearchResult } from '../../../infrastructure/services/global-search.service';
+import { NotificationBadgeService } from '../../../../notifications/infrastructure/services/notification-badge.service';
 /* eslint-enable import/order */
 
 @Component({
@@ -132,7 +134,9 @@ import { GlobalSearchService, SearchResult } from '../../../infrastructure/servi
                 tooltipPosition="bottom"
                 (click)="onNotifications()"
               >
-                <span class="notification-dot"></span>
+                @if (hasUnreadNotifications()) {
+                  <span class="notification-dot"></span>
+                }
               </button>
 
               <!-- Messages -->
@@ -237,7 +241,9 @@ import { GlobalSearchService, SearchResult } from '../../../infrastructure/servi
                 tooltipPosition="bottom"
                 (click)="onNotifications()"
               >
-                <span class="notification-dot"></span>
+                @if (hasUnreadNotifications()) {
+                  <span class="notification-dot"></span>
+                }
               </button>
               <button
                 pButton
@@ -671,17 +677,14 @@ export class HeaderComponent implements OnInit {
   private readonly themeService = inject(ThemeService);
     private readonly authService = inject(AuthService);
   private readonly webSocket = inject(WebSocketService);
+  private readonly notificationBadge = inject(NotificationBadgeService);
   private readonly router = inject(Router);
   private readonly transloco = inject(TranslocoService);
   private readonly searchService = inject(GlobalSearchService);
 
   // ===== Estados =====
   isLoggedIn = computed(() => this.authService.isAuthenticated());
-  canManageManagement = computed(() => {
-    const user = this.authService.user();
-    const profileType = user?.profileType?.toLowerCase();
-    return user?.role === 'ADMIN' || ['vet', 'seller', 'shelter', 'trainer'].includes(profileType ?? '');
-  });
+  canManageManagement = computed(() => isProfessionalProfile(this.authService.user()));
   isDarkMode = signal(false);
   showLoginModal = signal(false);
 
@@ -708,6 +711,7 @@ export class HeaderComponent implements OnInit {
   unreadMessagesDisplay = computed(() =>
     this.unreadMessages() > 99 ? '99+' : String(this.unreadMessages())
   );
+  hasUnreadNotifications = computed(() => this.notificationBadge.hasUnread());
   
   // ===== Búsqueda global =====
   @ViewChild('searchInput') searchInput?: ElementRef<HTMLInputElement>;
@@ -904,9 +908,13 @@ export class HeaderComponent implements OnInit {
     void this.router.navigate(['/settings']);
   }
 
-        onLogout(): void {
-    void this.authService.logout();
-    this.updateMenuItems();
-    void this.router.navigate(['/auth/login']);
+  async onLogout(): Promise<void> {
+    try {
+      await this.authService.logout();
+      this.updateMenuItems();
+      await this.router.navigate(['/auth/login']);
+    } catch (error: unknown) {
+      console.error('Could not complete logout.', error);
+    }
   }
 }

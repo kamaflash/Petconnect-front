@@ -1251,23 +1251,19 @@ export class HomePageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private loadPostPage(page: number, append: boolean, userId: string): void {
-    const loadPublicPage = (): void => {
-      this.homeService.getPublicFeed(page, this.postPageSize).subscribe({
-        next: (response) => this.handlePostPage(response, page, append, userId),
-        error: (error) => this.handlePostPageError(error, append),
-      });
-    };
-
     if (!userId) {
-      loadPublicPage();
+      this.handlePostPageError(
+        new Error('Cannot load the personalized home feed without an authenticated user id.'),
+        append,
+      );
       return;
     }
 
     this.homeService.getPostsByFollowing(userId, page, this.postPageSize).subscribe({
       next: (response) => this.handlePostPage(response, page, append, userId),
       error: (error) => {
-        console.error('Error loading posts from following; falling back to public feed:', error);
-        loadPublicPage();
+        console.error('Error loading posts from following:', error);
+        this.handlePostPageError(error, append);
       },
     });
   }

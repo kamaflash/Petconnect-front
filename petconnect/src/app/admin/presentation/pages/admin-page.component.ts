@@ -2,6 +2,7 @@ import { TranslocoService, TranslocoModule } from '@jsverse/transloco';
 import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { CardModule } from 'primeng/card';
 import { AvatarModule } from 'primeng/avatar';
@@ -14,29 +15,20 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
-import { SocialService, PostResponse, EventResponse, GroupResponse, StoryResponse } from '../../../social/infrastructure/services/social.service';
-import { HomeService, VetServiceResponse } from '../../../home/infrastructure/services/home.service';
 import { MarketplaceService, CreateProductRequest, ProductResponse } from '../../../marketplace/infrastructure/services/marketplace.service';
 import { AdoptionService, AdoptionRequest, AdoptionStatus } from '../../../adoptions/infrastructure/services/adoption.service';
+import { OrdersService, OrderResponse, CreateOrderRequest, UpdateOrderStatusRequest } from '../../../orders/infrastructure/services/orders.service';
+import { InvoicesService, InvoiceResponse, GenerateInvoiceRequest } from '../../../invoices/infrastructure/services/invoices.service';
 import { PageResponse } from '../../../shared/infrastructure/http/page-response';
 import { ProfileService, UserProfileResponse } from '../../../profile/infrastructure/services/profile.service';
 import { PetOwnershipEventService } from '../../../shared/services/pet-ownership-event.service';
-
-interface AdminTab {
-  label: string;
-  icon: string;
-  value: string;
-  roles?: string[];
-}
-
-interface ServiceItem {
-  id: string;
-  name: string;
-  description: string;
-  price: string;
-  duration: string;
-  active: boolean;
-}
+import { PetService } from '../../../pets/infrastructure/services/pet.service';
+import { PetResponse } from '../../../pets/domain/pet.model';
+import {
+  ShelterManagementService,
+  ShelterVisitRequest,
+  ShelterVisitStatus
+} from '../../../shelter/infrastructure/services/shelter-management.service';
 
 interface ProductItem {
   id: string;
@@ -57,6 +49,7 @@ interface ProductItem {
   imports: [
     TranslocoModule,
     CommonModule,
+    FormsModule,
     ButtonModule,
     CardModule,
     AvatarModule,
@@ -76,7 +69,7 @@ interface ProductItem {
         <header class="admin-header page-heading-card">
           <div class="page-heading-copy">
             <h1>{{ 'admin.dashboardTitle' | transloco }}</h1>
-            <p class="welcome-text">{{ 'admin.welcome' | transloco:{ userName: userName() } }}</p>
+            <p class="welcome-text">{{ dashboardSubtitleKey() | transloco }}</p>
           </div>
         </header>
 
@@ -94,122 +87,30 @@ interface ProductItem {
 
         <!-- Contenido de tabs -->
         <div class="admin-content">
-          <!-- Publicaciones -->
-          <div class="admin-section" *ngIf="activeTab() === 'posts'">
-            <!-- Formulario de creación -->
-            <div class="form-container" *ngIf="showCreatePostForm()">
-              <app-dynamic-form
-                [config]="postFormConfig"
-                [(formData)]="postFormData"
-                (onSubmitClick)="handleCreatePost($event)"
-                (onCancel)="showCreatePostForm.set(false)"
-              />
-            </div>
-
-            <!-- Lista de publicaciones -->
-            <div *ngIf="!showCreatePostForm()">
-              <app-table-card
-              [type]="'post'"
-                [items]="adminPostItems()"
-                [showSearch]="true"
-                [filteredItems]="adminPostItems()"
-                [editable]="true"
-                [loading]="loading()"
-                (onAdd)="showCreatePostForm.set(true)"
-              >
-                <ng-template card-actions let-item>
-                  <p-button icon="pi pi-trash" styleClass="p-button-sm p-button-danger" (onClick)="deletePostById(item.id)" />
-                </ng-template>
-              </app-table-card>
-            </div>
-          </div>
-
-          <!-- Eventos -->
-          <div class="admin-section" *ngIf="activeTab() === 'events'">
-            <!-- Formulario de creación -->
-            <div class="form-container" *ngIf="showCreateEventForm()">
-              <app-dynamic-form
-                [config]="eventFormConfig"
-                [(formData)]="eventFormData"
-                (onSubmitClick)="handleCreateEvent($event)"
-                (onCancel)="showCreateEventForm.set(false)"
-              />
-            </div>
-
-            <!-- Lista de eventos -->
-            <div *ngIf="!showCreateEventForm()">
-              <app-table-card
-              [type]="'event'"
-                [items]="adminEventItems()"
-                [showSearch]="true"
-                [filteredItems]="adminEventItems()"
-                [editable]="true"
-                (onAdd)="showCreateEventForm.set(true)"
-              >
-                <ng-template card-actions let-item>
-                  <p-button icon="pi pi-trash" styleClass="p-button-sm p-button-danger" (onClick)="deleteEventById(item.id)" />
-                </ng-template>
-              </app-table-card>
-            </div>
-          </div>
-
-          <!-- Historias -->
-          <div class="admin-section" *ngIf="activeTab() === 'stories'">
-            <!-- Formulario de creación -->
-            <div class="form-container" *ngIf="showCreateStoryForm()">
-              <app-dynamic-form
-                [config]="storyFormConfig"
-                [(formData)]="storyFormData"
-                (onSubmitClick)="handleCreateStory($event)"
-                (onCancel)="showCreateStoryForm.set(false)"
-              />
-            </div>
-
-            <!-- Lista de historias -->
-            <div *ngIf="!showCreateStoryForm()">
-              <app-table-card
-              [type]="'story'"
-                [items]="adminStoryItems()"
-                [showSearch]="true"
-                [filteredItems]="adminStoryItems()"
-                [editable]="true"
-                (onAdd)="showCreateStoryForm.set(true)"
-              >
-                <ng-template card-actions let-item>
-                  <p-button icon="pi pi-trash" styleClass="p-button-sm p-button-danger" (onClick)="deleteStoryById(item.id)" />
-                </ng-template>
-              </app-table-card>
-            </div>
-          </div>
-
-          <!-- Servicios (Vet) -->
+          <!-- Servicios ofrecidos (Vet) -->
           <div class="admin-section" *ngIf="activeTab() === 'services' && hasProfile('vet')">
-            <!-- Formulario de creación -->
-            <div class="form-container" *ngIf="showCreateServiceForm()">
-              <app-dynamic-form
-                [config]="serviceFormConfig"
-                [(formData)]="serviceFormData"
-                (onSubmitClick)="handleCreateService($event)"
-                (onCancel)="showCreateServiceForm.set(false)"
-              />
+            <div class="section-header">
+              <h2>{{ 'admin.tabs.services' | transloco }}</h2>
             </div>
+            <p class="section-subtitle">{{ 'admin.servicesSettingsDescription' | transloco }}</p>
+            <p-button
+              [label]="'admin.editProfessionalProfile' | transloco"
+              icon="pi pi-user-edit"
+              (onClick)="editProfessionalProfile()"
+            />
+          </div>
 
-            <!-- Lista de servicios -->
-            <div *ngIf="!showCreateServiceForm()">
-              <app-table-card
-                [type]="'service'"
-                [items]="adminServiceItems()"
-                [showSearch]="true"
-                [filteredItems]="adminServiceItems()"
-                [editable]="true"
-                [loading]="loading()"
-                (onAdd)="showCreateServiceForm.set(true)"
-              >
-                <ng-template card-actions let-item>
-                  <p-button icon="pi pi-trash" styleClass="p-button-sm p-button-danger" (onClick)="deleteServiceById(item.id)" />
-                </ng-template>
-              </app-table-card>
+          <!-- Perfil profesional (Trainer) -->
+          <div class="admin-section" *ngIf="activeTab() === 'professional-profile' && hasProfile('trainer')">
+            <div class="section-header">
+              <h2>{{ 'admin.tabs.professionalProfile' | transloco }}</h2>
             </div>
+            <p class="section-subtitle">{{ 'admin.trainerProfileDescription' | transloco }}</p>
+            <p-button
+              [label]="'admin.editProfessionalProfile' | transloco"
+              icon="pi pi-user-edit"
+              (onClick)="editProfessionalProfile()"
+            />
           </div>
 
           <!-- Productos (Seller) -->
@@ -242,37 +143,88 @@ interface ProductItem {
             </div>
           </div>
 
-          <!-- Grupos -->
-          <div class="admin-section" *ngIf="activeTab() === 'groups'">
-
-            <!-- Formulario de creación -->
-            <div class="form-container" *ngIf="showCreateGroupForm()">
-              <app-dynamic-form
-                [config]="groupFormConfig"
-                [(formData)]="groupFormData"
-                (onSubmitClick)="handleCreateGroup($event)"
-                (onCancel)="showCreateGroupForm.set(false)"
-              />
+          <!-- Pedidos (Seller) -->
+          <div class="admin-section" *ngIf="activeTab() === 'orders' && hasProfile('seller')">
+            <div class="section-header">
+              <h2>{{ 'admin.tabs.orders' | transloco }}</h2>
+              <p-button [label]="'admin.refreshOrders' | transloco" icon="pi pi-refresh" styleClass="p-button-sm p-button-secondary" (onClick)="loadMyOrders()" />
             </div>
-
-            <!-- Lista de grupos -->
-            <div *ngIf="!showCreateGroupForm()">
-              <app-table-card
-              [type]="'group'"
-                [items]="adminGroupItems()"
-                [showSearch]="true"
-                [filteredItems]="adminGroupItems()"
-                [editable]="true"
-                (onAdd)="showCreateGroupForm.set(true)"
-              >
-                <ng-template card-actions let-item>
-                  <p-button icon="pi pi-trash" styleClass="p-button-sm p-button-danger" (onClick)="deleteGroupById(item.id)" />
-                </ng-template>
-              </app-table-card>
+            <p class="section-subtitle">{{ 'admin.ordersSubtitle' | transloco }}</p>
+            <div class="adoptions-empty" *ngIf="ordersLoading() && adminOrders().length === 0"><p-progressBar mode="indeterminate" [style]="{'height': '4px'}"></p-progressBar></div>
+            <div class="adoptions-empty" *ngIf="!ordersLoading() && adminOrders().length === 0"><i class="pi pi-shopping-cart"></i><p>{{ 'admin.noOrders' | transloco }}</p><span class="empty-subtitle">{{ 'admin.noOrdersSubtitle' | transloco }}</span></div>
+            <div class="orders-list" *ngIf="!ordersLoading() && adminOrders().length > 0">
+              <div class="order-card" *ngFor="let order of adminOrders()">
+                <div class="order-header">
+                  <div class="order-info"><span class="order-id">Pedido #{{ order.id.substring(0, 8) }}</span><p-tag [value]="order.status" [severity]="orderStatusSeverity(order.status)"></p-tag></div>
+                  <div class="order-total"><span>{{ order.totalAmount | currency:'EUR' }}</span></div>
+                </div>
+                <div class="order-body">
+                  <div class="order-customer"><i class="pi pi-user"></i><span>{{ 'admin.orderBuyer' | transloco }}: {{ order.buyerId.substring(0, 8) }}</span></div>
+                  <div class="order-date"><i class="pi pi-calendar"></i><span>{{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}</span></div>
+                  <div class="order-items"><span>{{ 'admin.orderItems' | transloco }}: {{ order.items.length }}</span><div class="order-items-preview"><span *ngFor="let item of order.items.slice(0, 3)">{{ item.productName }} ×{{ item.quantity }}</span><span *ngIf="order.items.length > 3" class="more-items">+{{ order.items.length - 3 }} más</span></div></div>
+                </div>
+                <div class="order-actions">
+                  <p-button [label]="'admin.viewDetails' | transloco" icon="pi pi-eye" styleClass="p-button-sm p-button-secondary" (onClick)="selectOrder(order.id)" />
+                  <p-button *ngIf="order.status === 'PENDING' || order.status === 'PAID'" [label]="'admin.markAsPreparing' | transloco" icon="pi pi-clock" styleClass="p-button-sm p-button-info" (onClick)="updateOrderStatus(order.id, 'PREPARING')" />
+                  <p-button *ngIf="order.status === 'PREPARING'" [label]="'admin.markAsShipped' | transloco" icon="pi pi-truck" styleClass="p-button-sm p-button-success" (onClick)="updateOrderStatus(order.id, 'SHIPPED')" />
+                  <p-button *ngIf="order.status === 'SHIPPED'" [label]="'admin.markAsDelivered' | transloco" icon="pi pi-check-circle" styleClass="p-button-sm p-button-success" (onClick)="updateOrderStatus(order.id, 'DELIVERED')" />
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Adopciones -->
+          <!-- Facturas (Seller) -->
+          <div class="admin-section" *ngIf="activeTab() === 'invoices' && hasProfile('seller')">
+            <div class="section-header">
+              <h2>{{ 'admin.tabs.invoices' | transloco }}</h2>
+              <p-button [label]="'admin.refreshInvoices' | transloco" icon="pi pi-refresh" styleClass="p-button-sm p-button-secondary" (onClick)="loadMyInvoices()" />
+            </div>
+            <p class="section-subtitle">{{ 'admin.invoicesSubtitle' | transloco }}</p>
+            <div class="adoptions-empty" *ngIf="invoicesLoading() && adminInvoices().length === 0"><p-progressBar mode="indeterminate" [style]="{'height': '4px'}"></p-progressBar></div>
+            <div class="adoptions-empty" *ngIf="!invoicesLoading() && adminInvoices().length === 0"><i class="pi pi-file"></i><p>{{ 'admin.noInvoices' | transloco }}</p><span class="empty-subtitle">{{ 'admin.noInvoicesSubtitle' | transloco }}</span></div>
+            <div class="invoices-list" *ngIf="!invoicesLoading() && adminInvoices().length > 0">
+              <div class="invoice-card" *ngFor="let invoice of adminInvoices()">
+                <div class="invoice-header">
+                  <div class="invoice-info"><span class="invoice-number">Factura {{ invoice.invoiceNumber }}</span><p-tag [value]="invoice.status" severity="info"></p-tag></div>
+                  <div class="invoice-total"><span>{{ invoice.totalAmount | currency:'EUR' }}</span></div>
+                </div>
+                <div class="invoice-body">
+                  <div class="invoice-date"><i class="pi pi-calendar"></i><span>{{ 'admin.invoiceDate' | transloco }}: {{ invoice.issueDate | date:'dd/MM/yyyy' }}</span></div>
+                  <div class="invoice-order"><i class="pi pi-shopping-cart"></i><span>{{ 'admin.invoiceOrder' | transloco }}: #{{ invoice.orderId.substring(0, 8) }}</span></div>
+                </div>
+                <div class="invoice-actions">
+                  <p-button *ngIf="!invoice.pdfUrl" [label]="'admin.generateInvoice' | transloco" icon="pi pi-download" styleClass="p-button-sm p-button-success" (onClick)="prepareGenerateInvoice(invoice.orderId)" />
+                  <p-button *ngIf="invoice.pdfUrl" [label]="'admin.downloadInvoice' | transloco" icon="pi pi-download" styleClass="p-button-sm p-button-secondary" (onClick)="downloadInvoice(invoice.pdfUrl)" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resumen de protectora -->
+          <div class="admin-section" *ngIf="activeTab() === 'shelter-overview' && hasProfile('shelter')">
+            <div class="section-header">
+              <div>
+                <h2>{{ 'admin.shelterOverviewTitle' | transloco }}</h2>
+                <p class="section-subtitle">{{ 'admin.shelterOverviewSubtitle' | transloco }}</p>
+              </div>
+            </div>
+
+            <div class="shelter-stats-grid">
+              <article class="shelter-stat-card">
+                <span class="shelter-stat-icon"><i class="pi pi-paw"></i></span>
+                <span class="shelter-stat-value">{{ shelterPets().length }}</span>
+                <span class="shelter-stat-label">{{ 'admin.shelterAnimals' | transloco }}</span>
+              </article>
+              <article class="shelter-stat-card">
+                <span class="shelter-stat-icon"><i class="pi pi-heart"></i></span>
+                <span class="shelter-stat-value">{{ adoptableShelterPets().length }}</span>
+                <span class="shelter-stat-label">{{ 'admin.shelterAnimalsForAdoption' | transloco }}</span>
+              </article>
+            </div>
+
+          </div>
+
+          <!-- Solicitudes de adopción recibidas -->
           <div class="admin-section" *ngIf="activeTab() === 'adoptions'">
             <div class="section-header">
               <h2>{{ 'admin.adoptionRequests' | transloco }}</h2>
@@ -349,58 +301,91 @@ interface ProductItem {
               </div>
             </div>
 
-            <div class="adoptions-section-title">
-              <h3>{{ 'admin.mySentRequests' | transloco }}</h3>
+          </div>
+
+          <!-- Enlace de donación de la protectora -->
+          <div class="admin-section" *ngIf="activeTab() === 'donations' && hasProfile('shelter')">
+            <div class="section-header">
+              <div>
+                <h2>{{ 'admin.shelterDonationLink' | transloco }}</h2>
+                <p class="section-subtitle">{{ 'admin.shelterDonationLinkDescription' | transloco }}</p>
+              </div>
             </div>
-            <div class="adoptions-empty" *ngIf="myAdoptionRequests().length === 0">
-              <i class="pi pi-send"></i>
-              <p>{{ 'admin.noSentRequests' | transloco }}</p>
-              <span class="empty-subtitle">{{ 'admin.noSentRequestsSubtitle' | transloco }}</span>
-            </div>
-            <div class="adoptions-list" *ngIf="myAdoptionRequests().length > 0">
-              <div class="adoption-request-card" *ngFor="let req of myAdoptionRequests()">
-                <div class="adoption-request-main">
-                  <p-avatar [image]="req.petImage || 'https://placehold.co/150'" shape="circle" size="large"></p-avatar>
-                  <div class="adoption-request-info">
-                    <div class="adoption-request-title">
-                      <strong>{{ req.petName }}</strong>
-                      <p-tag
-                        [value]="adoptionStatusLabel(req.status)"
-                        [severity]="adoptionStatusSeverity(req.status)"
-                        styleClass="adoption-status-tag"
-                      ></p-tag>
-                    </div>
-                    <div class="adoption-request-pet">
-                      <i class="pi pi-paw"></i>
-                      <span>{{ req.species || ('admin.unknownSpecies' | transloco) }} {{ req.breed ? '· ' + req.breed : '' }}</span>
-                    </div>
-                    <div class="adoption-steps" *ngIf="stageIndexOf(req.status) >= 0">
-                      <div
-                        class="adoption-step"
-                        *ngFor="let stage of adoptionStages; let i = index"
-                        [class.active]="i < stageIndexOf(req.status)"
-                        [class.current]="i === stageIndexOf(req.status)"
-                      >
-                        <span class="adoption-step-dot"></span>
-                        <span class="adoption-step-label">{{ adoptionStageShortLabel(stage) }}</span>
-                      </div>
-                      <span class="adoption-step-counter" *ngIf="isCompleted(req.status)">✓ {{ 'admin.completed' | transloco }}</span>
-                      <span class="adoption-step-counter" *ngIf="!isCompleted(req.status)">
-                        {{ 'admin.stageOf' | transloco:{ current: stageIndexOf(req.status) + 1, total: adoptionStages.length } }}
-                      </span>
-                    </div>
-                    <div class="adoption-request-date">
-                      {{ req.createdAt | date:'dd/MM/yyyy HH:mm' }}
-                    </div>
-                  </div>
-                </div>
-                <div class="adoption-readonly-note">
-                  <i class="pi pi-lock"></i>
-                  <span>{{ 'admin.sentRequest' | transloco }}</span>
-                </div>
+
+            <form class="shelter-form" (ngSubmit)="saveDonationLink()">
+              <label>
+                {{ 'admin.donationLink' | transloco }}
+                <input name="donationUrl" type="url" maxlength="2048" placeholder="https://" [(ngModel)]="donationUrl" />
+              </label>
+              <div class="shelter-form-actions">
+                <p-button type="submit" [label]="'common.save' | transloco" icon="pi pi-check" [disabled]="donationLinkSaving()" />
+                <p-button
+                  *ngIf="donationUrl"
+                  type="button"
+                  [label]="'admin.removeDonationLink' | transloco"
+                  icon="pi pi-trash"
+                  severity="secondary"
+                  [outlined]="true"
+                  [disabled]="donationLinkSaving()"
+                  (onClick)="clearDonationLink()"
+                />
+              </div>
+            </form>
+            <div class="shelter-management-card" *ngIf="donationUrl">
+              <i class="pi pi-heart-fill" aria-hidden="true"></i>
+              <div class="shelter-management-card-copy">
+                <p>{{ 'admin.currentDonationLink' | transloco }}</p>
+                <a [href]="donationUrl" target="_blank" rel="noopener noreferrer">{{ donationUrl }}</a>
               </div>
             </div>
           </div>
+
+          <!-- Visitas a la protectora -->
+          <div class="admin-section" *ngIf="activeTab() === 'shelter-visits' && hasProfile('shelter')">
+            <div class="section-header">
+              <div>
+                <h2>{{ 'admin.shelterVisits' | transloco }}</h2>
+                <p class="section-subtitle">{{ 'admin.shelterVisitsDescription' | transloco }}</p>
+              </div>
+            </div>
+            <div class="adoptions-empty" *ngIf="!shelterVisitRequests().length">
+              <i class="pi pi-calendar"></i>
+              <p>{{ 'admin.noShelterVisits' | transloco }}</p>
+            </div>
+            <div class="shelter-management-list" *ngIf="shelterVisitRequests().length">
+              <article class="shelter-management-card visit-request-card" *ngFor="let visit of shelterVisitRequests()">
+                <div class="shelter-management-card-copy">
+                  <div class="adoption-request-title">
+                    <strong>{{ visit.visitorName }}</strong>
+                    <p-tag [value]="visitStatusLabel(visit.status)" [severity]="visitStatusSeverity(visit.status)" />
+                  </div>
+                  <p><i class="pi pi-calendar"></i> {{ visit.visitAt | date:'dd/MM/yyyy HH:mm' }} · {{ 'admin.visitorCount' | transloco:{ count: visit.partySize } }}</p>
+                  <p *ngIf="visit.message">{{ visit.message }}</p>
+                  <p class="visit-response-note" *ngIf="visit.responseNote">{{ visit.responseNote }}</p>
+                  <div class="visit-alternative-form" *ngIf="alternativeVisitId() === visit.id">
+                    <label>
+                      {{ 'admin.alternativeVisitDate' | transloco }}
+                      <input type="datetime-local" [(ngModel)]="alternativeVisitDate" [ngModelOptions]="{standalone: true}" />
+                    </label>
+                    <div class="shelter-form-actions">
+                      <p-button [label]="'admin.proposeVisitTime' | transloco" icon="pi pi-send" (onClick)="proposeVisitTime(visit)" />
+                      <p-button [label]="'common.cancel' | transloco" severity="secondary" [outlined]="true" (onClick)="alternativeVisitId.set(null)" />
+                    </div>
+                  </div>
+                </div>
+                <div class="shelter-form-actions" *ngIf="visit.status === 'PENDING'">
+                  <p-button [label]="'admin.confirmVisit' | transloco" icon="pi pi-check" severity="success" (onClick)="updateVisitStatus(visit, 'CONFIRMED')" />
+                  <p-button [label]="'admin.proposeAnotherTime' | transloco" icon="pi pi-clock" severity="secondary" [outlined]="true" (onClick)="openAlternativeVisit(visit)" />
+                  <p-button [label]="'admin.reject' | transloco" icon="pi pi-times" severity="danger" [outlined]="true" (onClick)="updateVisitStatus(visit, 'REJECTED')" />
+                </div>
+                <div class="shelter-form-actions" *ngIf="visit.status === 'CONFIRMED' || visit.status === 'ALTERNATIVE_PROPOSED'">
+                  <p-button *ngIf="visit.status === 'CONFIRMED'" [label]="'admin.markVisitCompleted' | transloco" icon="pi pi-check-circle" severity="success" [outlined]="true" (onClick)="updateVisitStatus(visit, 'COMPLETED')" />
+                  <p-button [label]="'admin.proposeAnotherTime' | transloco" icon="pi pi-clock" severity="secondary" [outlined]="true" (onClick)="openAlternativeVisit(visit)" />
+                </div>
+              </article>
+            </div>
+          </div>
+
           <!-- Solicitudes de cambio de tipo de perfil (solo admin) -->
           <div class="admin-section" *ngIf="activeTab() === 'type-requests' && isAdmin()">
             <div class="section-header">
@@ -517,6 +502,52 @@ interface ProductItem {
       margin: 0 0 1rem;
       color: var(--bitbucket-text-secondary);
       font-size: 0.9rem;
+    }
+
+    .shelter-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+      margin: 1rem 0 1.5rem;
+    }
+
+    .shelter-stat-card,
+    .shelter-action-card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--bitbucket-border);
+      border-radius: 0.75rem;
+      background: var(--surface-card);
+    }
+
+    .shelter-stat-card {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.35rem;
+    }
+
+    .shelter-stat-icon,
+    .shelter-action-icon {
+      display: grid;
+      width: 2.5rem;
+      height: 2.5rem;
+      place-items: center;
+      border-radius: 0.75rem;
+      color: var(--primary-color);
+      background: color-mix(in srgb, var(--primary-color) 10%, var(--surface-card));
+    }
+
+    .shelter-stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--bitbucket-text-primary);
+    }
+
+    .shelter-stat-label {
+      color: var(--bitbucket-text-secondary);
+      font-size: 0.875rem;
     }
 
     .form-container {
@@ -692,223 +723,166 @@ interface ProductItem {
     }
 
     /* Responsive */
+    .shelter-form, .shelter-management-list {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .shelter-form {
+      max-width: 720px;
+      margin: 1.25rem 0;
+    }
+
+    .shelter-form label {
+      display: grid;
+      gap: 0.4rem;
+      color: var(--bitbucket-text-primary);
+      font-weight: 600;
+    }
+
+    .shelter-form input:not([type="checkbox"]), .shelter-form textarea,
+    .visit-alternative-form input {
+      width: 100%;
+      border: 1px solid var(--surface-border);
+      border-radius: 0.65rem;
+      padding: 0.75rem;
+      color: var(--bitbucket-text-primary);
+      background: var(--surface-card);
+    }
+
+    .shelter-checkbox {
+      display: flex !important;
+      align-items: center;
+    }
+
+    .shelter-management-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem;
+      border: 1px solid var(--surface-border);
+      border-radius: 1rem;
+      background: var(--surface-card);
+    }
+
+    .shelter-management-card > img {
+      width: 110px;
+      height: 90px;
+      object-fit: cover;
+      border-radius: 0.75rem;
+    }
+
+    .shelter-management-card-copy {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .shelter-management-card-copy p {
+      margin: 0.5rem 0;
+    }
+
+    .shelter-management-card-copy a {
+      overflow-wrap: anywhere;
+    }
+
+    .shelter-form-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .visit-alternative-form {
+      display: grid;
+      gap: 0.75rem;
+      max-width: 420px;
+      margin-top: 1rem;
+    }
+
+    .visit-response-note {
+      color: var(--bitbucket-text-secondary);
+    }
+
     @media (max-width: 768px) {
       .section-header {
         flex-direction: column;
         align-items: flex-start;
         gap: 1rem;
       }
+
+      .shelter-stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .shelter-management-card {
+        flex-direction: column;
+      }
+
+      .shelter-management-card > img {
+        width: 100%;
+        height: 160px;
+      }
+
     }
   `]
 })
 export class AdminPageComponent implements OnInit {
   readonly i18n = inject(TranslocoService);
   private readonly authService = inject(AuthService);
-  private readonly socialService = inject(SocialService);
-  private readonly homeService = inject(HomeService);
   private readonly marketplaceService = inject(MarketplaceService);
   private readonly adoptionService = inject(AdoptionService);
+  private readonly petService = inject(PetService);
   private readonly profileService = inject(ProfileService);
   private readonly messageService = inject(MessageService);
   private readonly router = inject(Router);
   private readonly petOwnershipEvent = inject(PetOwnershipEventService);
+  private readonly shelterManagementService = inject(ShelterManagementService);
+  private readonly ordersService = inject(OrdersService);
+  private readonly invoicesService = inject(InvoicesService);
 
   // Loading state
   loading = signal(true);
 
   // Tabs
-  activeTab = signal('posts');
+  activeTab = signal('');
 
-  // Form states
-  showCreatePostForm = signal(false);
-  showCreateEventForm = signal(false);
-  showCreateStoryForm = signal(false);
-  showCreateGroupForm = signal(false);
-
-  // Form data
-  postFormData = signal<any>({});
-  eventFormData = signal<any>({});
-  storyFormData = signal<any>({});
-  groupFormData = signal<any>({});
-
-  // Data from backend
-  adminPosts = signal<any[]>([]);
-  adminEvents = signal<any[]>([]);
-  adminStories = signal<any[]>([]);
-  adminGroups = signal<any[]>([]);
-    adminAdoptions = signal<AdoptionRequest[]>([]);
-
-  // Solicitudes de adopción enviadas por el usuario actual (solo lectura)
-  myAdoptionRequests = signal<AdoptionRequest[]>([]);
+  adminAdoptions = signal<AdoptionRequest[]>([]);
+  shelterPets = signal<PetResponse[]>([]);
+  shelterVisitRequests = signal<ShelterVisitRequest[]>([]);
+  alternativeVisitId = signal<string | null>(null);
+  alternativeVisitDate = '';
+  donationUrl = '';
+  donationLinkSaving = signal(false);
+  adoptableShelterPets = computed(() =>
+    this.shelterPets().filter(pet => pet.availableForAdoption)
+  );
 
   // Solicitudes de cambio de tipo de perfil pendientes (solo admin)
   typeRequests = signal<UserProfileResponse[]>([]);
-
-  // Vet services data
-  adminServices = signal<ServiceItem[]>([]);
-  showCreateServiceForm = signal(false);
-  serviceFormData = signal<any>({});
 
   // Products data (for sellers)
   adminProducts = signal<ProductItem[]>([]);
   showCreateProductForm = signal(false);
   productFormData = signal<any>({});
 
-  // Form configurations
-  postFormConfig: DynamicFormConfig = {
-    title: this.i18n.translate('admin.createNewPost'),
-    submitLabel: this.i18n.translate('admin.createPost'),
-    showCancel: true,
-    fields: [
-      {
-        key: 'caption',
-        label: this.i18n.translate('admin.captionLabel'),
-        type: 'textarea',
-        placeholder: this.i18n.translate('admin.captionPlaceholder'),
-        rows: 3,
-        validation: { required: true, minLength: 1, maxLength: 500 }
-      },
-      {
-        key: 'imageUrl',
-        label: this.i18n.translate('common.image'),
-        type: 'file',
-        placeholder: this.i18n.translate('admin.selectImage'),
-        accept: 'image/*',
-        maxFileSize: 5000000,
-        multiple: false
-      }
-    ]
-  };
+  // Orders data (for sellers)
+  adminOrders = signal<OrderResponse[]>([]);
+  ordersLoading = signal(false);
+  selectedOrderId = signal<string | null>(null);
+  orderStatusOptions = [
+    { label: 'Pendiente', value: 'PENDING' },
+    { label: 'Pagado', value: 'PAID' },
+    { label: 'Preparando', value: 'PREPARING' },
+    { label: 'Enviado', value: 'SHIPPED' },
+    { label: 'Entregado', value: 'DELIVERED' },
+    { label: 'Cancelado', value: 'CANCELLED' }
+  ];
 
-  eventFormConfig: DynamicFormConfig = {
-    title: this.i18n.translate('admin.createNewEvent'),
-    submitLabel: this.i18n.translate('admin.createEvent'),
-    showCancel: true,
-    fields: [
-      {
-        key: 'title',
-        label: this.i18n.translate('common.title'),
-        type: 'input',
-        placeholder: this.i18n.translate('admin.eventTitlePlaceholder'),
-        validation: { required: true, minLength: 2, maxLength: 100 }
-      },
-      {
-        key: 'description',
-        label: this.i18n.translate('common.description'),
-        type: 'textarea',
-        placeholder: this.i18n.translate('admin.eventDescPlaceholder'),
-        rows: 3,
-        validation: { required: true }
-      },
-      {
-        key: 'location',
-        label: this.i18n.translate('common.location'),
-        type: 'input',
-        placeholder: this.i18n.translate('admin.eventLocationPlaceholder'),
-        validation: { required: true }
-      },
-      {
-        key: 'date',
-        label: this.i18n.translate('common.date'),
-        type: 'date',
-        placeholder: this.i18n.translate('admin.selectDate'),
-        showIcon: true,
-        dateFormat: 'dd/mm/yy',
-        validation: { required: true }
-      }
-    ]
-  };
-
-  storyFormConfig: DynamicFormConfig = {
-    title: this.i18n.translate('admin.createNewStory'),
-    submitLabel: this.i18n.translate('admin.createStory'),
-    showCancel: true,
-    fields: [
-      {
-        key: 'imageUrl',
-        label: this.i18n.translate('common.image'),
-        type: 'file',
-        placeholder: this.i18n.translate('admin.selectImage'),
-        accept: 'image/*',
-        maxFileSize: 5000000,
-        multiple: false,
-        validation: { required: true }
-      },
-      {
-        key: 'duration',
-        label: this.i18n.translate('admin.durationHours'),
-        type: 'number',
-        placeholder: this.i18n.translate('admin.durationHoursPlaceholder'),
-        validation: { required: true, min: 1, max: 24 }
-      }
-    ]
-  };
-
-  groupFormConfig: DynamicFormConfig = {
-    title: this.i18n.translate('admin.createNewGroup'),
-    submitLabel: this.i18n.translate('admin.createGroup'),
-    showCancel: true,
-    fields: [
-      {
-        key: 'name',
-        label: this.i18n.translate('admin.name'),
-        type: 'input',
-        placeholder: this.i18n.translate('admin.groupNamePlaceholder'),
-        validation: { required: true, minLength: 2, maxLength: 100 }
-      },
-      {
-        key: 'description',
-        label: this.i18n.translate('common.description'),
-        type: 'textarea',
-        placeholder: this.i18n.translate('admin.groupDescPlaceholder'),
-        rows: 3,
-        validation: { required: true }
-      },
-      {
-        key: 'isPublic',
-        label: this.i18n.translate('admin.publicGroup'),
-        type: 'checkbox'
-      }
-    ]
-  };
-
-  // Service form configuration (for vets)
-  serviceFormConfig: DynamicFormConfig = {
-    title: this.i18n.translate('admin.createNewService'),
-    submitLabel: this.i18n.translate('admin.createService'),
-    showCancel: true,
-    fields: [
-      {
-        key: 'name',
-        label: this.i18n.translate('admin.serviceName'),
-        type: 'input',
-        placeholder: this.i18n.translate('admin.serviceTagsPlaceholder'),
-        validation: { required: true, minLength: 2, maxLength: 100 }
-      },
-      {
-        key: 'description',
-        label: this.i18n.translate('common.description'),
-        type: 'textarea',
-        placeholder: this.i18n.translate('admin.describeService'),
-        rows: 3,
-        validation: { required: true, maxLength: 500 }
-      },
-      {
-        key: 'price',
-        label: this.i18n.translate('admin.price'),
-        type: 'input',
-        placeholder: 'Ej: 50.00',
-        validation: { required: true }
-      },
-      {
-        key: 'duration',
-        label: this.i18n.translate('admin.durationMinutes'),
-        type: 'input',
-        placeholder: 'Ej: 30',
-        validation: { required: true }
-      }
-    ]
-  };
+  // Invoices data (for sellers)
+  adminInvoices = signal<InvoiceResponse[]>([]);
+  invoicesLoading = signal(false);
+  showGenerateInvoiceDialog = signal(false);
+  invoiceForOrderId = signal<string | null>(null);
 
   // Product form configuration (for sellers)
   productFormConfig: DynamicFormConfig = {
@@ -972,11 +946,6 @@ export class AdminPageComponent implements OnInit {
   };
 
   // User info
-  userName = computed(() => {
-    const user = this.authService.user();
-    return user ? `${user.firstName} ${user.lastName}` : this.i18n.translate('admin.userFallback');
-  });
-
   // User profile type
   userProfileType = computed(() => {
     const user = this.authService.user();
@@ -985,6 +954,24 @@ export class AdminPageComponent implements OnInit {
 
   // Solo los administradores gestionan solicitudes de cambio de tipo
   isAdmin = computed(() => this.authService.user()?.role === 'ADMIN');
+  dashboardSubtitleKey = computed(() => {
+    if (this.isAdmin()) {
+      return 'admin.dashboardSubtitleAdmin';
+    }
+
+    switch (this.userProfileType()) {
+      case 'shelter':
+        return 'admin.dashboardSubtitleShelter';
+      case 'seller':
+        return 'admin.dashboardSubtitleSeller';
+      case 'vet':
+        return 'admin.dashboardSubtitleVet';
+      case 'trainer':
+        return 'admin.dashboardSubtitleTrainer';
+      default:
+        return 'admin.dashboardSubtitle';
+    }
+  });
 
   // Check if user has specific profile
   hasProfile = (profileType: string): boolean => {
@@ -992,56 +979,6 @@ export class AdminPageComponent implements OnInit {
   };
 
   // Convert to TableCardItem format
-  adminPostItems = computed((): TableCardItem[] => {
-    return this.adminPosts().map(post => ({
-      id: post.id,
-      name: post.caption || this.i18n.translate('common.untitled'),
-      avatar: post.imageUrl || 'https://placehold.co/150',
-      description: `${this.i18n.translate('admin.likes')}: ${post.likesCount} | ${this.i18n.translate('admin.comments')}: ${post.commentsCount}`,
-      tags: post.active ? [this.i18n.translate('admin.active')] : [this.i18n.translate('admin.inactive')],
-    }));
-  });
-
-  adminEventItems = computed((): TableCardItem[] => {
-    return this.adminEvents().map(event => ({
-      id: event.id,
-      name: event.title,
-      avatar: event.imageUrl || 'https://placehold.co/150',
-      description: event.description,
-      location: event.location,
-      tags: event.active ? [this.i18n.translate('admin.active')] : [this.i18n.translate('admin.inactive')],
-    }));
-  });
-
-  adminStoryItems = computed((): TableCardItem[] => {
-    return this.adminStories().map(story => ({
-      id: story.id,
-      name: this.i18n.translate('admin.storyItem'),
-      avatar: story.imageUrl || 'https://placehold.co/150',
-      description: story.seen ? this.i18n.translate('admin.seen') : this.i18n.translate('admin.storyPending'),
-    }));
-  });
-
-  adminGroupItems = computed((): TableCardItem[] => {
-    return this.adminGroups().map(group => ({
-      id: group.id,
-      name: group.name,
-      avatar: group.avatarUrl || 'https://placehold.co/150',
-      description: group.description,
-      tags: group.active ? [this.i18n.translate('admin.active')] : [this.i18n.translate('admin.inactive')],
-    }));
-  });
-
-  adminServiceItems = computed((): TableCardItem[] => {
-    return this.adminServices().map(service => ({
-      id: service.id,
-      name: service.name,
-      avatar: 'https://placehold.co/150',
-      description: `${service.description} | ${this.i18n.translate('admin.duration')}: ${service.duration}min | ${this.i18n.translate('admin.price')}: ${service.price}€`,
-      tags: service.active ? [this.i18n.translate('admin.active')] : [this.i18n.translate('admin.inactive')],
-    }));
-  });
-
   adminProductItems = computed((): TableCardItem[] => {
     return this.adminProducts().map(product => ({
       id: product.id,
@@ -1055,62 +992,81 @@ export class AdminPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    const firstAvailableTab = this.adminTabs()[0];
+    if (firstAvailableTab) {
+      this.activeTab.set(firstAvailableTab.id);
+    }
     this.loadAllData();
   }
 
   private loadAllData(): void {
     this.loading.set(true);
 
-    // Load all data in parallel
-    this.socialService.getAllPosts().subscribe({
-      next: (posts) => this.adminPosts.set(posts),
-      error: (err) => console.error('Error loading posts:', err)
-    });
-
-    this.socialService.getAllEvents().subscribe({
-      next: (events) => this.adminEvents.set(events),
-      error: (err) => console.error('Error loading events:', err)
-    });
-
-    this.socialService.getAllGroups().subscribe({
-      next: (groups) => this.adminGroups.set(groups),
-      error: (err) => console.error('Error loading groups:', err)
-    });
-    // Load products (for sellers)
-    this.marketplaceService.getMyProducts().subscribe({
-      next: (products: PageResponse<ProductResponse>) => {
-        console.log('Products loaded from API:', products);
-        const mapped = products.content.map(p => ({
-          id: p.id,
-          name: p.name,
-          description: p.description || '',
-          price: Number(p.price),
-          stock: p.stock,
-          category: p.category,
-          imageUrl: p.imageUrl || '',
-          active: p.active
-        }));
-        console.log('Mapped products:', mapped);
-        this.adminProducts.set(mapped);
-      },
-      error: (err) => console.error('Error loading products:', err)
-    });
-
-        // Load adoption requests for pets owned by the current user
-    this.adoptionService.getAdoptionRequestsForMyPets().subscribe({
-      next: (requests: PageResponse<AdoptionRequest>) => this.adminAdoptions.set(requests.content),
-      error: (err) => console.error('Error loading adoption requests:', err)
-    });
-
-    // Load adoption requests sent by the current user (solicitudes enviadas)
-    this.adoptionService.getMyAdoptionRequests().subscribe({
-      next: (requests: PageResponse<AdoptionRequest>) => this.myAdoptionRequests.set(requests.content),
-      error: (err) => console.error('Error loading my adoption requests:', err)
-    });
-
-    // Solicitudes de cambio de tipo de perfil (solo visibles para admins)
     if (this.isAdmin()) {
       this.loadTypeRequests();
+    }
+
+    if (this.hasProfile('seller')) {
+      this.marketplaceService.getMyProducts().subscribe({
+        next: (products: PageResponse<ProductResponse>) => {
+          const mapped = products.content.map(product => ({
+            id: product.id,
+            name: product.name,
+            description: product.description || '',
+            price: Number(product.price),
+            stock: product.stock,
+            category: product.category,
+            imageUrl: product.imageUrl || '',
+            active: product.active
+          }));
+          this.adminProducts.set(mapped);
+        },
+        error: (err) => console.error('Error loading products:', err)
+      });
+    }
+
+    if (this.hasProfile('shelter')) {
+      this.adoptionService.getAdoptionRequestsForMyPets().subscribe({
+        next: (requests: PageResponse<AdoptionRequest>) => this.adminAdoptions.set(requests.content),
+        error: (err) => console.error('Error loading adoption requests:', err)
+      });
+
+      const ownerId = this.authService.user()?.id;
+      if (ownerId) {
+        this.petService.getPetsByOwner(ownerId).subscribe({
+          next: pets => this.shelterPets.set(pets),
+          error: (err) => {
+            console.error('Error loading shelter animals:', err);
+            this.messageService.add({
+              severity: 'error',
+              summary: this.i18n.translate('admin.error'),
+              detail: this.i18n.translate('admin.shelterAnimalsLoadError')
+            });
+          }
+        });
+      }
+
+      this.shelterManagementService.getMyDonationLink().subscribe({
+        next: link => this.donationUrl = link.donationUrl ?? '',
+        error: err => {
+          console.error('Error loading shelter donation link:', err);
+          this.showShelterError('admin.donationLinkLoadError');
+        }
+      });
+
+      this.shelterManagementService.getMyVisitRequests().subscribe({
+        next: visits => this.shelterVisitRequests.set(visits),
+        error: err => {
+          console.error('Error loading shelter visit requests:', err);
+          this.showShelterError('admin.shelterVisitsLoadError');
+        }
+      });
+    }
+
+    // Load orders and invoices for sellers
+    if (this.userProfileType() === 'seller') {
+      this.loadMyOrders();
+      this.loadMyInvoices();
     }
 
     // Set loading to false after a short delay
@@ -1123,113 +1079,8 @@ export class AdminPageComponent implements OnInit {
     this.activeTab.set(tab);
   }
 
-  // Create handlers
-  handleCreatePost(postData: any) {
-    const newPost = {
-      id: Date.now().toString(),
-      caption: postData.caption,
-      imageUrl: postData.imageUrl?.[0]?.objectURL || 'https://placehold.co/150',
-      likesCount: 0,
-      commentsCount: 0,
-      active: true
-    };
-
-    this.adminPosts.update(posts => [...posts, newPost]);
-    this.showCreatePostForm.set(false);
-
-    this.messageService.add({
-      severity: 'success',
-      summary: this.i18n.translate('admin.postCreated'),
-      detail: this.i18n.translate('admin.postCreatedDetail')
-    });
-  }
-
-  handleCreateEvent(eventData: any) {
-    const newEvent = {
-      id: Date.now().toString(),
-      title: eventData.title,
-      description: eventData.description,
-      location: eventData.location,
-      date: eventData.date,
-      imageUrl: eventData.imageUrl?.[0]?.objectURL || 'https://placehold.co/150',
-      active: true
-    };
-
-    this.adminEvents.update(events => [...events, newEvent]);
-    this.showCreateEventForm.set(false);
-
-    this.messageService.add({
-      severity: 'success',
-      summary: this.i18n.translate('admin.eventCreated'),
-      detail: this.i18n.translate('admin.eventCreatedDetail', { name: eventData.title })
-    });
-  }
-
-  handleCreateStory(storyData: any) {
-    const newStory = {
-      id: Date.now().toString(),
-      imageUrl: storyData.imageUrl?.[0]?.objectURL || 'https://placehold.co/150',
-      duration: storyData.duration,
-      seen: false
-    };
-
-    this.adminStories.update(stories => [...stories, newStory]);
-    this.showCreateStoryForm.set(false);
-
-    this.messageService.add({
-      severity: 'success',
-      summary: this.i18n.translate('admin.storyCreated'),
-      detail: this.i18n.translate('admin.storyCreatedDetail')
-    });
-  }
-
-  handleCreateGroup(groupData: any) {
-    const newGroup = {
-      id: Date.now().toString(),
-      name: groupData.name,
-      description: groupData.description,
-      isPublic: groupData.isPublic,
-      avatarUrl: 'https://placehold.co/150',
-      active: true
-    };
-
-    this.adminGroups.update(groups => [...groups, newGroup]);
-    this.showCreateGroupForm.set(false);
-
-    this.messageService.add({
-      severity: 'success',
-      summary: this.i18n.translate('admin.groupCreated'),
-      detail: this.i18n.translate('admin.groupCreatedDetail', { name: groupData.name })
-    });
-  }
-
-  // Service handlers (for vets)
-  handleCreateService(serviceData: any) {
-    const newService = {
-      id: Date.now().toString(),
-      name: serviceData.name,
-      description: serviceData.description,
-      price: serviceData.price,
-      duration: serviceData.duration,
-      active: true
-    };
-
-    this.adminServices.update(services => [...services, newService]);
-    this.showCreateServiceForm.set(false);
-
-    this.messageService.add({
-      severity: 'success',
-      summary: this.i18n.translate('admin.serviceCreated'),
-      detail: this.i18n.translate('admin.serviceCreatedDetail', { name: serviceData.name })
-    });
-  }
-
-  deleteServiceById(id: string) {
-    this.messageService.add({
-      severity: 'info',
-      summary: this.i18n.translate('admin.underDevelopment'),
-      detail: this.i18n.translate('admin.deleteServicesSoon')
-    });
+  editProfessionalProfile(): void {
+    void this.router.navigate(['/settings'], { queryParams: { editProfile: '1' } });
   }
 
   // Product handlers (for sellers)
@@ -1282,59 +1133,259 @@ export class AdminPageComponent implements OnInit {
     });
   }
 
+  // Order handlers (for sellers)
+  loadMyOrders(): void {
+    this.ordersLoading.set(true);
+    this.ordersService.getMyOrders().subscribe({
+      next: (orders) => this.adminOrders.set(orders),
+      error: (err) => {
+        console.error('Error loading orders:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.i18n.translate('admin.error'),
+          detail: this.i18n.translate('admin.ordersLoadError')
+        });
+        this.ordersLoading.set(false);
+      },
+      complete: () => this.ordersLoading.set(false)
+    });
+  }
+
+  updateOrderStatus(orderId: string, status: string): void {
+    this.ordersService.updateOrderStatus(orderId, status).subscribe({
+      next: (updated) => {
+        this.adminOrders.update(orders =>
+          orders.map(o => o.id === updated.id ? updated : o)
+        );
+        this.messageService.add({
+          severity: 'success',
+          summary: this.i18n.translate('admin.orderUpdated'),
+          detail: this.i18n.translate('admin.orderStatusChanged', { status })
+        });
+      },
+      error: (err) => {
+        console.error('Error updating order status:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.i18n.translate('admin.error'),
+          detail: this.i18n.translate('admin.orderUpdateError')
+        });
+      }
+    });
+  }
+
+  selectOrder(orderId: string): void {
+    this.selectedOrderId.set(orderId);
+    this.ordersService.getOrderDetail(orderId).subscribe({
+      next: (order) => {
+        this.adminOrders.update(orders =>
+          orders.map(o => o.id === order.id ? order : o)
+        );
+      },
+      error: (err) => console.error('Error loading order detail:', err)
+    });
+  }
+
+  orderStatusSeverity(status: string): 'success' | 'danger' | 'warn' | 'info' | 'secondary' {
+    switch (status) {
+      case 'DELIVERED': return 'success';
+      case 'CANCELLED': return 'danger';
+      case 'SHIPPED': return 'info';
+      case 'PREPARING': return 'warn';
+      case 'PAID': return 'secondary';
+      default: return 'secondary';
+    }
+  }
+
+  // Invoice handlers (for sellers)
+  loadMyInvoices(): void {
+    this.invoicesLoading.set(true);
+    this.invoicesService.getMyInvoices().subscribe({
+      next: (invoices) => this.adminInvoices.set(invoices),
+      error: (err) => {
+        console.error('Error loading invoices:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.i18n.translate('admin.error'),
+          detail: this.i18n.translate('admin.invoicesLoadError')
+        });
+        this.invoicesLoading.set(false);
+      },
+      complete: () => this.invoicesLoading.set(false)
+    });
+  }
+
+  prepareGenerateInvoice(orderId: string): void {
+    this.invoiceForOrderId.set(orderId);
+    this.showGenerateInvoiceDialog.set(true);
+  }
+
+  generateInvoiceForOrder(taxAmount: number | null): void {
+    const orderId = this.invoiceForOrderId();
+    if (!orderId) return;
+    this.invoicesService.generateInvoice({
+      orderId,
+      taxAmount: taxAmount ?? 0
+    }).subscribe({
+      next: (invoice) => {
+        this.adminInvoices.update(invoices => [...invoices, invoice]);
+        this.showGenerateInvoiceDialog.set(false);
+        this.invoiceForOrderId.set(null);
+        this.messageService.add({
+          severity: 'success',
+          summary: this.i18n.translate('admin.invoiceGenerated'),
+          detail: this.i18n.translate('admin.invoiceGeneratedDetail', { number: invoice.invoiceNumber })
+        });
+      },
+      error: (err) => {
+        console.error('Error generating invoice:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: this.i18n.translate('admin.error'),
+          detail: this.i18n.translate('admin.invoiceGenerateError')
+        });
+      }
+    });
+  }
+
+  downloadInvoice(pdfUrl: string): void {
+    window.open(pdfUrl, '_blank');
+  }
+
   // Tabs configuration
-    adminTabs = computed((): Tab[] => {
-    const profileType = this.userProfileType();
+  adminTabs = computed((): Tab[] => {
     const t = this.i18n;
-    const tabs: Tab[] = [
-      // Common tabs for all users
-      { id: 'posts', label: t.translate('admin.tabs.posts'), icon: 'photo_library' },
-    ];
-
-    // Solicitudes de cambio de tipo de perfil (solo administradores)
     if (this.isAdmin()) {
-      tabs.push({ id: 'type-requests', label: t.translate('admin.tabs.typeRequests'), icon: 'pending_actions' });
+      return [{ id: 'type-requests', label: t.translate('admin.tabs.typeRequests'), icon: 'pending_actions' }];
     }
 
-    // Add tabs based on profile type
-    if (profileType === 'vet') {
-      tabs.push(
-        { id: 'services', label: t.translate('admin.tabs.services'), icon: 'medical_services' },
-        { id: 'appointments', label: t.translate('admin.tabs.appointments'), icon: 'calendar_month' }
-      );
-    } else if (profileType === 'seller') {
-      tabs.push(
-        { id: 'products', label: t.translate('admin.tabs.products'), icon: 'shopping_bag' },
-        { id: 'orders', label: t.translate('admin.tabs.orders'), icon: 'receipt_long' }
-      );
-    } else if (profileType === 'shelter') {
-      tabs.push(
-        { id: 'adoptions', label: t.translate('admin.tabs.adoptions'), icon: 'favorite' }
-      );
-    } else if (profileType === 'trainer') {
-      tabs.push(
-        { id: 'training-services', label: t.translate('admin.tabs.trainingServices'), icon: 'fitness_center' },
-        { id: 'sessions', label: t.translate('admin.tabs.sessions'), icon: 'event_available' }
-      );
+    switch (this.userProfileType()) {
+      case 'vet':
+        return [{ id: 'services', label: t.translate('admin.tabs.services'), icon: 'medical_services' }];
+      case 'seller':
+        return [
+          { id: 'products', label: t.translate('admin.tabs.products'), icon: 'shopping_bag' },
+          { id: 'orders', label: t.translate('admin.tabs.orders'), icon: 'shopping_cart' },
+          { id: 'invoices', label: t.translate('admin.tabs.invoices'), icon: 'file' }
+        ];
+      case 'shelter':
+        return [
+          { id: 'shelter-overview', label: t.translate('admin.tabs.shelterOverview'), icon: 'home' },
+          { id: 'adoptions', label: t.translate('admin.tabs.adoptions'), icon: 'favorite' },
+          { id: 'donations', label: t.translate('admin.tabs.donations'), icon: 'volunteer_activism' },
+          { id: 'shelter-visits', label: t.translate('admin.tabs.shelterVisits'), icon: 'event' }
+        ];
+      case 'trainer':
+        return [{ id: 'professional-profile', label: t.translate('admin.tabs.professionalProfile'), icon: 'fitness_center' }];
+      default:
+        return [];
     }
-
-    // Add general tabs (exclude groups for sellers)
-    tabs.push(
-      { id: 'events', label: t.translate('admin.tabs.events'), icon: 'event' },
-      { id: 'stories', label: t.translate('admin.tabs.stories'), icon: 'schedule' }
-    );
-
-    // Replace the generic 'groups' tab with an 'adoptions' tab for pet owners
-    // (only added once; shelters already receive an adoptions tab above)
-    if (profileType !== 'seller' && !tabs.some(tab => tab.id === 'adoptions')) {
-      tabs.push({ id: 'adoptions', label: t.translate('admin.tabs.adoptions'), icon: 'favorite' });
-    }
-
-    return tabs;
   });
 
   onTabChange(tabId: string) {
     this.setActiveTab(tabId);
+  }
+
+  saveDonationLink(value = this.donationUrl): void {
+    const donationUrl = value.trim();
+    if (donationUrl) {
+      try {
+        const url = new URL(donationUrl);
+        if (url.protocol !== 'https:' || !url.hostname || url.username || url.password) {
+          throw new Error('Invalid donation URL');
+        }
+      } catch {
+        this.showShelterError('admin.invalidDonationLink');
+        return;
+      }
+    }
+
+    this.donationLinkSaving.set(true);
+    this.shelterManagementService.updateMyDonationLink(donationUrl).subscribe({
+      next: updated => {
+        this.donationUrl = updated.donationUrl ?? '';
+        this.donationLinkSaving.set(false);
+        this.messageService.add({
+          severity: 'success',
+          summary: this.i18n.translate('common.success'),
+          detail: this.i18n.translate('admin.donationLinkSaved')
+        });
+      },
+      error: err => {
+        this.donationLinkSaving.set(false);
+        console.error('Error saving shelter donation link:', err);
+        this.showShelterError('admin.donationLinkSaveError');
+      }
+    });
+  }
+
+  clearDonationLink(): void {
+    this.saveDonationLink('');
+  }
+
+  visitStatusLabel(status: ShelterVisitStatus): string {
+    return this.i18n.translate(`admin.visitStatus.${status.toLowerCase()}`);
+  }
+
+  visitStatusSeverity(status: ShelterVisitStatus): 'success' | 'danger' | 'warn' {
+    if (status === 'CONFIRMED' || status === 'COMPLETED') return 'success';
+    if (status === 'REJECTED' || status === 'CANCELLED') return 'danger';
+    return 'warn';
+  }
+
+  openAlternativeVisit(visit: ShelterVisitRequest): void {
+    this.alternativeVisitId.set(visit.id);
+    const requested = new Date(visit.visitAt);
+    requested.setDate(requested.getDate() + 1);
+    this.alternativeVisitDate = this.toDateTimeLocal(requested);
+  }
+
+  proposeVisitTime(visit: ShelterVisitRequest): void {
+    if (!this.alternativeVisitDate) return;
+    const proposedDate = new Date(this.alternativeVisitDate);
+    if (Number.isNaN(proposedDate.getTime()) || proposedDate <= new Date()) {
+      this.showShelterError('admin.invalidAlternativeVisitDate');
+      return;
+    }
+    this.updateVisitStatus(
+      visit,
+      'ALTERNATIVE_PROPOSED',
+      this.i18n.translate('admin.alternativeVisitMessage', {
+        date: proposedDate.toLocaleString()
+      }),
+      this.alternativeVisitDate
+    );
+    this.alternativeVisitId.set(null);
+  }
+
+  updateVisitStatus(
+    visit: ShelterVisitRequest,
+    status: ShelterVisitStatus,
+    responseNote?: string,
+    proposedVisitAt?: string
+  ): void {
+    this.shelterManagementService.updateVisitStatus(visit.id, status, responseNote, proposedVisitAt).subscribe({
+      next: updated => this.shelterVisitRequests.update(visits =>
+        visits.map(item => item.id === updated.id ? updated : item)
+      ),
+      error: err => {
+        console.error('Error updating shelter visit request:', err);
+        this.showShelterError('admin.shelterVisitUpdateError');
+      }
+    });
+  }
+
+  private toDateTimeLocal(date: Date): string {
+    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return localDate.toISOString().slice(0, 16);
+  }
+
+  private showShelterError(detailKey: string): void {
+    this.messageService.add({
+      severity: 'error',
+      summary: this.i18n.translate('admin.error'),
+      detail: this.i18n.translate(detailKey)
+    });
   }
 
   // ========== SOLICITUDES DE TIPO DE PERFIL (solo admin) ==========
@@ -1526,48 +1577,4 @@ export class AdminPageComponent implements OnInit {
     });
   }
 
-  // Delete actions
-  deletePostById(id: string) {
-    this.socialService.deletePost(id).subscribe({
-      next: () => {
-        this.adminPosts.update(posts => posts.filter(p => p.id !== id));
-        this.messageService.add({
-          severity: 'success',
-          summary: this.i18n.translate('admin.deleted'),
-          detail: this.i18n.translate('admin.postDeleted')
-        });
-      },
-      error: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: this.i18n.translate('admin.postDeleteError')
-        });
-      }
-    });
-  }
-
-  deleteEventById(id: string) {
-    this.messageService.add({
-      severity: 'info',
-      summary: this.i18n.translate('admin.underDevelopment'),
-      detail: this.i18n.translate('admin.deleteEventsSoon')
-    });
-  }
-
-  deleteStoryById(id: string) {
-    this.messageService.add({
-      severity: 'info',
-      summary: this.i18n.translate('admin.underDevelopment'),
-      detail: this.i18n.translate('admin.deleteStoriesSoon')
-    });
-  }
-
-  deleteGroupById(id: string) {
-    this.messageService.add({
-      severity: 'info',
-      summary: this.i18n.translate('admin.underDevelopment'),
-      detail: this.i18n.translate('admin.deleteGroupsSoon')
-    });
-  }
 }

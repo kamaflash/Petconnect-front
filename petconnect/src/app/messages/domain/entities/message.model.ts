@@ -5,10 +5,20 @@ export interface Message {
   receiverId: string;
   conversationId: string;
   status: 'SENT' | 'DELIVERED' | 'READ';
-  type: 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM';
+  type: 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM' | 'PET_CARD' | 'ADOPTION_CARD';
   attachmentUrl?: string | null;
+  metadata?: string | null;
+  replyToMessageId?: string | null;
+  replyToContent?: string | null;
+  replyToSenderId?: string | null;
+  reactions?: MessageReaction[];
   createdAt: string;
   readAt?: string | null;
+}
+
+export interface MessageReaction {
+  emoji: string;
+  userId: string;
 }
 
 export interface Conversation {

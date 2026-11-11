@@ -95,4 +95,9 @@ export class MarketplaceService {
   createProduct(request: CreateProductRequest): Observable<ProductResponse> {
     return this.http.post<ProductResponse>(`${this.apiUrl}/marketplace/products`, request);
   }
+
+  /** Obtener el detalle completo de un producto por su ID. */
+  getProductById(id: string): Observable<ProductResponse> {
+    return this.http.get<ProductResponse>(`${this.apiUrl}/marketplace/products/${id}`);
+  }
 }

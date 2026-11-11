@@ -21,6 +21,25 @@ export interface ProviderSearchResponse {
   totalPages: number;
 }
 
+export type DirectMessagePolicy = 'EVERYONE' | 'FOLLOWING' | 'NOBODY';
+export type FeedDefault = 'ALL' | 'FOLLOWING';
+
+export interface UserPreferencesResponse {
+  profilePublic: boolean;
+  notificationsEnabled: boolean;
+  directMessagePolicy: DirectMessagePolicy;
+  showOnlineStatus: boolean;
+  notifyMessages: boolean;
+  feedDefault: FeedDefault;
+}
+
+export interface BlockedUserResponse {
+  userId: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string | null;
+}
+
 export interface UserProfileResponse {
   id: string;
   authUserId: string;
@@ -131,12 +150,32 @@ export class ProfileService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = environment.apiUrl;
 
-  updateProfile(formData: FormData): Observable<any> {
-    return this.http.put(`${this.apiUrl}/users/profile`, formData);
+  updateProfile(formData: FormData): Observable<UserProfileResponse> {
+    return this.http.put<UserProfileResponse>(`${this.apiUrl}/users/profile`, formData);
   }
 
   getMyProfile(): Observable<UserProfileResponse> {
     return this.http.get<UserProfileResponse>(`${this.apiUrl}/users/profile`);
+  }
+
+  getPreferences(): Observable<UserPreferencesResponse> {
+    return this.http.get<UserPreferencesResponse>(`${this.apiUrl}/users/profile/preferences`);
+  }
+
+  updatePreferences(preferences: UserPreferencesResponse): Observable<UserPreferencesResponse> {
+    return this.http.patch<UserPreferencesResponse>(`${this.apiUrl}/users/profile/preferences`, preferences);
+  }
+
+  getBlockedUsers(): Observable<BlockedUserResponse[]> {
+    return this.http.get<BlockedUserResponse[]>(`${this.apiUrl}/users/blocked`);
+  }
+
+  blockUser(userId: string): Observable<void> {
+    return this.http.post<void>(`${this.apiUrl}/users/blocked/${userId}`, {});
+  }
+
+  unblockUser(userId: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/users/blocked/${userId}`);
   }
 
   /**

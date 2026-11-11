@@ -36,35 +36,78 @@ import { TranslocoModule } from '@jsverse/transloco';
       </div>
 
       <!-- Mobile Bottom Navigation -->
-      <nav class="mobile-nav">
-        <a routerLink="/" routerLinkActive="mobile-nav-active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" [attr.aria-label]="'nav.home' | transloco">
+      <nav class="mobile-nav" [attr.aria-label]="'nav.mobileNavigation' | transloco" (keydown.escape)="closeMoreMenu()">
+        <a routerLink="/" routerLinkActive="mobile-nav-active" [routerLinkActiveOptions]="{ exact: true }" class="mobile-nav-link" [attr.aria-label]="'nav.home' | transloco" (click)="closeMoreMenu()">
           <span class="material-symbols-rounded">home</span>
           <span class="mobile-nav-label">{{ 'nav.home' | transloco }}</span>
         </a>
-        <a routerLink="/pets" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.family' | transloco">
-          <span class="material-symbols-rounded">group</span>
-          <span class="mobile-nav-label">{{ 'nav.family' | transloco }}</span>
-        </a>
-        <a routerLink="/agenda" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.agenda' | transloco">
-          <span class="material-symbols-rounded">calendar_month</span>
-          <span class="mobile-nav-label">{{ 'nav.agenda' | transloco }}</span>
-        </a>
-        <a routerLink="/nearby" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.discover' | transloco">
+        <a routerLink="/nearby" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.discover' | transloco" (click)="closeMoreMenu()">
           <span class="material-symbols-rounded">explore</span>
           <span class="mobile-nav-label">{{ 'nav.discover' | transloco }}</span>
         </a>
-        <a routerLink="/adoptions" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.adoptions' | transloco">
-          <span class="material-symbols-rounded">pet_supplies</span>
-          <span class="mobile-nav-label">{{ 'nav.adoptions' | transloco }}</span>
+        <button type="button" class="mobile-nav-link mobile-nav-create" (click)="createPost()" [attr.aria-label]="'nav.createPost' | transloco">
+          <span class="mobile-nav-create-icon">
+            <span class="material-symbols-rounded">add</span>
+          </span>
+          <span class="mobile-nav-label">{{ 'nav.createPost' | transloco }}</span>
+        </button>
+        <a routerLink="/messages" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.messages' | transloco" (click)="closeMoreMenu()">
+          <span class="material-symbols-rounded">chat_bubble</span>
+          <span class="mobile-nav-label">{{ 'nav.messages' | transloco }}</span>
         </a>
-        <a routerLink="/lostpets" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.lostPets' | transloco">
-          <span class="material-symbols-rounded">search</span>
-          <span class="mobile-nav-label">{{ 'nav.lostPets' | transloco }}</span>
-        </a>
-        <a routerLink="/social" routerLinkActive="mobile-nav-active" class="mobile-nav-link" [attr.aria-label]="'nav.community' | transloco">
-          <span class="material-symbols-rounded">groups</span>
-          <span class="mobile-nav-label">{{ 'nav.community' | transloco }}</span>
-        </a>
+        <button
+          type="button"
+          class="mobile-nav-link mobile-nav-more"
+          [class.mobile-nav-active]="mobileMoreOpen()"
+          [attr.aria-label]="'nav.more' | transloco"
+          [attr.aria-expanded]="mobileMoreOpen()"
+          aria-controls="mobile-more-menu"
+          (click)="toggleMoreMenu()"
+        >
+          <span class="material-symbols-rounded">more_horiz</span>
+          <span class="mobile-nav-label">{{ 'nav.more' | transloco }}</span>
+        </button>
+
+        @if (mobileMoreOpen()) {
+          <button type="button" class="mobile-more-backdrop" tabindex="-1" aria-hidden="true" (click)="closeMoreMenu()"></button>
+          <div class="mobile-more-menu" id="mobile-more-menu">
+            <div class="mobile-more-header">
+              <span>{{ 'nav.more' | transloco }}</span>
+              <button type="button" class="mobile-more-close" [attr.aria-label]="'nav.closeMore' | transloco" (click)="closeMoreMenu()">
+                <span class="material-symbols-rounded">close</span>
+              </button>
+            </div>
+            <nav class="mobile-more-links" [attr.aria-label]="'nav.moreNavigation' | transloco">
+              <a routerLink="/social" (click)="closeMoreMenu()">
+                <span class="material-symbols-rounded">groups</span>{{ 'nav.community' | transloco }}
+              </a>
+              <a routerLink="/pets" (click)="closeMoreMenu()">
+                <span class="material-symbols-rounded">group</span>{{ 'nav.family' | transloco }}
+              </a>
+              <a routerLink="/agenda" (click)="closeMoreMenu()">
+                <span class="material-symbols-rounded">calendar_month</span>{{ 'nav.agenda' | transloco }}
+              </a>
+              <a routerLink="/adoptions" (click)="closeMoreMenu()">
+                <span class="material-symbols-rounded">pet_supplies</span>{{ 'nav.adoptions' | transloco }}
+              </a>
+              <a routerLink="/lostpets" (click)="closeMoreMenu()">
+                <span class="material-symbols-rounded">search</span>{{ 'nav.lostPets' | transloco }}
+              </a>
+              <a routerLink="/events" (click)="closeMoreMenu()">
+                <span class="material-symbols-rounded">event</span>{{ 'nav.events' | transloco }}
+              </a>
+              <a routerLink="/marketplace" (click)="closeMoreMenu()">
+                <span class="material-symbols-rounded">storefront</span>{{ 'nav.marketplace' | transloco }}
+              </a>
+              <a routerLink="/gamification" (click)="closeMoreMenu()">
+                <span class="material-symbols-rounded">emoji_events</span>{{ 'nav.achievements' | transloco }}
+              </a>
+              <a routerLink="/profile" (click)="closeMoreMenu()">
+                <span class="material-symbols-rounded">person</span>{{ 'nav.profile' | transloco }}
+              </a>
+            </nav>
+          </div>
+        }
       </nav>
     </div>
   `,
@@ -125,9 +168,10 @@ import { TranslocoModule } from '@jsverse/transloco';
       z-index: 100;
       align-items: center;
       justify-content: space-around;
-      padding: 0 8px;
+      padding: 0 12px;
       padding-bottom: env(safe-area-inset-bottom);
       backdrop-filter: blur(12px);
+      box-shadow: 0 -8px 24px rgba(27, 31, 24, 0.06);
     }
 
     .dark .mobile-nav {
@@ -142,14 +186,19 @@ import { TranslocoModule } from '@jsverse/transloco';
       justify-content: center;
       gap: 2px;
       padding: 6px 4px;
+      border: 0;
+      background: transparent;
       color: var(--sidebar-text);
       text-decoration: none;
+      font-family: inherit;
       font-size: 0.6875rem;
       border-radius: var(--radius-md);
       transition: all var(--transition-fast);
-      flex: 1;
+      flex: 1 1 0;
       min-width: 0;
       position: relative;
+      z-index: 100;
+      cursor: pointer;
     }
 
     .mobile-nav-link .material-symbols-rounded {
@@ -190,6 +239,131 @@ import { TranslocoModule } from '@jsverse/transloco';
     .mobile-nav-active .mobile-nav-label {
       color: var(--sidebar-active-text);
       font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .mobile-nav-more.mobile-nav-active .material-symbols-rounded {
+      color: var(--sidebar-active-text);
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .mobile-nav-create {
+      gap: 1px;
+    }
+
+    .mobile-nav-create-icon {
+      display: grid;
+      place-items: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      margin-top: -1rem;
+      border: 3px solid var(--sidebar-bg);
+      border-radius: 0.9rem;
+      background: var(--primary-color);
+      color: var(--on-primary, #ffffff);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--primary-color) 28%, transparent);
+      transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .mobile-nav-create:hover .mobile-nav-create-icon {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px color-mix(in srgb, var(--primary-color) 34%, transparent);
+    }
+
+    .mobile-nav-create-icon .material-symbols-rounded {
+      font-size: 1.5rem;
+      color: inherit;
+      font-variation-settings: 'wght' 500;
+    }
+
+    .mobile-nav-create .mobile-nav-label {
+      color: var(--text-secondary);
+    }
+
+    .mobile-nav-create:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: -2px;
+    }
+
+    .mobile-more-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 99;
+      border: 0;
+      background: rgba(15, 18, 14, 0.18);
+    }
+
+    .mobile-more-menu {
+      position: fixed;
+      right: 12px;
+      bottom: calc(72px + env(safe-area-inset-bottom));
+      z-index: 101;
+      width: min(360px, calc(100vw - 24px));
+      max-height: calc(100dvh - 160px);
+      overflow-y: auto;
+      padding: 0.75rem;
+      border: 1px solid var(--surface-border);
+      border-radius: var(--radius-xl);
+      background: var(--surface-card);
+      box-shadow: var(--shadow-xl);
+    }
+
+    .mobile-more-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.125rem 0.25rem 0.625rem;
+      color: var(--text-primary);
+      font-size: 0.9375rem;
+      font-weight: 650;
+    }
+
+    .mobile-more-close {
+      display: grid;
+      place-items: center;
+      width: 2rem;
+      height: 2rem;
+      border: 0;
+      border-radius: var(--radius-full);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .mobile-more-close:hover {
+      background: var(--surface-hover);
+      color: var(--text-primary);
+    }
+
+    .mobile-more-links {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.375rem;
+    }
+
+    .mobile-more-links a {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      min-width: 0;
+      padding: 0.75rem 0.625rem;
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: 0.8125rem;
+      text-decoration: none;
+      transition: background-color var(--transition-fast), color var(--transition-fast);
+    }
+
+    .mobile-more-links a:hover,
+    .mobile-more-links a:focus-visible {
+      outline: none;
+      background: var(--surface-hover);
+      color: var(--text-primary);
+    }
+
+    .mobile-more-links .material-symbols-rounded {
+      flex: 0 0 auto;
+      font-size: 1.25rem;
+      color: var(--primary-color);
     }
 
     /* ===== RESPONSIVE ===== */
@@ -233,13 +407,36 @@ import { TranslocoModule } from '@jsverse/transloco';
       .mobile-nav-link .material-symbols-rounded {
         font-size: 1.25rem;
       }
+
+      .mobile-nav-create-icon {
+        width: 2.125rem;
+        height: 2.125rem;
+      }
+
+      .mobile-nav-create-icon .material-symbols-rounded {
+        font-size: 1.375rem;
+      }
     }
   `]
 })
 export class PublicLayout implements OnInit {
   private readonly router = inject(Router);
+  mobileMoreOpen = signal(false);
 
   ngOnInit(): void {
     // No page loader needed - each page handles its own loading state
+  }
+
+  toggleMoreMenu(): void {
+    this.mobileMoreOpen.update(open => !open);
+  }
+
+  closeMoreMenu(): void {
+    this.mobileMoreOpen.set(false);
+  }
+
+  createPost(): void {
+    this.closeMoreMenu();
+    void this.router.navigate(['/social'], { queryParams: { compose: 'true' } });
   }
 }

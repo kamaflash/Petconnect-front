@@ -23,6 +23,8 @@ export type PostIntent =
  */
 export const DEFAULT_POST_INTENT: PostIntent = 'UPDATE';
 
+export type PostAudience = 'PUBLIC' | 'FOLLOWERS' | 'ONLY_ME';
+
 /** Intención efectiva de una publicación, nunca nula. */
 export function resolveIntent(intent: PostIntent | null | undefined): PostIntent {
   return intent ?? DEFAULT_POST_INTENT;
@@ -48,6 +50,7 @@ export interface PostResponse {
   latitude?: number | null;
   /** Solo presente cuando el autor confirmó la ubicación en el mapa. */
   longitude?: number | null;
+  audience?: PostAudience;
 }
 
 export interface CreatePostRequest {
@@ -56,6 +59,7 @@ export interface CreatePostRequest {
   caption: string;
   tags?: string;
   intent?: PostIntent;
+  audience?: PostAudience;
   /** Dirección confirmada en el selector (como en editar perfil). */
   location?: string | null;
   /** Coordenadas confirmadas en el mapa; pueden faltar aunque haya dirección. */
@@ -68,6 +72,7 @@ export interface UpdatePostRequest {
   imageUrl?: string;
   caption?: string;
   intent?: PostIntent;
+  audience?: PostAudience;
   location?: string | null;
   latitude?: number | null;
   longitude?: number | null;
@@ -290,6 +295,18 @@ export class SocialService {
     return this.http.get<PageResponse<PostResponse> | PostResponse[]>(`${this.apiUrl}/social/posts/feed`, { params });
   }
 
+  getPostsByFollowing(
+    userId: string,
+    page: number = 0,
+    size: number = 10
+  ): Observable<PageResponse<PostResponse> | PostResponse[]> {
+    const params = new HttpParams().set('page', page).set('size', size);
+    return this.http.get<PageResponse<PostResponse> | PostResponse[]>(
+      `${this.apiUrl}/social/posts/following/${userId}`,
+      { params }
+    );
+  }
+
   getPost(postId: string): Observable<PostResponse> {
     return this.http.get<PostResponse>(`${this.apiUrl}/social/posts/${postId}`);
   }
@@ -311,6 +328,9 @@ export class SocialService {
     }
     if (request.intent) {
       formData.append('intent', request.intent);
+    }
+    if (request.audience) {
+      formData.append('audience', request.audience);
     }
     // Ubicación con el mismo patrón que editar perfil: la dirección es el texto
     // confirmado en el selector y las coordenadas solo viajan si se confirmó en el mapa.
