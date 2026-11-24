@@ -10,7 +10,6 @@ import { AuthService } from '../../../auth/infrastructure/services/auth.service'
 import { PetResponse, CreatePetRequest } from '../../domain/pet.model';
 import { PetService } from '../../infrastructure/services/pet.service';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
-import { ModalComponent } from '../../../shared/presentation/components/modal/modal';
 import { buildPetEditorFormConfig, petEditorDataToRequest } from '../forms/pet-editor-form';
 import { TableCardComponent, TableCardItem } from '../../../shared/presentation/components/table-card/table-card.component';
 
@@ -26,7 +25,6 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
     RouterLink,
     DynamicFormComponent,
     TableCardComponent,
-    ModalComponent,
   ],
   providers: [MessageService],
   template: `
@@ -93,7 +91,7 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
         </div>
       </section>
 
-      <section class="state-card card-modern" *ngIf="!loading() && !loadFailed() && pets().length === 0">
+      <section class="state-card card-modern" *ngIf="!loading() && !loadFailed() && pets().length === 0 && !showPetForm()">
         <div class="card-body">
           <i class="pi pi-paw state-icon" aria-hidden="true"></i>
           <h2>{{ 'petsPage.emptyTitle' | transloco }}</h2>
@@ -102,7 +100,7 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
         </div>
       </section>
 
-      <section class="pets-panel card-modern" *ngIf="!loading() && !loadFailed() && pets().length > 0">
+      <section class="pets-panel card-modern" *ngIf="!loading() && !loadFailed() && pets().length > 0 && !showPetForm()">
         <div class="card-header pets-panel-header">
           <i class="pi pi-paw card-header-icon" aria-hidden="true"></i>
           <span class="card-header-title">{{ 'petsPage.petCount' | transloco:{ count: pets().length } }}</span>
@@ -148,21 +146,10 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
           </div>
         </div>
       </section>
-    </main>
 
-    <app-modal
-      [visible]="dialogVisible"
-      [showHeader]="false"
-      [style]="{ width: 'min(94vw, 56rem)' }"
-      [contentStyle]="{ 'max-height': '86vh', overflow: 'auto', padding: '0' }"
-      [noPadding]="true"
-      [draggable]="false"
-      [resizable]="false"
-      [showCancel]="false"
-      [showConfirm]="false"
-      (onHide)="closeDialog()"
-    >
-      <div class="pet-wizard">
+    <section class="pet-form-section card-modern" *ngIf="showPetForm()">
+      <div class="card-body">
+        <div class="pet-wizard">
         <header class="pet-wizard-header">
           <div class="pet-wizard-heading">
             <span class="pet-wizard-icon"><i class="pi pi-heart-fill" aria-hidden="true"></i></span>
@@ -177,7 +164,7 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
             class="pet-wizard-close"
             [disabled]="saving()"
             [attr.aria-label]="'petsPage.closeForm' | transloco"
-            (click)="closeDialog()"
+            (click)="closeForm()"
           >
             <i class="pi pi-times" aria-hidden="true"></i>
           </button>
@@ -220,17 +207,18 @@ import { TableCardComponent, TableCardItem } from '../../../shared/presentation/
             </div>
           </div>
           <app-dynamic-form
-            *ngIf="dialogVisible"
             [config]="activePetFormConfig()"
             [formData]="petFormData()"
             [submitting]="saving()"
             (formValueChange)="onPetFormValueChange($event)"
             (onSubmitClick)="advancePetForm($event)"
-            (onCancel)="closeDialog()"
+            (onCancel)="closeForm()"
           />
         </section>
       </div>
-    </app-modal>
+    </div>
+  </section>
+</main>
   `,
   styles: [`
     :host { display: block; }
@@ -431,7 +419,7 @@ export class PetsPageComponent implements OnInit {
     }))
   );
 
-  dialogVisible = false;
+  readonly showPetForm = signal(false);
   readonly petFormData = signal<Record<string, unknown>>({});
 
   ngOnInit(): void {
@@ -470,7 +458,7 @@ export class PetsPageComponent implements OnInit {
     this.petFormData.set({});
     this.activePetTab.set(0);
     this.furthestPetTab.set(0);
-    this.dialogVisible = true;
+    this.showPetForm.set(true);
   }
 
   selectPetTab(index: number): void {
@@ -494,9 +482,9 @@ export class PetsPageComponent implements OnInit {
     this.savePet(this.petFormData());
   }
 
-  closeDialog(): void {
+  closeForm(): void {
     if (this.saving()) return;
-    this.dialogVisible = false;
+    this.showPetForm.set(false);
   }
 
   savePet(data: Record<string, unknown>): void {
@@ -510,7 +498,7 @@ export class PetsPageComponent implements OnInit {
       next: pet => {
         this.pets.update(pets => [...pets, pet]);
         this.saving.set(false);
-        this.dialogVisible = false;
+        this.showPetForm.set(false);
         this.messageService.add({
           severity: 'success',
           summary: this.i18n.translate('petsPage.savedTitle'),

@@ -1,10 +1,10 @@
 export const CONSENT_TEMPLATE = `
     @if (visible()) {
-      <div class="consent-overlay" (click)="onOverlayClick($event)">
-        <div #dialog class="consent-dialog" role="dialog" aria-modal="true"
-          aria-labelledby="consent-title" aria-describedby="consent-desc" tabindex="-1">
-          <h2 id="consent-title" class="consent-title">{{ 'consent.title' | transloco }}</h2>
-          <p id="consent-desc" class="consent-text">{{ 'consent.description' | transloco }}</p>
+      <div class="cookie-blocker"></div>
+      <div class="consent-banner" role="region" aria-label="{{ 'consent.title' | transloco }}">
+        <div class="consent-content">
+          <strong class="consent-title">{{ 'consent.title' | transloco }}</strong>
+          <span class="consent-desc">{{ 'consent.description' | transloco }}</span>
           @if (customizing()) {
             <fieldset class="consent-categories">
               <legend class="consent-subtitle">{{ 'consent.preferencesTitle' | transloco }}</legend>

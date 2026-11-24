@@ -155,7 +155,8 @@ export interface TableColumn {
                     </div>
                   } @else if (col.type === 'avatar') {
                     <div class="table-avatar">
-                      <span class="avatar-initials">
+                      <img *ngIf="rowData[col.field]" [src]="rowData[col.field]" [alt]="col.header" class="avatar-image" />
+                      <span class="avatar-initials" *ngIf="!rowData[col.field]">
                         {{ col.format ? col.format(rowData[col.field], rowData) : rowData[col.field] }}
                       </span>
                     </div>
@@ -200,8 +201,8 @@ export interface TableColumn {
       background-color: var(--surface-card);
       border-radius: var(--radius-md);
       overflow: hidden;
-      box-shadow: var(--shadow-sm);
-      border: 1px solid var(--surface-border);
+      // box-shadow: var(--shadow-sm);
+      // border: 1px solid var(--surface-border);
       transition: all var(--transition-normal);
     }
 
@@ -222,6 +223,31 @@ export interface TableColumn {
       border-bottom-color: var(--surface-border);
     }
 
+    .dark .table-empty {
+      color: var(--text-secondary);
+    }
+
+    .dark .table-empty i {
+      color: var(--text-tertiary);
+    }
+
+    .dark .table-empty span {
+      color: var(--text-secondary);
+    }
+
+    .dark .table-cell-text {
+      color: var(--text-primary);
+    }
+
+    .dark .table-badge {
+      background-color: var(--surface-hover);
+      color: var(--text-secondary);
+    }
+
+    .dark .table-status-tag {
+      color: var(--text-primary);
+    }
+
     .table-title {
       font-size: 1.125rem;
       font-weight: 600;
@@ -238,6 +264,107 @@ export interface TableColumn {
     .table-wrapper {
       overflow-x: auto;
       padding: 0;
+    }
+
+    /* ===== TABLE EMPTY / LOADING STATES ===== */
+    .table-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1rem;
+      color: var(--text-secondary);
+      text-align: center;
+    }
+
+    .table-empty i {
+      font-size: 2.5rem;
+      margin-bottom: 0.75rem;
+      color: var(--text-tertiary);
+    }
+
+    .table-empty span {
+      font-size: 0.9375rem;
+      font-weight: 500;
+    }
+
+    /* ===== AVATAR COLUMN ===== */
+    .table-avatar {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+    }
+
+    .avatar-image {
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 50%;
+      object-fit: cover;
+      background-color: var(--surface-hover);
+    }
+
+    .avatar-initials {
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 50%;
+      background-color: var(--primary-color);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+    }
+
+    /* ===== ACTIONS COLUMN ===== */
+    .table-actions-buttons {
+      display: flex;
+      gap: 0.375rem;
+      justify-content: center;
+    }
+
+    .table-action-btn {
+      width: 2.5rem;
+      height: 2.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .table-action-btn .p-button-icon {
+      font-size: 1rem;
+    }
+
+    /* ===== STATUS TAG ===== */
+    .table-status-tag {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 0.375rem 0.75rem;
+    }
+
+    /* ===== BADGE COLUMN ===== */
+    .table-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.375rem 0.75rem;
+      border-radius: var(--radius-full);
+      background-color: var(--surface-hover);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    /* ===== CELL TEXT ===== */
+    .table-cell-text {
+      color: var(--text-primary);
+      font-size: 0.875rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 20rem;
     }
 
     /* ===== PRIMENG TABLE OVERRIDES - MODERN ===== */
@@ -296,11 +423,13 @@ export interface TableColumn {
       border-left: none;
       border-right: none;
       color: var(--text-primary);
+      background-color: var(--surface-card);
     }
 
     .dark :host ::ng-deep .p-datatable .p-datatable-tbody > tr > td {
       border-bottom-color: var(--surface-border);
       color: var(--text-primary);
+      background-color: var(--surface-card);
     }
 
     :host ::ng-deep .p-datatable .p-datatable-tbody > tr:hover {
@@ -358,7 +487,159 @@ export interface TableColumn {
       font-size: 0.8125rem;
     }
 
-    /* ===== DROPDOWN OVERLAY Z-INDEX ===== */
+    .dark :host ::ng-deep .p-datatable .p-datatable-thead > tr:nth-child(2) > th input {
+      background-color: var(--surface-card);
+      color: var(--text-primary);
+      border-color: var(--surface-border);
+    }
+
+    .dark :host ::ng-deep .p-datatable .p-datatable-thead > tr:nth-child(2) > th input:hover {
+      border-color: var(--primary-color);
+    }
+
+    .dark :host ::ng-deep .p-datatable .p-datatable-thead > tr:nth-child(2) > th input:focus {
+      border-color: var(--primary-color) !important;
+      box-shadow: 0 0 0 2px var(--primary-color-highlight) !important;
+    }
+
+    .dark :host ::ng-deep .p-datatable .p-datatable-thead > tr:nth-child(2) > th .p-select .p-select-label {
+      background-color: var(--surface-card);
+      color: var(--text-primary);
+      border-color: var(--surface-border);
+    }
+
+    /* ===== STYLES FROM DYNAMIC-FORM (formdynamic) ===== */
+    /* Externally hidden label to keep accessibility */
+    :host ::ng-deep .p-select,
+    :host ::ng-deep .p-multiselect,
+    :host ::ng-deep .p-select-label,
+    :host ::ng-deep .p-select-trigger,
+    :host ::ng-deep .p-select-dropdown,
+    :host ::ng-deep .p-select-overlay,
+    :host ::ng-deep .p-dropdown-panel {
+      display: block;
+    }
+
+    :host ::ng-deep .p-select,
+    :host ::ng-deep .p-multiselect,
+    :host ::ng-deep .p-inputnumber-input,
+    :host ::ng-deep .p-datepicker-input {
+      background: transparent !important;
+      background-color: transparent !important;
+      border: 1px solid var(--surface-border) !important;
+      border-radius: var(--radius-sm) !important;
+      color: var(--text-primary) !important;
+      font-size: 0.875rem !important;
+      transition: all var(--transition-fast) !important;
+      min-width: 0;
+      width: 100%;
+    }
+
+    :host ::ng-deep .p-select:not(.p-disabled):hover,
+    :host ::ng-deep .p-multiselect:not(.p-disabled):hover,
+    :host ::ng-deep .p-password-input:hover,
+    :host ::ng-deep .p-inputnumber-input:hover,
+    :host ::ng-deep .p-datepicker-input:hover {
+      border-color: var(--surface-border) !important;
+    }
+
+    :host ::ng-deep .p-select:focus-within,
+    :host ::ng-deep .p-select.p-focus,
+    :host ::ng-deep .p-multiselect:focus-within,
+    :host ::ng-deep .p-select-label.p-focus,
+    :host ::ng-deep .p-inputtext:focus,
+    :host ::ng-deep .p-inputtext.ng-focus,
+    :host ::ng-deep textarea:focus,
+    :host ::ng-deep .p-textarea:focus,
+    :host ::ng-deep .p-select-dropdown:focus,
+    :host ::ng-deep .p-datepicker-toggle:focus {
+      border-color: var(--primary-color) !important;
+      box-shadow: 0 0 0 3px var(--primary-color-highlight) !important;
+    }
+
+    :host ::ng-deep .p-select .p-select-label,
+    :host ::ng-deep .p-multiselect .p-select-label {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--surface-border) !important;
+      border-radius: var(--radius-sm) !important;
+      background-color: var(--surface-card) !important;
+      color: var(--text-primary) !important;
+      font-size: 0.8125rem !important;
+    }
+
+    :host ::ng-deep .p-select .p-select-trigger,
+    :host ::ng-deep .p-multiselect .p-select-trigger {
+      color: var(--text-secondary) !important;
+    }
+
+    :host ::ng-deep .p-select .p-select-clear-icon,
+    :host ::ng-deep .p-select .p-select-dropdown {
+      color: var(--text-secondary) !important;
+    }
+
+    :host ::ng-deep .p-select-option,
+    :host ::ng-deep .p-multiselect-option {
+      color: var(--text-primary);
+      transition: all var(--transition-fast);
+      padding: 0.625rem 0.75rem !important;
+      font-size: 0.8125rem !important;
+    }
+
+    :host ::ng-deep .p-select-option:not(.p-select-option-selected):not(.p-disabled):hover,
+    :host ::ng-deep .p-multiselect-option:not(.p-multiselect-option-selected):not(.p-disabled):hover {
+      background: var(--primary-color) !important;
+      color: #ffffff !important;
+    }
+
+    :host ::ng-deep .p-select-option-selected,
+    :host ::ng-deep .p-multiselect-option-selected {
+      background: var(--primary-color-light) !important;
+      color: var(--primary-color) !important;
+    }
+
+    :host ::ng-deep .p-select-option-selected:hover,
+    :host ::ng-deep .p-multiselect-option-selected:hover {
+      background: var(--primary-color) !important;
+      color: #ffffff !important;
+    }
+
+    :host ::ng-deep .p-select-option-check-icon,
+    :host ::ng-deep .p-multiselect-option-check-icon {
+      color: inherit !important;
+    }
+
+    /* Dark mode variants for dynamic-form-styled selects */
+    .dark :host ::ng-deep .p-select,
+    .dark :host ::ng-deep .p-multiselect,
+    .dark :host ::ng-deep .p-select-label,
+    .dark :host ::ng-deep .p-select-trigger,
+    .dark :host ::ng-deep .p-select-label.p-placeholder {
+      color: var(--text-primary) !important;
+    }
+
+    .dark :host ::ng-deep .p-select .p-select-label,
+    .dark :host ::ng-deep .p-multiselect .p-select-label {
+      background-color: var(--surface-card) !important;
+      border-color: var(--surface-border) !important;
+      color: var(--text-primary) !important;
+    }
+
+    .dark :host ::ng-deep .p-select-option,
+    .dark :host ::ng-deep .p-multiselect-option {
+      color: var(--text-primary) !important;
+    }
+
+    .dark :host ::ng-deep .p-select-option:not(.p-select-option-selected):not(.p-disabled):hover,
+    .dark :host ::ng-deep .p-multiselect-option:not(.p-multiselect-option-selected):not(.p-disabled):hover {
+      background: var(--primary-color) !important;
+      color: #ffffff !important;
+    }
+
+    .dark :host ::ng-deep .p-select-option-selected,
+    .dark :host ::ng-deep .p-multiselect-option-selected {
+      background: var(--primary-color-light) !important;
+      color: var(--primary-color) !important;
+    }
     :host ::ng-deep .p-select-overlay {
       z-index: 1000 !important;
     }

@@ -332,7 +332,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
                         <img [src]="item.avatar" [alt]="item.name" class="product-image" />
                       </div>
                     }
-                    <div class="product-content">
+                    <div class="product-content" (click)="onItemClick.emit(item)">
                       <div class="product-name">{{ item.name }}</div>
                       @if (item.description) {
                         <div class="product-description">{{ item.description }}</div>
@@ -774,6 +774,7 @@ export type CardType = 'post' | 'pet' | 'event' | 'story' | 'group' | 'service' 
 
     .product-content {
       padding: 1.25rem;
+      cursor: pointer;
     }
     .product-name {
       font-weight: 600;
@@ -814,6 +815,7 @@ export class TableCardComponent implements AfterViewInit, OnDestroy {
   filterChange = output<string>();
   onAdd = output<void>();
   loadMore = output<void>();
+  onItemClick = output<TableCardItem>();
 
   searchValue = signal('');
 

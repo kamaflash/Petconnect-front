@@ -41,6 +41,22 @@ export interface CreateProductRequest {
   tags?: string;
 }
 
+export interface UpdateProductRequest {
+  name?: string;
+  description?: string;
+  price?: number;
+  originalPrice?: number;
+  category?: string;
+  subcategory?: string;
+  imageUrl?: string;
+  imageUrls?: string;
+  stock?: number;
+  brand?: string;
+  discount?: number;
+  tags?: string;
+  active?: boolean;
+}
+
 /** Filtros del catálogo que el backend aplica en BD (`GET /marketplace/products`). */
 export interface ProductListFilters {
   /** Texto libre sobre nombre, descripción y marca. */
@@ -99,5 +115,10 @@ export class MarketplaceService {
   /** Obtener el detalle completo de un producto por su ID. */
   getProductById(id: string): Observable<ProductResponse> {
     return this.http.get<ProductResponse>(`${this.apiUrl}/marketplace/products/${id}`);
+  }
+
+  /** Actualizar un producto existente del vendedor autenticado. */
+  updateProduct(id: string, request: UpdateProductRequest): Observable<ProductResponse> {
+    return this.http.put<ProductResponse>(`${this.apiUrl}/marketplace/products/${id}`, request);
   }
 }

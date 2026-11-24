@@ -11,8 +11,8 @@ import { TagModule } from 'primeng/tag';
 import { DialogModule } from 'primeng/dialog';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-import { TableCardComponent, TableCardItem } from '../../../shared/presentation/components/table-card/table-card.component';
 import { TabsComponent, Tab } from '../../../shared/presentation/components/tabs/tabs.component';
+import { TableComponent, TableColumn } from '../../../shared/presentation/components/table/table.component';
 import { DynamicFormComponent, DynamicFormConfig } from '../../../shared/presentation/components/dynamic-form/dynamic-form.component';
 import { AuthService } from '../../../auth/infrastructure/services/auth.service';
 import { MarketplaceService, CreateProductRequest, ProductResponse } from '../../../marketplace/infrastructure/services/marketplace.service';
@@ -57,9 +57,9 @@ interface ProductItem {
     TagModule,
     DialogModule,
     ToastModule,
-    TableCardComponent,
     TabsComponent,
     DynamicFormComponent,
+    TableComponent,
   ],
   providers: [MessageService],
   template: `
@@ -127,19 +127,19 @@ interface ProductItem {
 
             <!-- Lista de productos -->
             <div *ngIf="!showCreateProductForm()">
-              <app-table-card
-                [type]="'product'"
-                [items]="adminProductItems()"
-                [showSearch]="true"
-                [filteredItems]="adminProductItems()"
-                [editable]="true"
+              <app-table
+                [data]="adminProductItems()"
+                [columns]="productColumns"
+                [rows]="10"
+                [paginator]="true"
                 [loading]="loading()"
-                (onAdd)="showCreateProductForm.set(true)"
+                (onEdit)="goToEditProduct($event.id)"
+                (onDelete)="deleteProductById($event.id)"
               >
-                <ng-template card-actions let-item>
-                  <p-button icon="pi pi-trash" styleClass="p-button-sm p-button-danger" (onClick)="deleteProductById(item.id)" />
+                <ng-template table-actions>
+                  <p-button label="Nuevo producto" icon="pi pi-plus" styleClass="p-button-sm p-button-secondary" (onClick)="showCreateProductForm.set(true)" />
                 </ng-template>
-              </app-table-card>
+              </app-table>
             </div>
           </div>
 
@@ -865,6 +865,22 @@ export class AdminPageComponent implements OnInit {
   showCreateProductForm = signal(false);
   productFormData = signal<any>({});
 
+  productColumns: TableColumn[] = [
+    { field: 'imageUrl', header: 'Imagen', type: 'avatar', width: '80px' },
+    { field: 'name', header: 'Nombre', sortable: true },
+    { field: 'category', header: 'Categoría' },
+    { field: 'price', header: 'Precio', type: 'number', align: 'right', format: (v: any) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(v) },
+    { field: 'stock', header: 'Stock', type: 'number', align: 'center' },
+    {
+      field: 'active',
+      header: 'Estado',
+      type: 'status',
+      statusLabel: (v: boolean) => (v ? this.i18n.translate('admin.active') : this.i18n.translate('admin.inactive')),
+      statusSeverity: (v: boolean) => (v ? 'success' : 'danger'),
+    },
+    { field: 'actions', header: 'Acciones', type: 'actions', width: '120px' },
+  ];
+
   // Orders data (for sellers)
   adminOrders = signal<OrderResponse[]>([]);
   ordersLoading = signal(false);
@@ -978,18 +994,8 @@ export class AdminPageComponent implements OnInit {
     return this.userProfileType() === profileType.toLowerCase();
   };
 
-  // Convert to TableCardItem format
-  adminProductItems = computed((): TableCardItem[] => {
-    return this.adminProducts().map(product => ({
-      id: product.id,
-      name: product.name,
-      avatar: product.imageUrl || 'https://placehold.co/150',
-      description: `${product.description || ''} | ${this.i18n.translate('admin.stock')}: ${product.stock} | ${this.i18n.translate('common.category')}: ${product.category}`,
-      rating: product.rating || 0,
-      reviews: product.reviews || 0,
-      tags: [product.price.toString() + '€', product.active ? this.i18n.translate('admin.active') : this.i18n.translate('admin.inactive')],
-    }));
-  });
+  // Product items for the table
+  adminProductItems = computed((): ProductItem[] => this.adminProducts());
 
   ngOnInit(): void {
     const firstAvailableTab = this.adminTabs()[0];
@@ -1131,6 +1137,10 @@ export class AdminPageComponent implements OnInit {
       summary: this.i18n.translate('admin.underDevelopment'),
       detail: this.i18n.translate('admin.deleteProductsSoon')
     });
+  }
+
+  goToEditProduct(id: string): void {
+    void this.router.navigate(['/management', 'products', 'edit', id]);
   }
 
   // Order handlers (for sellers)

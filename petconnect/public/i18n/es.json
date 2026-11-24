@@ -76,7 +76,8 @@
     "female": "Hembra",
     "other": "Otro",
     "pet": "Mascota",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "error": "Error"
   },
   "form": {
     "images": "Imágenes"
@@ -1114,6 +1115,38 @@
     "description": "Descripción del producto",
     "submit": "Crear producto"
   },
+  "editProduct": {
+    "title": "Editar Producto",
+    "subtitle": "Modifica los datos de tu producto",
+    "nameLabel": "Nombre del producto *",
+    "namePlaceholder": "Nombre del producto",
+    "categoryLabel": "Categoría *",
+    "categoryPlaceholder": "Selecciona una categoría",
+    "subcategoryLabel": "Subcategoría",
+    "subcategoryPlaceholder": "Ej: Perros, Gatos...",
+    "priceLabel": "Precio (€,€) *",
+    "originalPriceLabel": "Precio original (€,€)",
+    "stockLabel": "Stock *",
+    "brandLabel": "Marca",
+    "brandPlaceholder": "Marca del producto",
+    "discountLabel": "Descuento (%)",
+    "discountPlaceholder": "0",
+    "imageUrlLabel": "URL de la imagen principal",
+    "imageUrlPlaceholder": "https://...",
+    "tagsLabel": "Etiquetas (separadas por coma)",
+    "tagsPlaceholder": "Ej: nuevo, popular, oferta",
+    "descriptionLabel": "Descripción del producto",
+    "descriptionPlaceholder": "Describe tu producto...",
+    "submit": "Guardar cambios",
+    "missingFields": "Por favor, completa todos los campos obligatorios",
+    "error": "Error",
+    "food": "Alimento",
+    "toys": "Juguetes",
+    "accessories": "Accesorios",
+    "health": "Salud",
+    "clothing": "Ropa",
+    "hygiene": "Higiene"
+  },
   "social": {
     "communities": {
       "title": "Círculos de comunidad",
@@ -1457,6 +1490,9 @@
     "productCreated": "Producto creado",
     "productCreatedDetail": "El producto {{name}} ha sido creado correctamente",
     "productCreateError": "No se pudo crear el producto",
+    "productUpdated": "Producto actualizado",
+    "productUpdatedDetail": "El producto {{name}} ha sido actualizado correctamente",
+    "productUpdateError": "No se pudo actualizar el producto",
     "deleted": "Eliminado",
     "petDeletedDetail": "Mascota eliminada correctamente",
     "petDeleteError": "No se pudo eliminar la compañer@",

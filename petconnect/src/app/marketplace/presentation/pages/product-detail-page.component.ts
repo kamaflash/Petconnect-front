@@ -1,4 +1,4 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -37,7 +37,7 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
   providers: [MessageService],
   template: `
     <p-toast />
-    <main class="w-full p-3 md:p-4">
+    <main class="p-2 page-container">
       <nav class="flex align-items-center gap-2 mb-3 text-color-secondary" aria-label="Breadcrumb">
         <button pButton type="button" class="p-button-link p-0" (click)="goBack()">Marketplace</button>
         <i class="pi pi-angle-right" aria-hidden="true"></i>
@@ -60,8 +60,8 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
         </p-card>
       } @else if (product(); as item) {
         <section class="grid">
-          <div class="col-12 lg:col-6">
-            <p-card>
+          <div class="col-12 lg:col-8">
+            <p-card class="card-modern">
               @if (mainImage()) {
                 <img class="w-full border-round" [src]="mainImage()" [alt]="item.name" />
               } @else {
@@ -70,7 +70,7 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
                 </div>
               }
               @if (thumbnailImages().length > 1) {
-                <div class="flex flex-wrap gap-2 mt-3" aria-label="Imágenes del producto">
+                <div class="flex flex-wrap gap-2 mt-3" aria-label="ImÃ¡genes del producto">
                   @for (image of thumbnailImages(); track image; let index = $index) {
                     <button
                       pButton
@@ -89,7 +89,7 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
             </p-card>
           </div>
 
-          <div class="col-12 lg:col-6">
+          <div class="col-12 lg:col-4">
             <p-card>
               <div class="flex flex-column gap-3">
                 <div>
@@ -98,7 +98,7 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
                   <div class="flex align-items-center flex-wrap gap-2">
                     <p-rating [ngModel]="avgRating()" [readonly]="true" />
                     <span class="text-color-secondary">
-                      {{ avgRating() | number: '1.1-1' }} · {{ reviews().length }} reseñas
+                      {{ avgRating() | number: '1.1-1' }} Â· {{ reviews().length }} reseÃ±as
                     </span>
                   </div>
                 </div>
@@ -142,7 +142,7 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
                   </div>
                   <button pButton type="button" [disabled]="item.stock < 1" (click)="addToCart()">
                     <i class="pi pi-shopping-cart mr-2" aria-hidden="true"></i>
-                    <span>Añadir al carrito</span>
+                    <span>AÃ±adir al carrito</span>
                   </button>
                   <button pButton type="button" severity="warn" [disabled]="item.stock < 1" (click)="buyNow()">
                     <i class="pi pi-bolt mr-2" aria-hidden="true"></i>
@@ -166,21 +166,21 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
         </section>
 
         <section class="grid">
-          <div class="col-12 lg:col-6">
-            <p-card header="Descripción">
+          <div class="col-12 lg:col-8">
+            <p-card header="DescripciÃ³n">
               <p class="m-0 line-height-3">
-                {{ item.description || 'El vendedor todavía no ha añadido una descripción.' }}
+                {{ item.description || 'El vendedor todavÃ­a no ha aÃ±adido una descripciÃ³n.' }}
               </p>
             </p-card>
           </div>
-          <div class="col-12 lg:col-6">
+          <div class="col-12 lg:col-4">
             <p-card header="Especificaciones">
               <div class="flex flex-column">
                 <div class="flex justify-content-between gap-3 py-2 border-bottom-1 surface-border">
-                  <span class="text-color-secondary">Categoría</span><strong>{{ item.category }}</strong>
+                  <span class="text-color-secondary">CategorÃ­a</span><strong>{{ item.category }}</strong>
                 </div>
                 <div class="flex justify-content-between gap-3 py-2 border-bottom-1 surface-border">
-                  <span class="text-color-secondary">Marca</span><strong>{{ item.brand || '—' }}</strong>
+                  <span class="text-color-secondary">Marca</span><strong>{{ item.brand || 'â€”' }}</strong>
                 </div>
                 <div class="flex justify-content-between gap-3 py-2 border-bottom-1 surface-border">
                   <span class="text-color-secondary">SKU</span><strong>{{ item.id }}</strong>
@@ -190,7 +190,7 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
                 </div>
                 @if (item.subcategory) {
                   <div class="flex justify-content-between gap-3 py-2 border-top-1 surface-border">
-                    <span class="text-color-secondary">Subcategoría</span><strong>{{ item.subcategory }}</strong>
+                    <span class="text-color-secondary">SubcategorÃ­a</span><strong>{{ item.subcategory }}</strong>
                   </div>
                 }
               </div>
@@ -202,8 +202,8 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
           <p-card>
             <ng-template #title>
               <div class="flex align-items-center flex-wrap gap-2">
-                <span>Reseñas y valoraciones</span>
-                <p-tag severity="secondary" [value]="reviews().length + ' reseñas'" />
+                <span>ReseÃ±as y valoraciones</span>
+                <p-tag severity="secondary" [value]="reviews().length + ' reseÃ±as'" />
               </div>
             </ng-template>
             <div class="grid">
@@ -227,7 +227,7 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
               </div>
             </div>
             <div class="border-top-1 surface-border mt-3 pt-3">
-              <h3 class="mt-0">Escribe tu reseña</h3>
+              <h3 class="mt-0">Escribe tu reseÃ±a</h3>
               @if (isAuthenticated()) {
                 <app-dynamic-form
                   [config]="reviewFormConfig"
@@ -235,7 +235,7 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
                   (onSubmitClick)="submitReview($event)"
                 />
               } @else {
-                <p class="text-color-secondary">Inicia sesión para dejar una reseña de este producto.</p>
+                <p class="text-color-secondary">Inicia sesiÃ³n para dejar una reseÃ±a de este producto.</p>
               }
             </div>
             <div class="flex flex-column mt-3">
@@ -255,20 +255,20 @@ import { PageHeadingCardComponent } from '../../../shared/presentation/component
                   </article>
                 }
               } @else {
-                <p class="text-color-secondary">Todavía no hay reseñas. ¡Sé la primera persona en opinar!</p>
+                <p class="text-color-secondary">TodavÃ­a no hay reseÃ±as. Â¡SÃ© la primera persona en opinar!</p>
               }
             </div>
           </p-card>
         </section>
 
         <section class="mt-3">
-          <p-card header="También te puede interesar">
-            <p class="m-0 text-color-secondary">Próximamente encontrarás productos relacionados.</p>
+          <p-card header="TambiÃ©n te puede interesar">
+            <p class="m-0 text-color-secondary">PrÃ³ximamente encontrarÃ¡s productos relacionados.</p>
           </p-card>
         </section>
       } @else {
         <p-card>
-          <p class="m-0 text-color-secondary">No se encontró el producto solicitado.</p>
+          <p class="m-0 text-color-secondary">No se encontrÃ³ el producto solicitado.</p>
         </p-card>
       }
     </main>
@@ -296,7 +296,7 @@ export class ProductDetailPageComponent implements OnInit {
     fields: [
       {
         key: 'rating',
-        label: 'Valoración (1-5)',
+        label: 'ValoraciÃ³n (1-5)',
         type: 'number',
         defaultValue: 5,
         validation: { required: true, min: 1, max: 5 },
@@ -305,12 +305,12 @@ export class ProductDetailPageComponent implements OnInit {
         key: 'comment',
         label: 'Tu comentario',
         type: 'textarea',
-        placeholder: 'Cuéntanos qué te ha parecido este producto',
+        placeholder: 'CuÃ©ntanos quÃ© te ha parecido este producto',
         rows: 4,
         validation: { required: true, minLength: 3, maxLength: 1000 },
       },
     ],
-    submitLabel: 'Publicar reseña',
+    submitLabel: 'Publicar reseÃ±a',
     showCancel: false,
     showSubmit: true,
     columns: 1,
@@ -374,7 +374,7 @@ export class ProductDetailPageComponent implements OnInit {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo cargar el producto. Inténtalo de nuevo más tarde.',
+          detail: 'No se pudo cargar el producto. IntÃ©ntalo de nuevo mÃ¡s tarde.',
         });
       },
     });
@@ -387,7 +387,7 @@ export class ProductDetailPageComponent implements OnInit {
         this.reviewsLoading.set(false);
       },
       error: (error: unknown) => {
-        console.error('No se pudieron cargar las reseñas', error);
+        console.error('No se pudieron cargar las reseÃ±as', error);
         this.reviewsLoading.set(false);
       },
     });
@@ -424,15 +424,15 @@ export class ProductDetailPageComponent implements OnInit {
       this.messageService.add({
         severity: 'warn',
         summary: 'Revisa los datos',
-        detail: 'Selecciona una valoración entre 1 y 5 y escribe un comentario.',
+        detail: 'Selecciona una valoraciÃ³n entre 1 y 5 y escribe un comentario.',
       });
       return;
     }
     if (!this.isAuthenticated()) {
       this.messageService.add({
         severity: 'warn',
-        summary: 'Inicia sesión',
-        detail: 'Necesitas iniciar sesión para publicar una reseña.',
+        summary: 'Inicia sesiÃ³n',
+        detail: 'Necesitas iniciar sesiÃ³n para publicar una reseÃ±a.',
       });
       return;
     }
@@ -443,18 +443,19 @@ export class ProductDetailPageComponent implements OnInit {
         this.reviewFormData = { rating: 5, comment: '' };
         this.messageService.add({
           severity: 'success',
-          summary: 'Reseña publicada',
-          detail: 'Gracias por compartir tu opinión.',
+          summary: 'ReseÃ±a publicada',
+          detail: 'Gracias por compartir tu opiniÃ³n.',
         });
       },
       error: (error: unknown) => {
-        console.error('No se pudo publicar la reseña', error);
+        console.error('No se pudo publicar la reseÃ±a', error);
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'No se pudo publicar tu reseña. Inténtalo de nuevo.',
+          detail: 'No se pudo publicar tu reseÃ±a. IntÃ©ntalo de nuevo.',
         });
       },
     });
   }
 }
+

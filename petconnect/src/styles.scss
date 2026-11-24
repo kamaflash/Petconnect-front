@@ -518,7 +518,7 @@
 
   /* Shared app surfaces */
   --surface-bg: #131510;
-  --surface-card: #1a1d17;
+  --surface-card: #1A1D17;
   --surface-border: #2b3029;
   --surface-hover: #20241d;
   --surface-overlay: #1a1d17;
@@ -641,6 +641,49 @@ app-table-card .stories-row > .add-card {
   .page-heading-card h1 {
     font-size: 1.25rem;
   }
+}
+
+/* ===== CARD MODERN STYLES ===== */
+.card-modern {
+  background: var(--surface-card);
+  // border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.card-modern .card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.card-modern .card-header-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--primary-color);
+}
+
+.card-modern .card-header-title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-modern .card-header-link {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+/* ===== PAGE CONTAINER ===== */
+.page-container {
+  max-width: 72rem; /* 1152px - ancho máximo como home-page */
+  margin: 0 auto;
+  width: 100%;
 }
 
 /* ===== HEADER STYLES ===== */
@@ -1088,7 +1131,7 @@ button.primary-button {
 .p-card {
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
-  border: 1px solid var(--surface-border);
+  // border: 1px solid var(--surface-border);
   background: var(--surface-card);
   transition: all var(--transition-normal);
 
